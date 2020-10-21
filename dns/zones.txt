@@ -1,0 +1,35 @@
+@ 10800 IN SOA ns1.gandi.net. hostmaster.gandi.net. 1579092697 10800 3600 604800 10800
+@ 10800 IN A 195.154.119.61
+@ 10800 IN AAAA 2001:bc8:3d8f::cafe
+@ 10800 IN MX 1 mail.erebe.eu.
+@ 10800 IN MX 10 spool.mail.gandi.net.
+@ 10800 IN MX 50 fb.mail.gandi.net.
+api 10800 IN A 195.154.119.61
+api 10800 IN AAAA 2001:bc8:3d8f::cafe
+ca 10800 IN A 195.154.119.61
+ca 10800 IN AAAA 2001:bc8:3d8f::cafe
+cal 10800 IN A 195.154.119.61
+cal 10800 IN AAAA 2001:bc8:3d8f::cafe
+cloud 10800 IN A 195.154.119.61
+cloud 10800 IN AAAA 2001:bc8:3d8f::cafe
+ftp 10800 IN A 195.154.119.61
+ftp 10800 IN AAAA 2001:bc8:3d8f::cafe
+git 10800 IN A 195.154.119.61
+git 10800 IN AAAA 2001:bc8:3d8f::cafe
+imap 10800 IN A 195.154.119.61
+imap 10800 IN AAAA 2001:bc8:3d8f::cafe
+mail 10800 IN A 195.154.119.61
+mail 10800 IN AAAA 2001:bc8:3d8f::cafe
+mig 10800 IN A 195.154.119.61
+mon 10800 IN A 195.154.119.61
+mon 10800 IN AAAA 2001:bc8:3d8f::cafe
+pop 10800 IN A 195.154.119.61
+pop 10800 IN AAAA 2001:bc8:3d8f::cafe
+smtp 10800 IN A 195.154.119.61
+smtp 10800 IN AAAA 2001:bc8:3d8f::cafe
+stats 10800 IN A 195.154.119.61
+stats 10800 IN AAAA 2001:bc8:3d8f::cafe
+todo 10800 IN A 195.154.119.61
+todo 10800 IN AAAA 2001:bc8:3d8f::cafe
+www 10800 IN A 195.154.119.61
+www 10800 IN AAAA 2001:bc8:3d8f::cafe
