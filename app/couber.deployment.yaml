@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: couber
+  labels:
+    app: couber
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate 
+  selector:
+    matchLabels:
+      app: couber
+  template:
+    metadata:
+      labels:
+        app: couber
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: couber
+        image: erebe/couber:latest
+        imagePullPolicy: Always
+        env:
+        - name: PORT
+          value: "8081"
+        ports:
+        - containerPort: 8081
+        volumeMounts:
+        - name: db
+          mountPath: /home/app/db
+        - name: videos
+          mountPath: /home/app/videos
+      volumes:
+      - name: db
+        hostPath:
+          path: /opt/couber/db/
+          type: Directory
+      - name: videos
+        hostPath:
+          path: /opt/couber/videos/
+          type: Directory
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: couber
+spec:
+  selector:
+    app: couber
+  ports:
+    - protocol: TCP
+      port: 8081
+  clusterIP: None
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: couber-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/app-root: /index.html
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - erebe.eu
+    secretName: couber-tls
+  rules:
+  - host: erebe.eu
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: couber
+          servicePort: 8081
