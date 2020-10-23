@@ -31,6 +31,6 @@ mailbox_size_limit = 0
 recipient_delimiter = +
 inet_interfaces = all
 message_size_limit = 204800000
-maillog_file = /dev/stdout
+maillog_file = /var/log/postfix
 compatibility_level=2
 

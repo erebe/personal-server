@@ -1,8 +1,8 @@
 HOST='root@erebe.eu'
 
-.PHONY: dns sudo ssh package iptables kubernetes_install k8s dovecot
+.PHONY: dns sudo ssh package iptables kubernetes_install k8s dovecot postfix
 
-all: dns sudo ssh package iptables k8s dovecot
+all: dns sudo ssh package iptables k8s dovecot postfix
 
 dns:
 	sops -d --output secrets_decrypted/gandi.yml secrets/gandi.yml
@@ -42,3 +42,5 @@ dovecot:
 	kubectl apply -f secrets_decrypted/dovecot.yml
 	kubectl apply -f dovecot/dovecot.yml
 
+postfix:
+	kubectl apply -f postfix/postfix.yml
