@@ -5,6 +5,7 @@ RUN apk update && \
     apk add ca-certificates postfix procmail spamassassin spamassassin-client curl && \
     rm -rf /var/cache/apk/* && \
     adduser -D erebe && \
+    mkdir /home/erebe/procmail && chown erebe:erebe -R /home/erebe && \
     mkdir /data && chmod 777 -R /data && chown erebe:erebe -R /data && \
     # Generate virtual alias map
     echo '@erebe.eu erebe' > /etc/postfix/virtual && \
