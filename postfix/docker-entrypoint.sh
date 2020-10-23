@@ -28,6 +28,9 @@ mail_filter_url=$(curl -s https://api.github.com/repos/erebe/hmailfilter/release
 curl -L -o hmailclassifier $mail_filter_url
 chmod +x hmailclassifier
 
+# Give right to the data volume
+chown erebe:erebe -R /data
+
 # Start spamassassin
 sa-update
 spamd -d -s stderr 2>/dev/null
