@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: imap
+  name: dovecot
   labels:
-    app: imap
+    app: dovecot
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: imap
+      app: dovecot
   template:
     metadata:
       labels:
-        app: imap
+        app: dovecot
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
