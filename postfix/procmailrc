@@ -2,7 +2,6 @@ VERBOSE=off
 MAILDIR=/data/
 PMDIR=$HOME/procmail
 LOGFILE=$PMDIR/procmail.log
-INCLUDERC=$PMDIR/trash.rc
 
 
 #:0 c
