@@ -50,3 +50,6 @@ app:
 	kubectl apply -f app/nextcloud.yml
 	kubectl apply -f app/couber.yml
 
+
+nextcloud_resync_file:
+	kubectl exec -t $(shell kubectl get pods -n default -l app=nextcloud -o json | jq .items[].metadata.name) -- sudo -u abc /config/www/nextcloud/occ files:scan --all
