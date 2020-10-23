@@ -25,12 +25,18 @@ spec:
         ports:
         - containerPort: 993
         volumeMounts:
+        - name: dovecot-tls
+          mountPath: /etc/ssl/dovecot/
+          readOnly: true
         - name: dovecot-users-password
           mountPath: /etc/dovecot/users/
           readOnly: true
         - name: mail-data
           mountPath: /data
       volumes:
+      - name: dovecot-tls
+        secret:
+          secretName: dovecot-tls
       - name: dovecot-users-password
         secret:
           secretName: dovecot-users-password
