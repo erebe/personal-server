@@ -4,7 +4,7 @@ on:
     branches: [ master ]
 jobs:
   dovecot:
-    name: Build and Push dovecot image
+    name: Dovecot (IMAP) image
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo

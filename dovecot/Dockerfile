@@ -11,7 +11,12 @@ RUN apk update && \
     sed -i 's#\#mail_location =#mail_location = maildir:/data#' /etc/dovecot/conf.d/10-mail.conf && \
     # User passwd db file, need to be mounted as a secret
     sed -i 's#/etc/dovecot/users#/etc/dovecot/users/users#' /etc/dovecot/conf.d/auth-passwdfile.conf.ext && \
-    rm -f /etc/dovecot/users
+    rm -f /etc/dovecot/users && \
+    # To match kube cert-manager naming
+    sed -i 's#/etc/ssl/dovecot/server.pem#/etc/ssl/dovecot/tls.crt#' /etc/dovecot/conf.d/10-ssl.conf && \
+    sed -i 's#/etc/ssl/dovecot/server.key#/etc/ssl/dovecot/tls.key#' /etc/dovecot/conf.d/10-ssl.conf && \
+    mv /etc/ssl/dovecot/server.pem /etc/ssl/dovecot/server.crt && \
+    mv /etc/ssl/dovecot/server.key /etc/ssl/dovecot/tls.key 
 
 VOLUME /data
 VOLUME /etc/dovecot/users
