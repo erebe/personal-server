@@ -1,8 +1,8 @@
 HOST='root@erebe.eu'
 
-.PHONY: dns sudo ssh package iptables kubernetes_install k8s dovecot postfix
+.PHONY: dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file
 
-deploy: dns sudo ssh package iptables k8s dovecot postfix
+deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud
 
 dns:
 	sops -d --output secrets_decrypted/gandi.yml secrets/gandi.yml
@@ -46,8 +46,12 @@ postfix:
 	kubectl apply -f postfix/postfix.yml
 
 
+nextcloud:
+	kubectl apply -f nextcloud/nextcloud.yml
+	sleep 5
+	kubectl cp nextcloud/config.nginx.site-confs.default default/$(shell kubectl get pods -n default -l app=nextcloud -o json | jq .items[].metadata.name):/config/nginx/site-confs/default
+
 app:
-	kubectl apply -f app/nextcloud.yml
 	kubectl apply -f app/couber.yml
 
 
