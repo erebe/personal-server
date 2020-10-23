@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: imap
+  labels:
+    app: imap
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: imap
+  template:
+    metadata:
+      labels:
+        app: imap
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: mail
+        image: erebe/imap:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 993
+        volumeMounts:
+        - name: dovecot-user-password
+          mountPath: /etc/dovecot/users/
+          readOnly: true
+        - name: mail-data
+          mountPath: /data
+      volumes:
+      - name: dovecot-user-password
+        secret:
+          secretName: imap-users-password
+      - name: mail-data
+        hostPath:
+          path: /opt/mail/data
+          type: Directory
