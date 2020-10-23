@@ -2,7 +2,7 @@ FROM alpine:3.11
 #newer version does not have procmail binary (due to being unmaintened and CVE)
 
 RUN apk update && \
-    apk add ca-certificates postfix procmail curl && \
+    apk add ca-certificates postfix procmail spamassassin spamassassin-client curl && \
     rm -rf /var/cache/apk/* && \
     adduser -D erebe && \
     mkdir /home/erebe/procmail && \
@@ -32,8 +32,8 @@ RUN apk update && \
     newaliases  
 
 
-
 ADD docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
+ADD procmailrc /etc/postfix/procmailrc
 
 VOLUME /etc/ssl/postfix
 VOLUME /data

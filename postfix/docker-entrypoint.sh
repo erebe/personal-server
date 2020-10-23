@@ -25,8 +25,12 @@ trap "postfix reload" SIGHUP
 #cp /etc/hosts /var/spool/postfix/etc/hosts
 
 mail_filter_url=$(curl -s https://api.github.com/repos/erebe/hmailfilter/releases/latest | grep browser_download_url | cut -d '"' -f 4)
-curl -L -o /usr/bin/hmailclassifier $mail_filter_url
-chmod +x /usr/bin/hmailclassifier
+curl -L -o hmailclassifier $mail_filter_url
+chmod +x hmailclassifier
+
+# Start spamassassin
+sa-update
+spamd -d -s stderr 2>/dev/null
 
 # start postfix
 postfix start
@@ -36,5 +40,11 @@ sleep 3
 
 # wait until postfix is dead (triggered by trap)
 while kill -0 "`cat /var/spool/postfix/pid/master.pid | sed 's/ //g'`"; do
-  sleep 15
+  if [ $(( ( RANDOM % 100 )  + 1 )) -ge 99 ]
+  then
+    sa-update
+  fi
+
+  sleep 30
 done
+
