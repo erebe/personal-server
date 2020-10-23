@@ -1,8 +1,8 @@
 HOST='root@erebe.eu'
 
-.PHONY: dns sudo ssh package iptables kubernetes_install k8s
+.PHONY: dns sudo ssh package iptables kubernetes_install k8s dovecot
 
-all: dns sudo ssh package iptables k8s
+all: dns sudo ssh package iptables k8s dovecot
 
 dns:
 	sops -d --output secrets_decrypted/gandi.yml secrets/gandi.yml
@@ -36,4 +36,9 @@ k8s:
 	kubectl apply -f k8s/ingress-nginx-v0.40.2.yml
 	kubectl apply --validate=false -f k8s/cert-manager-v1.0.3.yml
 	kubectl apply -f k8s/lets-encrypt-issuer.yml
+
+dovecot:
+	sops -d --output secrets_decrypted/dovecot.yml secrets/dovecot.yml
+	kubectl apply -f secrets_decrypted/dovecot.yml
+	kubectl apply -f dovecot/dovecot.yml
 
