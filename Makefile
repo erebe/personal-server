@@ -1,8 +1,18 @@
 HOST='root@erebe.eu'
 
-.PHONY: dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file
+.PHONY: install deploy dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file
+
 
 deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud
+
+install:
+	sops -d --extract '["public_key"]' --output ~/.ssh/erebe_rsa.pub secrets/ssh.yml
+	sops -d --extract '["private_key"]' --output ~/.ssh/erebe_rsa.key secrets/ssh.yml
+	chmod 600 ~/.ssh/erebe_rsa.*
+	grep -q erebe.eu ~/.ssh/config > /dev/null 2>&1 || cat config/ssh_client_config >> ~/.ssh/config
+	mkdir ~/.kube || exit 0
+	sops -d --output ~/.kube/config secrets/kubernetes-config.yml
+
 
 dns:
 	sops -d --output secrets_decrypted/gandi.yml secrets/gandi.yml
@@ -11,8 +21,6 @@ dns:
 ssh:
 	ssh ${HOST} "cat /etc/ssh/sshd_config" | diff  - config/sshd_config \
 		|| (scp config/sshd_config ${HOST}:/etc/ssh/sshd_config && ssh ${HOST} systemctl restart sshd)
-	sops -d --extract '["public_key"]' --output secrets_decrypted/id_rsa.pub secrets/ssh.yml
-	sops -d --extract '["private_key"]' --output secrets_decrypted/id_rsa secrets/ssh.yml
 
 sudo:
 	scp config/sudoers ${HOST}:/etc/sudoers.d/erebe

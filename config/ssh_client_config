@@ -1,0 +1,4 @@
+Host erebe.eu
+     HostName erebe.eu
+     User erebe
+     IdentityFile ~/.ssh/erebe_rsa.key
