@@ -1,0 +1,40 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: backup
+spec:
+  schedule: "0 4 * * *" 
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
+          containers:
+          - name: backup
+            image: alpine
+            args:
+            - /bin/sh
+            - -c
+            - apk add --no-cache lftp; tar -cvf backup.tar /data; lftp -u ${USER},${PASSWORD} dedibackup-dc3.online.net -e 'put backup.tar -o /backups/backup.tar; bye'
+            env:
+            - name: USER
+              valueFrom:
+                secretKeyRef:
+                  name: ftp-credentials
+                  key: username
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ftp-credentials
+                  key: password
+            volumeMounts:
+            - name: data
+              mountPath: /data
+          restartPolicy: OnFailure
+          volumes:
+          - name: data
+            hostPath: 
+              path: /opt
+              type: Directory

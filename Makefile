@@ -1,9 +1,9 @@
 HOST='root@erebe.eu'
 
-.PHONY: install deploy dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file
+.PHONY: install deploy dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup
 
 
-deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud
+deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud backup
 
 install:
 	sops -d --extract '["public_key"]' --output ~/.ssh/erebe_rsa.pub secrets/ssh.yml
@@ -26,7 +26,7 @@ sudo:
 	scp config/sudoers ${HOST}:/etc/sudoers.d/erebe
 
 package:
-	ssh ${HOST} 'apt-get update && apt-get install -y curl htop mtr tcpdump ncdu vim dnsutils strace linux-perf'
+	ssh ${HOST} 'apt-get update && apt-get install -y curl htop mtr tcpdump ncdu vim dnsutils strace linux-perf iftop'
 	# Enable automatic security Updates
 	ssh ${HOST} 'echo "unattended-upgrades unattended-upgrades/enable_auto_updates boolean true" | debconf-set-selections && apt-get install unattended-upgrades -y'
 
@@ -59,8 +59,14 @@ nextcloud:
 	sleep 5
 	kubectl cp nextcloud/config.nginx.site-confs.default default/$(shell kubectl get pods -n default -l app=nextcloud -o json | jq .items[].metadata.name):/config/nginx/site-confs/default
 
+backup:
+	sops -d --output secrets_decrypted/backup_ftp_credentials.yml secrets/backup_ftp_credentials.yml
+	kubectl apply -f secrets_decrypted/backup_ftp_credentials.yml
+	kubectl apply -f backup/backup-cron.yml
+
 app:
 	kubectl apply -f app/couber.yml
+	kubectl apply -f app/crawler.yml
 
 
 nextcloud_resync_file:
