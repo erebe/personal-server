@@ -51,6 +51,8 @@ dovecot:
 	kubectl apply -f dovecot/dovecot.yml
 
 postfix:
+	sops -d --output secrets_decrypted/fetchmail.yml secrets/fetchmail.yml
+	kubectl apply -f secrets_decrypted/fetchmail.yml
 	kubectl apply -f postfix/postfix.yml
 
 
