@@ -30,7 +30,8 @@ chmod +x hmailclassifier
 
 # Give right to the data volume
 chown erebe:erebe -R /data
-chmod 600 /etc/fetchmail/fetchmailrc 
+cp /etc/fetchmail/fetchmailrc /home/erebe/
+chmod 600 /home/erebe/fetchmailrc 
 
 # Start spamassassin
 spamd -d -s stderr 2>/dev/null
@@ -49,7 +50,7 @@ while kill -0 "`cat /var/spool/postfix/pid/master.pid | sed 's/ //g'`"; do
   # Fetch mail from fallback mail server every 15min
   if [ $(( $counter % 30 )) -eq 0 ]
   then
-    fetchmail --nodetach --nosyslog --ssl -f /etc/fetchmail/fetchmailrc
+    fetchmail --nodetach --nosyslog --ssl -f /home/erebe/fetchmailrc
   fi 
 
   # Update spamassassin filter every 12hours

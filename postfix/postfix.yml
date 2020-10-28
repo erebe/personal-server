@@ -30,6 +30,8 @@ spec:
           readOnly: true
         - name: mail-data
           mountPath: /data
+        - name: fetchmail
+          mountPath: /etc/fetchmail
       volumes:
       - name: dovecot-tls
         secret:
@@ -38,3 +40,9 @@ spec:
         hostPath:
           path: /opt/mail/data
           type: Directory
+      - name: fetchmail
+        configMap:
+          name: fetchmail
+          items:
+          - key: fetchmailrc
+            path: fetchmailrc
