@@ -30,9 +30,9 @@ chmod +x hmailclassifier
 
 # Give right to the data volume
 chown erebe:erebe -R /data
+chmod 600 /etc/fetchmail/fetchmailrc 
 
 # Start spamassassin
-sa-update
 spamd -d -s stderr 2>/dev/null
 
 # start postfix
@@ -41,12 +41,23 @@ postfix start
 # lets give postfix some time to start
 sleep 3
 
+counter=-1
 # wait until postfix is dead (triggered by trap)
 while kill -0 "`cat /var/spool/postfix/pid/master.pid | sed 's/ //g'`"; do
-  if [ $(( ( RANDOM % 100 )  + 1 )) -ge 99 ]
+
+  counter=$(($counter + 1))
+  # Fetch mail from fallback mail server every 15min
+  if [ $(( $counter % 30 )) -eq 0 ]
+  then
+    fetchmail --nodetach --nosyslog --ssl -f /etc/fetchmail/fetchmailrc
+  fi 
+
+  # Update spamassassin filter every 12hours
+  if [ $(( $counter % 1440 )) -eq 0 ]
   then
     sa-update
-  fi
+    counter=0
+  fi 
 
   sleep 30
 done
