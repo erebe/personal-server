@@ -60,6 +60,7 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10G"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   tls:
