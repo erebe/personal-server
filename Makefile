@@ -1,9 +1,10 @@
 HOST='root@erebe.eu'
+RASPBERRY='pi@192.168.1.253'
 
-.PHONY: install deploy dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app
+.PHONY: install deploy dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app wireguard
 
 
-deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud backup
+deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud backup wireguard
 
 install:
 	sops -d --extract '["public_key"]' --output ~/.ssh/erebe_rsa.pub secrets/ssh.yml
@@ -26,7 +27,8 @@ sudo:
 	scp config/sudoers ${HOST}:/etc/sudoers.d/erebe
 
 package:
-	ssh ${HOST} 'apt-get update && apt-get install -y curl htop mtr tcpdump ncdu vim dnsutils strace linux-perf iftop'
+	scp wireguard/wireguard-backport.list ${HOST}:/etc/apt/sources.list.d/
+	ssh ${HOST} 'apt-get update && apt-get install -y curl htop mtr tcpdump ncdu vim dnsutils strace linux-perf iftop wireguard'
 	# Enable automatic security Updates
 	ssh ${HOST} 'echo "unattended-upgrades unattended-upgrades/enable_auto_updates boolean true" | debconf-set-selections && apt-get install unattended-upgrades -y'
 
@@ -61,6 +63,9 @@ nextcloud:
 	sleep 5
 	kubectl cp nextcloud/config.nginx.site-confs.default default/$(shell kubectl get pods -n default -l app=nextcloud -o json | jq .items[].metadata.name):/config/nginx/site-confs/default
 
+nextcloud_resync_file:
+	kubectl exec -t $(shell kubectl get pods -n default -l app=nextcloud -o json | jq .items[].metadata.name) -- sudo -u abc /config/www/nextcloud/occ files:scan --all
+
 backup:
 	sops -d --output secrets_decrypted/backup_ftp_credentials.yml secrets/backup_ftp_credentials.yml
 	kubectl apply -f secrets_decrypted/backup_ftp_credentials.yml
@@ -70,6 +75,10 @@ app:
 	kubectl apply -f app/couber.yml
 	kubectl apply -f app/crawler.yml
 
+wireguard:
+	sops exec-env secrets/wireguard.yml 'cp wireguard/wg0.conf secrets_decrypted/; for i in $$(env | grep _KEY | cut -d = -f1); do sed -i "s#__$${i}__#$${!i}#g" secrets_decrypted/wg0.conf ; done'
+	ssh ${HOST} "cat /etc/wireguard/wg0.conf" | diff  - secrets_decrypted/wg0.conf \
+		|| (scp secrets_decrypted/wg0.conf ${HOST}:/etc/wireguard/wg0.conf && ssh ${HOST} systemctl restart wg-quick@wg0)
+	ssh ${HOST} 'systemctl enable wg-quick@wg0'
 
-nextcloud_resync_file:
-	kubectl exec -t $(shell kubectl get pods -n default -l app=nextcloud -o json | jq .items[].metadata.name) -- sudo -u abc /config/www/nextcloud/occ files:scan --all
+

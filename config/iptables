@@ -19,6 +19,9 @@ iptables -N USER_CUSTOM
 # Allow loopback interface
 iptables -A USER_CUSTOM -i lo -j ACCEPT
 
+# Allow wireguard interface
+iptables -A USER_CUSTOM -i wg0 -j ACCEPT
+
 # Allow already accepted connections
 iptables -A USER_CUSTOM -p tcp  -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 iptables -A USER_CUSTOM -p udp  -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -37,6 +40,9 @@ iptables -A USER_CUSTOM -p tcp --dport 443 -j ACCEPT
 # Allow SMTP and IMAP
 iptables -A USER_CUSTOM -p tcp --dport 25 -j ACCEPT
 iptables -A USER_CUSTOM -p tcp --dport 993 -j ACCEPT
+
+# Allow wireguard
+iptables -A USER_CUSTOM -p udp --dport 995 -j ACCEPT
 
 # Allow kubernetes
 iptables -A USER_CUSTOM -p tcp --dport 6443 -j ACCEPT
@@ -63,6 +69,9 @@ ip6tables -N USER_CUSTOM
 # Allow loopback interface
 ip6tables -A USER_CUSTOM -i lo -j ACCEPT
 
+# Allow wireguard interface
+ip6tables -A USER_CUSTOM -i wg0 -j ACCEPT
+
 # Allow already accepted connections
 ip6tables -A USER_CUSTOM -p tcp  -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 ip6tables -A USER_CUSTOM -p udp  -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -81,6 +90,9 @@ ip6tables -A USER_CUSTOM -p tcp --dport 443 -j ACCEPT
 # Allow SMTP and IMAP
 ip6tables -A USER_CUSTOM -p tcp --dport 25 -j ACCEPT
 ip6tables -A USER_CUSTOM -p tcp --dport 993 -j ACCEPT
+
+# Allow wireguard
+ip6tables -A USER_CUSTOM -p udp --dport 995 -j ACCEPT
 
 # Allow kubernetes
 ip6tables -A USER_CUSTOM -p tcp --dport 6443 -j ACCEPT
