@@ -1,6 +1,6 @@
 HOST='root@erebe.eu'
 
-.PHONY: install deploy dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup
+.PHONY: install deploy dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app
 
 
 deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud backup
