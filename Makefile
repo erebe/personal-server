@@ -1,7 +1,7 @@
 HOST='root@erebe.eu'
 RASPBERRY='pi@192.168.1.253'
 
-.PHONY: install deploy dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app wireguard
+.PHONY: install deploy dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app wireguard pihole
 
 
 deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud backup wireguard
@@ -82,3 +82,8 @@ wireguard:
 	ssh ${HOST} 'systemctl enable wg-quick@wg0'
 
 
+pihole:
+	sops exec-env secrets/wireguard.yml 'cp pihole/wg0.conf secrets_decrypted/; for i in $$(env | grep _KEY | cut -d = -f1); do sed -i "s#__$${i}__#$${!i}#g" secrets_decrypted/wg0.conf ; done'
+	rsync --rsync-path="sudo rsync" secrets_decrypted/wg0.conf ${RASPBERRY}:/etc/wireguard/wg0.conf 
+	ssh ${RASPBERRY} 'sudo systemctl enable wg-quick@wg0; sudo systemctl restart wg-quick@wg0'
+	kubectl apply -f pihole/pihole.yml
