@@ -18,7 +18,7 @@ RUN apk update && \
     sed -i 's#/etc/dovecot/users#/etc/dovecot/users/users#' /etc/dovecot/conf.d/auth-passwdfile.conf.ext && \
     rm -f /etc/dovecot/users && \
 
-    # Rename tls location to match kube cert-manager naming
+    # Rename TLS location to match kube cert-manager naming
     sed -i -e 's#/etc/ssl/dovecot/server.pem#/etc/ssl/dovecot/tls.crt#' \
 	   -e 's#/etc/ssl/dovecot/server.key#/etc/ssl/dovecot/tls.key#' \
 	/etc/dovecot/conf.d/10-ssl.conf && \
