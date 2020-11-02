@@ -23,7 +23,6 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: dovecot
-          context: dovecot
           file: dovecot/Dockerfile
           push: true
           tags: erebe/dovecot:latest
