@@ -57,6 +57,8 @@ spec:
       port: 8083
       protocol: TCP
   type: ClusterIP
+  clusterIP: None
+
 ---
 apiVersion: extensions/v1beta1
 kind: Ingress

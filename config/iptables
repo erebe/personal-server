@@ -45,7 +45,7 @@ iptables -A USER_CUSTOM -p tcp --dport 993 -j ACCEPT
 iptables -A USER_CUSTOM -p udp --dport 995 -j ACCEPT
 
 # Allow kubernetes
-iptables -A USER_CUSTOM -p tcp --dport 6443 -j ACCEPT
+#iptables -A USER_CUSTOM -p tcp --dport 6443 -j ACCEPT
 
 
 # Add our custom chain
@@ -95,7 +95,7 @@ ip6tables -A USER_CUSTOM -p tcp --dport 993 -j ACCEPT
 ip6tables -A USER_CUSTOM -p udp --dport 995 -j ACCEPT
 
 # Allow kubernetes
-ip6tables -A USER_CUSTOM -p tcp --dport 6443 -j ACCEPT
+#ip6tables -A USER_CUSTOM -p tcp --dport 6443 -j ACCEPT
 
 
 # Add our custom chain
