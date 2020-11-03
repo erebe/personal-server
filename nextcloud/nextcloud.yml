@@ -16,20 +16,25 @@ spec:
       labels:
         app: nextcloud
     spec:
-            #      hostNetwork: true
-            #      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: nextcloud
         image: linuxserver/nextcloud:amd64-version-20.0.0
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 80
+        - containerPort: 8083
         volumeMounts:
         - name: data
           mountPath: /data
         - name: config
           mountPath: /config
+        - name: nginx-siteconfig
+          mountPath: /config/nginx/site-confs
       volumes:
+      - name: nginx-siteconfig
+        configMap:
+          name: nextcloud-nginx-siteconfig
       - name: data
         hostPath:
           path: /opt/nextcloud/data
@@ -49,7 +54,7 @@ spec:
     app: nextcloud
   ports:
     - name: http
-      port: 80
+      port: 8083
       protocol: TCP
   type: ClusterIP
 ---
@@ -74,4 +79,4 @@ spec:
       - path: /
         backend:
           serviceName: nextcloud
-          servicePort: 80
+          servicePort: http

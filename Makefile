@@ -64,9 +64,8 @@ postfix:
 
 
 nextcloud:
+	kubectl apply -f nextcloud/config.nginx.site-confs.default.yml
 	kubectl apply -f nextcloud/nextcloud.yml
-	sleep 5
-	kubectl cp nextcloud/config.nginx.site-confs.default default/$(shell kubectl get pods -n default -l app=nextcloud -o json | jq .items[].metadata.name):/config/nginx/site-confs/default
 
 nextcloud_resync_file:
 	kubectl exec -t $(shell kubectl get pods -n default -l app=nextcloud -o json | jq .items[].metadata.name) -- sudo -u abc /config/www/nextcloud/occ files:scan --all
