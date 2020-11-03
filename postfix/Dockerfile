@@ -1,6 +1,8 @@
 FROM alpine:3.11 
 #newer version does not have procmail binary (due to being unmaintened and CVEs)
 
+LABEL org.opencontainers.image.source https://github.com/erebe/server
+
 RUN apk update && \
     apk add ca-certificates postfix procmail spamassassin spamassassin-client curl fetchmail && \
     rm -rf /var/cache/apk/* && \

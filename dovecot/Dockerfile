@@ -1,5 +1,7 @@
 FROM alpine:3.12
 
+LABEL org.opencontainers.image.source https://github.com/erebe/server
+
 RUN apk update && \
     apk add ca-certificates dovecot su-exec && \
     rm -rf /var/cache/apk/* && \
