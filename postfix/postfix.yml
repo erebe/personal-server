@@ -20,7 +20,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: postfix
-        image: erebe/postfix:latest
+        image: ghcr.io/erebe/postfix:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 25

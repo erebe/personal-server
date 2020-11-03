@@ -20,7 +20,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: mail
-        image: erebe/dovecot:latest
+        image: ghcr.io/erebe/dovecot:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 993
