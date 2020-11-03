@@ -1,11 +1,16 @@
 HOST='root@erebe.eu'
 RASPBERRY='pi@192.168.1.253'
 
-.PHONY: install deploy dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app wireguard pihole
-
+.PHONY: install deploy release dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app wireguard pihole
 
 deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud backup wireguard
 
+release:
+ifdef ARGS
+	kubectl delete pod -n default -l app=$(ARGS) 
+	kubectl wait --for=condition=Ready --timeout=-1s -n default -l app=$(ARGS) pod
+endif
+		
 install:
 	sops -d --extract '["public_key"]' --output ~/.ssh/erebe_rsa.pub secrets/ssh.yml
 	sops -d --extract '["private_key"]' --output ~/.ssh/erebe_rsa.key secrets/ssh.yml
@@ -37,7 +42,7 @@ iptables:
 	ssh ${HOST} 'chmod +x /etc/network/if-pre-up.d/iptables-restore && sh /etc/network/if-pre-up.d/iptables-restore'
 	
 kubernetes_install:
-	ssh ${HOST} 'export INSTALL_K3S_EXEC=" --no-deploy servicelb --no-deploy traefik --no-deploy=local-storage"; \
+	ssh ${HOST} 'export INSTALL_K3S_EXEC=" --no-deploy servicelb --no-deploy traefik --no-deploy local-storage"; \
 		curl -sfL https://get.k3s.io | sh -'
 
 k8s:
