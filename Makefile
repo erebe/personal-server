@@ -22,7 +22,8 @@ install:
 
 dns:
 	sops -d --output secrets_decrypted/gandi.yml secrets/gandi.yml
-	GANDI_CONFIG='secrets_decrypted/gandi.yml' gandi dns update erebe.eu -f dns/zones.txt
+	GANDI_CONFIG='secrets_decrypted/gandi.yml' gandi dns update erebe.eu -f dns/erebe.eu.zones
+	GANDI_CONFIG='secrets_decrypted/gandi.yml' gandi dns update erebe.dev -f dns/erebe.dev.zones
 
 ssh:
 	ssh ${HOST} "cat /etc/ssh/sshd_config" | diff  - config/sshd_config \

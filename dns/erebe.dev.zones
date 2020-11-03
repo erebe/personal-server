@@ -1,0 +1,6 @@
+@ 10800 IN SOA ns1.gandi.net. hostmaster.gandi.net. 1579092697 10800 3600 604800 10800
+@ 10800 IN A 195.154.119.61
+@ 10800 IN AAAA 2001:bc8:3d8f::cafe
+dev 10800 IN A 195.154.119.61
+dev 10800 IN AAAA 2001:bc8:3d8f::cafe
+
