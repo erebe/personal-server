@@ -20,7 +20,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: couber
-        image: erebe/couber:latest
+        image: ghcr.io/erebe/couber:latest
         imagePullPolicy: Always
         env:
         - name: PORT
