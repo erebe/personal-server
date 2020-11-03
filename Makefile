@@ -1,5 +1,5 @@
 HOST='root@erebe.eu'
-RASPBERRY='pi@192.168.1.253'
+RASPBERRY='pi@10.200.200.2'
 
 .PHONY: install deploy release dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app wireguard pihole
 
