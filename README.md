@@ -1144,6 +1144,7 @@ Sometimes is it not possible to connect to my VPN due to some firewalls, because
 
 To bypass those firewalls and allow me to reach my private network I use [WsTunnel](https://github.com/erebe/wstunnel), a websocket tunneling utility that I wrote. Basically, wstunnel leverage Websocket protocol that is using HTTP in order to tunnel TCP/UDP traffic through it.
 With that, 99.9% of the time I can connect to my VPN network, at the cost of 3 layer of encapsulation (data -> WebSocket -> Wireguard -> Ip) :x
+
 Check the [readme](https://github.com/erebe/wstunnel/blob/master/README.md) for more information
 
 ```bash
@@ -1402,6 +1403,23 @@ spec:
 
 
 # Conclusion <a name="conclusion"></a>
+
+* Everything is automated and idempotent 
+   * Installation of the machine
+   * DNS
+   * Reverse proxy
+   * Certificate generation
+   * docker image build
+* Everything is centralized inside the git repository
+   * Secrets are not separated from the code and derived from a GPG key
+   * Configuration and deployment are together thanks to container and kubernetes
+   * Deployment can be triggered from the makefile
+* A single interface/control plane to control several machines
+   * Container allow each component to be isolated
+   * Kubernetes allow to manage multiple servers and provide a clean interface
+   * [k9s](https://k9scli.io/) to get a simple/intuitive command center
+   * [skaffold](https://skaffold.dev/) for when I am developping
+
 
 
 # If you want more Freedom <a name="freedom"></a>
