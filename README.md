@@ -658,7 +658,7 @@ We have our reverse proxy working, now we want our k3s cluster to be able to gen
 
 to install it simply do a
 ```bash
-kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.0.4/cert-manager.yaml
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.0.4/cert-manager.yaml
 ```
 
 to automate the deployment we are going to add it in the repository and add a few lines in our Makefile
@@ -666,7 +666,7 @@ to automate the deployment we are going to add it in the repository and add a fe
 ```bash
 k8s:
         ...
-        kubectl apply --validate=false -f k8s/cert-manager-v1.0.4.yml
+        kubectl apply -f k8s/cert-manager-v1.0.4.yml
 ```
 
 You can verify the installation with
