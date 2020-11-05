@@ -1029,7 +1029,7 @@ When a file under `dovecot/**` is modified during a commit, the Github Actions C
 I use GitHub container registry in order to centralize things as much as possible and avoid adding docker hub as another external dependencies.
 
 The part left to do yet, is automatic deployment when a new image is build.
-Ideally, I would like to avoid having to store my kubeconfig inside GitHub secrets and code an app that support web hook in order to trigger a new deployment. But for now I am still thinking of how to do that properly, so I am left to delete manually my pod to re-fetch the latest image until then ¯\_(ツ)_/¯
+Ideally, I would like to avoid having to store my kubeconfig inside GitHub secrets and code an app that support web hook in order to trigger a new deployment. But for now I am still thinking of how to do that properly, so I am left to delete manually my pod to re-fetch the latest image until then ¯\\_(ツ)_/¯
 
 # Hosting your own cloud with Nextcloud <a name="cloud"></a>
 
