@@ -342,6 +342,18 @@ iptables -P INPUT DROP
 #IPv6
 #######
 #do the same thing with ip6tables instead of iptables
+
+# Accept incoming ICMP
+ip6tables -A USER_CUSTOM -p icmpv6 -j ACCEPT
+
+# Allow ipv6 route auto configuration if your provider support it
+ip6tables -A USER_CUSTOM -p udp --dport 546 -j ACCEPT
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type neighbour-advertisement -j ACCEPT
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type neighbour-solicitation -j ACCEPT 
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type echo-request -j ACCEPT
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
 ```
 
 I don't rate limit ssh connections, as most of the time it is me that is hit by that limit. Nowadays most bot scanning ssh servers are smart enough to time their attempts to avoid being rate limited.
