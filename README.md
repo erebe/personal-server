@@ -1,5 +1,9 @@
 # Managing my personal server in 2020
 
+<p align="center">
+  <img src="https://github.com/erebe/personal-server/raw/master/logo.jpeg" alt="logo"/>
+</p>
+
 # Summary
 
 This document is going to describe how I manage my personal server in 2020. It will talk about
