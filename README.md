@@ -1,13 +1,3 @@
----
-title: Managing my personal server in 2020
-created: '2020-10-28T14:24:20.600Z'
-modified: '2020-11-03T17:20:45.043Z'
----
-
----
-
-## title: Managing my personal server in 2020
-
 # Managing my personal server in 2020
 
 # Summary
@@ -1195,6 +1185,132 @@ systemctl restart k3s-agent
 
 We have our raspberry Ready to use now inside our kubernetes cluster.
 It is time now to use it by deploying [PiHole](https://pi-hole.net/) as a DNS server inside our home local network.
+PiHole allows to block tracker by not responding to dns requests. It is like having ad-block on your network instead of your browser.
+
+This is a standard deployment, with only 3 specificity:
+
+* We need to set the container in privileged mode as it needs to bind on port 53 (DNS)
+```yaml
+        securityContext:
+          privileged: true
+```
+* It has a `nodeAffinity` and a toleration for our `taint` in order to allow and force the deployment on the raspberry
+```yaml
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - raspberrypi
+...
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "raspberrypi"
+        effect: "NoSchedule"
+```
+
+* We had a other toleration for the state `unreachable` to let the container live on the raspberry even if we lose connectivity with the cluster.
+  The pihole container will be deployed and will stay there until manually deleted
+```yaml
+      tolerations:
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+```
+
+Full yaml
+```yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pihole
+  labels:
+    app: pihole
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: pihole
+  template:
+    metadata:
+      labels:
+        app: pihole
+    spec:
+      hostNetwork: true
+      dnsPolicy: "None"
+      dnsConfig:
+        nameservers:
+        - 127.0.0.1
+        - 1.1.1.1
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - raspberrypi
+      containers:
+      - name: pihole
+        image: pihole/pihole:v5.1.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: TZ
+          value: "Europe/Paris"
+        - name: WEBPASSWORD
+          value: "pihole"
+        - name: CONDITIONAL_FORWARDING
+          value: "true"
+        - name: CONDITIONAL_FORWARDING_IP
+          value: "192.168.1.254"
+        - name: CONDITIONAL_FORWARDING_DOMAIN
+          value: "lan"
+        ports:
+          - containerPort: 80
+            name: http
+            protocol: TCP
+          - containerPort: 53
+            name: dns
+            protocol: TCP
+          - containerPort: 53
+            name: dns-udp
+            protocol: UDP
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: pihole-etc-volume
+          mountPath: "/etc/pihole"
+        - name: pihole-dnsmasq-volume
+          mountPath: "/etc/dnsmasq.d"
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "raspberrypi"
+        effect: "NoSchedule"
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+      volumes:
+      - name: pihole-etc-volume
+        hostPath:
+          path: /opt/pihole/etc
+          type: Directory
+      - name: pihole-dnsmasq-volume
+        hostPath:
+          path: /opt/pihole/dnsmasq
+          type: Directory
+```
 
 
 
