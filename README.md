@@ -40,9 +40,10 @@ My goals for this setup are:
 16. [Backups](#backup)
 17. [TODO] [Monitoring with netdata](#monitoring)
 18. [VPN with Wireguard](#wireguard)
-19. [RaspberryPI as k8S node using your Wireguard VPN](#raspberrypi)
+19. [RaspberryPI as k8S node using your Wireguard VPN](#raspberry)
 20. [Deploying PiHole on your RaspberryPI](#pihole)
-21. [Conclusion](#theend)
+21. [Conclusion](#conclusion)
+22. [If you want more freedom](#freedom)
 
 # The road so far <a name="background"></a>
 
@@ -1070,7 +1071,7 @@ spec:
 
 [netdata](https://github.com/netdata/netdata)
 
-# Virtual Private Network with Wireguard
+# Virtual Private Network with Wireguard <a name="wireguard"></a>
 
 My next step is to setup a VPN with [wireguard](https://www.wireguard.com/) to :
 * Remove the access of the kube api server from internet
@@ -1132,7 +1133,7 @@ wireguard:
         ssh ${HOST} 'systemctl enable wg-quick@wg0'
 ```
 
-# Installing K3S on our raspberryPI using your Wireguard VPN
+# Installing K3S on our raspberryPI using your Wireguard VPN <a name="raspberry"></a>
 
 I want my raspberryPi that is living inside my home network to be manageable like a simple node inside the kubernetes cluster. For that I am going to setup wireguard on my raspberry pi and install the k3s agent on it.
 
@@ -1181,7 +1182,7 @@ systemctl restart k3s-agent
 ```
 9. Check that your raspberry is in Ready state with its ip
 
-# Deploying PiHole on your RaspberryPI
+# Deploying PiHole on your RaspberryPI <a name="pihole"></a>
 
 We have our raspberry Ready to use now inside our kubernetes cluster.
 It is time now to use it by deploying [PiHole](https://pi-hole.net/) as a DNS server inside our home local network.
@@ -1313,8 +1314,11 @@ spec:
 ```
 
 
+# Deploying PiHole on your RaspberryPI <a name="conclusion"></a>
 
-# If you want more Freedom
+
+# If you want more Freedom <a name="freedom"></a>
+
 
 ### Setup dkim for your mail
 [Google SMTP server](https://www.digitalocean.com/community/tutorials/how-to-use-google-s-smtp-server)
