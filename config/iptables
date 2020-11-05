@@ -86,7 +86,16 @@ ip6tables -A USER_CUSTOM -p udp  -m conntrack --ctstate ESTABLISHED,RELATED -j A
 ip6tables -A USER_CUSTOM -p icmp -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
 # Accept incoming ICMP
-ip6tables -A USER_CUSTOM -p icmp -j ACCEPT
+ip6tables -A USER_CUSTOM -p icmpv6 -j ACCEPT
+
+# Allow ipv6 route configuration
+ip6tables -A USER_CUSTOM -p udp --dport 546 -j ACCEPT
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type neighbour-advertisement -j ACCEPT
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type neighbour-solicitation -j ACCEPT 
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type echo-request -j ACCEPT
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
 
 # Allow ssh
 ip6tables -A USER_CUSTOM -p tcp --dport 22 -j ACCEPT
