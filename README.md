@@ -183,7 +183,7 @@ The installation section is decrypting the ssh keys, install them and looking in
 
 We have a git repository with our ssh keys, so now is the time to use those keys and get a real server behind it.
 
-Personally I use a 1rst tier [dedibox](https://www.scaleway.com/fr/dedibox/tarifs/) from `online.net` now renamed into `scaleway` for 8€ per month. Their machine is rock solid, cheap and never had an issue with them since more than 15 years. You are free to chose whatever provider you want but here my recommendations for the thing to look at
+Personally I use a 1st tier [dedibox](https://www.scaleway.com/fr/dedibox/tarifs/) from `online.net` now renamed into `scaleway` for 8€ per month. Their machine is rock solid, cheap and never had an issue with them since more than 15 years. You are free to chose whatever provider you want but here my recommendations for the thing to look at
 
 * **Disk space**: Using containers consume a lot of disk space. So take a machine with at least 60G of space.
 * **Public bandwidth limitation**: All hosting company throttle public bandwidth to avoid issue with torrent seedbox. So the higher you get for the same price, the better it is (i.e: scaleway provide 250Mbits/s while OVH only 200Mbits)
