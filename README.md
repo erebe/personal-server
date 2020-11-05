@@ -297,6 +297,10 @@ iptables -A USER_CUSTOM -i lo -j ACCEPT
 # Allow wireguard interface
 iptables -A USER_CUSTOM -i wg0 -j ACCEPT
 
+# Allow Kubernetes interfaces
+iptables -A USER_CUSTOM -i cni0 -j ACCEPT
+iptables -A USER_CUSTOM -i flannel.1 -j ACCEPT
+
 # Allow already accepted connections
 iptables -A USER_CUSTOM -p tcp  -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 iptables -A USER_CUSTOM -p udp  -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
