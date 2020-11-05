@@ -40,10 +40,11 @@ My goals for this setup are:
 16. [Backups](#backup)
 17. [TODO] [Monitoring with netdata](#monitoring)
 18. [VPN with Wireguard](#wireguard)
-19. [Raspberry Pi as k8S node using your Wireguard VPN](#raspberry)
-20. [Deploying PiHole on your Raspberry Pi](#pihole)
-21. [Conclusion](#conclusion)
-22. [If you want more freedom](#freedom)
+19. [Bypass firewalls with WsTunnel](#wstunnel)
+20. [Raspberry Pi as k8S node using your Wireguard VPN](#raspberry)
+21. [Deploying PiHole on your Raspberry Pi](#pihole)
+22. [Conclusion](#conclusion)
+23. [If you want more freedom](#freedom)
 
 # The road so far <a name="background"></a>
 
@@ -1135,6 +1136,93 @@ wireguard:
         ssh ${HOST} "cat /etc/wireguard/wg0.conf" | diff  - secrets_decrypted/wg0.conf \
                 || (scp secrets_decrypted/wg0.conf ${HOST}:/etc/wireguard/wg0.conf && ssh ${HOST} systemctl restart wg-quick@wg0)
         ssh ${HOST} 'systemctl enable wg-quick@wg0'
+```
+
+# Bypass firewalls with WsTunnel <a name="wstunnel"></a>
+
+Sometimes is it not possible to connect to my VPN due to some firewalls, because Wireguard uses UDP traffic and it is not allowed, or because the port 995 (POP3s) I bind it on is forbiden.
+
+To bypass those firewalls and allow me to reach my private network I use [WsTunnel](https://github.com/erebe/wstunnel), a websocket tunneling utility that I wrote. Basically, wstunnel leverage Websocket protocol that is using HTTP in order to tunnel TCP/UDP traffic through it.
+With that, 99.9% of the time I can connect to my VPN network, at the cost of 3 layer of encapsulation (data -> WebSocket -> Wireguard -> Ip) :x
+
+```bash
+# On the client
+wstunnel -u --udpTimeout=-1 -L 1995:127.0.0.1:995 -v ws://ws.erebe.eu
+# in your wg0.conf point the peer address to 127.0.0.1:995 instead of domain.name
+```
+On the server 
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wstunnel
+  labels:
+    app: wstunnel
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate 
+  selector:
+    matchLabels:
+      app: wstunnel
+  template:
+    metadata:
+      labels:
+        app: wstunnel
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: wstunnel
+        image: erebe/wstunnel:latest
+        imagePullPolicy: Always
+        args:
+        - "--server"
+        - "ws://0.0.0.0:8084"
+        - "-r"
+        - "127.0.0.1:995"  
+        ports:
+        - containerPort: 8084
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wstunnel
+spec:
+  selector:
+    app: wstunnel
+  ports:
+    - protocol: TCP
+      port: 8084
+      name: http
+  clusterIP: None
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: wstunnel-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "1800"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "1800"
+    nginx.ingress.kubernetes.io/connection-proxy-header: "upgrade"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - ws.erebe.eu
+    secretName: wstunnel-tls
+  rules:
+  - host: ws.erebe.eu
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: wstunnel
+          servicePort: http
 ```
 
 # Installing K3S on our Raspberry Pi using your Wireguard VPN <a name="raspberry"></a>
