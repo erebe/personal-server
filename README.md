@@ -11,7 +11,7 @@ This document is going to describe how I manage my personal server in 2020. It w
 * Deployment of postfix + dovecot for deploying an email server
 * Install Nextcloud to get your personal cloud in the sky
 * Putting backup in place
-* Using Wireguard to create a private network
+* Using Wireguard to create a private network and WsTunnel to bypass firewalls
 * Adding a Raspberry Pi to the K3s cluster
 
 My goals for this setup are:
@@ -1144,6 +1144,7 @@ Sometimes is it not possible to connect to my VPN due to some firewalls, because
 
 To bypass those firewalls and allow me to reach my private network I use [WsTunnel](https://github.com/erebe/wstunnel), a websocket tunneling utility that I wrote. Basically, wstunnel leverage Websocket protocol that is using HTTP in order to tunnel TCP/UDP traffic through it.
 With that, 99.9% of the time I can connect to my VPN network, at the cost of 3 layer of encapsulation (data -> WebSocket -> Wireguard -> Ip) :x
+Check the [readme](https://github.com/erebe/wstunnel/blob/master/README.md) for more information
 
 ```bash
 # On the client
