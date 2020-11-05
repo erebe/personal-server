@@ -20,9 +20,10 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: wstunnel
-        image: erebe/wstunnel:latest
+        image: ghcr.io/erebe/wstunnel:latest
         imagePullPolicy: Always
         args:
+        - "./wstunnel"
         - "--server"
         - "ws://0.0.0.0:8084"
         - "-r"
