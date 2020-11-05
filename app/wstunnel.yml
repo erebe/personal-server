@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wstunnel
+  labels:
+    app: wstunnel
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate 
+  selector:
+    matchLabels:
+      app: wstunnel
+  template:
+    metadata:
+      labels:
+        app: wstunnel
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: wstunnel
+        image: erebe/wstunnel:latest
+        imagePullPolicy: Always
+        args:
+        - "--server"
+        - "ws://0.0.0.0:8084"
+        - "-r"
+        - "127.0.0.1:995"  
+        ports:
+        - containerPort: 8084
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wstunnel
+spec:
+  selector:
+    app: wstunnel
+  ports:
+    - protocol: TCP
+      port: 8084
+      name: http
+  clusterIP: None
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: wstunnel-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "1800"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "1800"
+    nginx.ingress.kubernetes.io/connection-proxy-header: "upgrade"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - ws.erebe.eu
+    secretName: wstunnel-tls
+  rules:
+  - host: ws.erebe.eu
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: wstunnel
+          servicePort: http
