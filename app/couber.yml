@@ -69,7 +69,7 @@ metadata:
 spec:
   tls:
   - hosts:
-    - erebe.eu
+    - coub.erebe.eu
     secretName: couber-tls
   rules:
   - host: erebe.eu
