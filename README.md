@@ -2,23 +2,23 @@
 
 # Summary
 
-This document is going to describe how I manage my personnal server in 2020. It will talk about
+This document is going to describe how I manage my personal server in 2020. It will talk about
 
-* Management of secrets with SOPS and a gpg key
-* Automatic gestion of DNS record
-* Configuration of debian and installation of Kubernetes k3s
-* Setup Nginx ingress with let's encrypt for automatic TLS certificat
-* Deployment of postfix + dovecot for setuping an email server
-* Install nextcloud to get your personnal cloud in the sky
+* Management of secrets with SOPS and a GPG key
+* Automatic management of DNS record
+* Configuration of Debian and installation of Kubernetes k3s
+* Setup Nginx ingress with let's encrypt for automatic TLS certificate
+* Deployment of postfix + dovecot for deploying an email server
+* Install Nextcloud to get your personal cloud in the sky
 * Putting backup in place
 * Using Wireguard to create a private network
-* Adding a RaspberryPi to the K3s cluster
+* Adding a Raspberry Pi to the K3s cluster
 
 My goals for this setup are:
 
 * Simple to deploy, manage and update
 * Everything should live inside the git repository
-* Automating as much as possible with free tier service (github actions) but reproductible locally
+* Automating as much as possible with free tier service (GitHub actions) but reproducible locally
 
 # Table of Contents
 
@@ -33,15 +33,15 @@ My goals for this setup are:
 9. [Automate your DNS record update](#dnsupdate)
 10. [Installing Kubernetes K3S](#k3s)
 11. [Nginx as Ingress controller for Kubernetes](#ingress)
-12. [CertManager with let's encrypt for issuing TLS certificats](#letsencrypt)
+12. [CertManager with let's encrypt for issuing TLS certificates](#letsencrypt)
 13. [Mail Server with Postfix + Dovecot + Fetchmail + SpamAssassin](#mail)
-14. [Automating build and push of our images with github actions](#build)
+14. [Automating build and push of our images with GitHub actions](#build)
 15. [Hosting your own cloud with nextcloud](#cloud)
 16. [Backups](#backup)
 17. [TODO] [Monitoring with netdata](#monitoring)
 18. [VPN with Wireguard](#wireguard)
-19. [RaspberryPI as k8S node using your Wireguard VPN](#raspberry)
-20. [Deploying PiHole on your RaspberryPI](#pihole)
+19. [Raspberry Pi as k8S node using your Wireguard VPN](#raspberry)
+20. [Deploying PiHole on your Raspberry Pi](#pihole)
 21. [Conclusion](#conclusion)
 22. [If you want more freedom](#freedom)
 
@@ -52,37 +52,37 @@ My goals for this setup are:
 
 <p></p>
 
-It has been more than 15 years now that I manage my own dedicated server, I am in my thirties, and it all started thanks to a talk from Benjamin Bayart [Internet libre, ou minitel 2.0](https://www.youtube.com/watch?v=AoRGoQ76PK8) or for the non French "Free internet or minitel 2.0". For those who don't know what is a minitel, let me quote for you Wikipedia.
+It has been more than 15 years now that I manage my own dedicated server, I am in my thirties, and it all started thanks to a talk from Benjamin Bayart [Internet libre, ou minitel 2.0](https://www.youtube.com/watch?v=AoRGoQ76PK8) or for the non-French "Free internet or minitel 2.0". For those who don't know what is a minitel, let me quote for you Wikipedia.
 
 > The Minitel was a videotex online service accessible through telephone lines, and was the world's most successful online service prior to the World Wide Web. It was invented in Cesson-Sévigné, near Rennes in Brittany, France.
 
-In the essence, the talk is about creating awareness in 2007 that internet is starting to lose its decentralized nature and look like more to a minitel 2.0 due to our reliance on centralized big corp for about everything on the Web. This warning ring even louder nowaday with the advent of the Cloud where our computers are now just a fancy screen for accessing data/compute remotely.
+In the essence, the talk is about creating awareness in 2007 that the internet is starting to lose its decentralized nature and look like more to a minitel 2.0 due to our reliance on centralized big corp for about everything on the Web. This warning ring even louder nowadays with the advent of the Cloud where our computers are now just a fancy screen for accessing data/compute remotely.
 
-I went from hardcore extremist, by hosting a server made from scrap materials behind my parent house telephone line, using Gentoo to recompile everything, control every USE flags and have the statisfaying pleasure of adding `-mtune=native` to the compilation command line. Some years later, after behing fed up of having to spend night to recompile eveything on an old intel pentium 3 because I missed a USE flag that was mandatory to try this new software, I switched to Debian.
+I went from hardcore extremist, by hosting a server made from scrap materials behind my parent house telephone line, using Gentoo to recompile everything, control every USE flags and have the satisfying pleasure of adding `-mtune=native` to the compilation command line. Some years later, after being fed up with having to spend nights to recompile everything on an old Intel Pentium 3 because I missed a USE flag that was mandatory to try this new software, I switched to Debian.
 
 At that point I thought I had the perfect setup, just do an `apt-get install` and you have your software installed in a few minutes, is there anything more than that really ?
 
-It was at that time also that I switched from hosting my server at my parent house to a hosting company. I was out for college and calling my parents to ask them to reboot the machine because it frozed due to aging components was taking too much time. I was living in the constant fear of losing some emails and friends on IRC were complaining that the archive/history of the channel that my server was providing was not accessible anymore. So as hard as the decision had been, especially since everything was installed by hand without configuration management, I went to see my parents to tell them that I am removing the server from their care to host it on `online.net` and that they should expect even less calls from me from now on.
+It was at that time also that I switched from hosting my server at my parent house to a hosting company. I was out for college and calling my parents to ask them to reboot the machine because it froze due to aging components was taking too much time. I was living in the constant fear of losing some emails and friends on IRC were complaining that the archive/history of the channel that my server was providing was not accessible anymore. So as hard as the decision had been, especially since everything was installed by hand without configuration management, I went to see my parents to tell them that I am removing the server from their care to host it on `online.net` and that they should expect even fewer calls from me from now on.
 
-Rich of this new available bandwith and after porting my manual deployments to Ansible, I really thought this time I had the perfect setup. Easy to install and configured management ! Is there anything more than that really ?
+Rich of this new available bandwidth and after porting my manual deployments to Ansible, I really thought this time I had the perfect setup. Easy to install and configured management ! Is there anything more than that really ?
 
-I had found my cruise boat and sailed peacefully with it until the dependencies monsters knocked me off board. When you try to **CRAM** everything (mail, webserver, gitlab, pop3, imap, torrent, owncloud, munin, ...) into a single machine on Debian, you ultimatly end-up activating unstable repository to get the latest version of packages and end-up with conflicting versions between softwares to the point that doing an `apt-get update && apt-get upgrade` is now your nemesis.
+I had found my cruise boat and sailed peacefully with it until the dependencies monsters knocked me off board. When you try to **CRAM** everything (mail, webserver, gitlab, pop3, imap, torrent, owncloud, munin, ...) into a single machine on Debian, you ultimately end-up activating unstable repository to get the latest version of packages and end-up with conflicting versions between softwares to the point that doing an `apt-get update && apt-get upgrade` is now your nemesis.
 
-While avoiding system upgrade, I spent some time playing with Kvm/Xen, FreeBSD jails, Illumos, micro-kernel (I thought it will be the future :x) and the new player in town Docker ! I ended-up using Docker due to being too busy/lazy to reinstall everything on something new and Docker allowed me to progressively isalote/patch the software that were annoying me. Hello Python projects !
+While avoiding system upgrade, I spent some time playing with Kvm/Xen, FreeBSD jails, Illumos, micro-kernel (I thought it will be the future :x) and the new player in town Docker ! I ended-up using Docker due to being too busy/lazy to reinstall everything on something new and Docker allowed me to progressively isolate/patch the software that were annoying me. Hello Python projects !
 
-This hybrid setup worked for a while, but it felt clunky to manage, especially with ansible in the mix. I ended-up moving everything into container, not without hasle, and now ansible was felling at odd and the integration between systemd and Docker weird, I was just spending time gluing trivial things.
+This hybrid setup worked for a while, but it felt clunky to manage, especially with Ansible in the mix. I ended-up moving everything into containers, not without hassle, and now Ansible was felling at odd and the integration between systemd and Docker weird, I was just spending time gluing trivial things.
 
-So I spent a bit of time this month to create and share with you my perfect new setup for managing a personnal server in 2020 !
+So I spent a bit of time this month to create and share with you my perfect new setup for managing a personal server in 2020 !
 
 # Creating a GPG key <a name="gpg"></a>
 
-So let's start. The first step is to create a gpg key. This key will serve to encrypt every secrets we have in order to be able to commit them inside the git repository. With secrets inside git, our repository will be able be standalone and portable across machines. We will be able to do a `git clone `and get working !
+So let's start. The first step is to create a GPG key. This key will serve to encrypt every secret we have in order to be able to commit them inside the git repository. With secrets inside git, our repository will be able be standalone and portable across machines. We will be able to do a `git clone `and get working !
 
 ```bash
 gpg --full-generate-key
 ```
 
-This gpg key will be the guardian of your infrastructure, if it leaks, anybody will be able to access your infra. So store it somewhere safe
+This GPG key will be the guardian of your infrastructure, if it leaks, anybody will be able to access your infra. So store it somewhere safe
 
 ```bash
 gpg --armor --export erebe@erebe.eu > pub.asc
@@ -104,7 +104,7 @@ creation_rules:
         YOUR_PGP_FINGERPRINT_WITHOUT_SPACE
 ```
 
-after that just invoke sops to create new secret with your gpg key. Sops force the use of yaml, so your file need to be a valid yaml.
+After that just invoke sops to create a new secret with your GPG key. Sops force the use of YAML, so your file need to be a valid YAML.
 
 ```bash
 ❯ mkdir secrets secrets_decrypted
@@ -115,13 +115,13 @@ hello: ENC[AES256_GCM,data:zpzQz+siZxcshJjmi4PBvX2GMm3sWibxRPCgil2mi+c6AQ0uXEBLM
 ...
 ```
 
-to decrypt your secrets just do a
+To decrypt your secrets just do a
 
 ```bash
 sops -d --output secrets_decrypted/foobar.yml secrets/foorbar.yml
 ```
 
-There are other commands that allow you to avoid dumping your decrypted secrets onto the file system. If you are interested by this feature look at
+There are other commands that allow you to avoid dumping your decrypted secrets onto the file system. If you are interested in this feature look at
 
 ```bash
 sops exec-env
@@ -131,9 +131,9 @@ sops exec-file
 
 # Generating a new ssh key <a name="ssh"></a>
 
-Now that we are able to store secrets securly within our repository, it is time to generate a new ssh key in order to be able to log to our future next server.
+Now that we are able to store secrets securely within our repository, it is time to generate a new ssh key in order to be able to log to our future next server.
 
-We are going to set a passphrase to our ssh keys and use an ssh-agent/[keychain](https://www.funtoo.org/Keychain) in order to avoid typing it everytime
+We are going to set a passphrase to our ssh keys and use a ssh-agent/[keychain](https://www.funtoo.org/Keychain) in order to avoid typing it every time
 
 ```bash
 # Don't forget to set a strong passphrase and change the default name for your key from id_rsa to something else, it will be usefull later on
@@ -156,12 +156,12 @@ git commit -m 'Adding ssh key'
 
 # Automating installation with a Makefile <a name="makefile"></a>
 
-Now we want for this repository to be self contained and easily portable across machine. A valid approach would have been to use ansible in order to automate our deployment. But we will not tap a lot into the full power of a configuration management in this setup, so I chosed to use a simple makefile to automate the deployment.
+Now we want for this repository to be self-contained and easily portable across machines. A valid approach would have been to use Ansible in order to automate our deployment. But we will not tap a lot into the full power of a configuration management in this setup, so I chose to use a simple makefile to automate the deployment.
 
 ```bash
 ❯ mkdir config
 ❯ cat Makefile
-.PHONY: install 
+.PHONY: install
 
 install:
         sops -d --extract '["public_key"]' --output ~/.ssh/erebe_rsa.pub secrets/ssh.yml
@@ -172,16 +172,16 @@ install:
 
 ```
 
-The install section is decrypting the ssh keys, install them and looking into my \~/.ssh/config to see if I already have a section for my server in order to add it if missing. With that I will be able to do a `ssh my-server` and get everything setup correctly
+The installation section is decrypting the ssh keys, install them and looking into my \~/.ssh/config to see if I already have a section for my server in order to add it if missing. With that I will be able to do a `ssh my-server` and get everything setup correctly
 
 # Chose a server provider <a name="provider"></a>
 
 We have a git repository with our ssh keys, so now is the time to use those keys and get a real server behind it.
 
-Personnaly I use a 1rst tier [dedibox](https://www.scaleway.com/fr/dedibox/tarifs/) from `online.net` now renammed into `scaleway` for 8€ per month. Their machine are rock solid, cheap and never had an issue with them since more than 15 years. You are free to chose whatever provider you want but here my recommandations for the thing to look at
+Personally I use a 1rst tier [dedibox](https://www.scaleway.com/fr/dedibox/tarifs/) from `online.net` now renamed into `scaleway` for 8€ per month. Their machine is rock solid, cheap and never had an issue with them since more than 15 years. You are free to chose whatever provider you want but here my recommendations for the thing to look at
 
-* **Disk space**: Using containers consume a lot of disk space. So take a machine with at least 60G of space. 
-* **Public bandwith limitation**: All hosting company throttle public bandwith to avoid issue with torrent seedbox. So the higher you get for the same price, the better it is (i.e: scaleway provide 250Mbits/s while OVH only 200Mbits)
+* **Disk space**: Using containers consume a lot of disk space. So take a machine with at least 60G of space.
+* **Public bandwidth limitation**: All hosting company throttle public bandwidth to avoid issue with torrent seedbox. So the higher you get for the same price, the better it is (i.e: scaleway provide 250Mbits/s while OVH only 200Mbits)
 * **Free backup storage**: At some point we will have data to backup, so look if they provide some external storage for backups
 * **IPv6**: They should provide IPv6, not mandatory but it is 2020
 * **Domain name/Free mail account**: If you plan to use them as a registrar for your domain name, look if they can provide you email account storage in order to configure them as fallback to not lose mail
@@ -204,7 +204,7 @@ First thing to do is secure it ! We want to :
 * Restrict network access
 
 ### Enable automatic security update
-Let's start by enabling the automatic security dupdate of Debian.
+Let's start by enabling the automatic security update of Debian.
 In our Makefile
 
 ```bash
@@ -223,8 +223,8 @@ bconf-set-selections && apt-get install unattended-upgrades -y'
 With that the machine will install security update by its own, without requesting us to type manually `apt-get update && apt-get upgrade`
 
 ### Secure SSH server
-Next is improving the security of our ssh server. We are going to disable password authentification and allowing only public key authentification.
-As our ssh keys are encrypted in our repository, they will be always available to us if needed, as long as we have the gpg key.
+Next is improving the security of our ssh server. We are going to disable password authentication and allowing only public key authentication.
+As our ssh keys are encrypted in our repository, they will be always available to us if needed, as long as we have the GPG key.
 
 The main config options for your sshd_config
 ```bash
@@ -236,11 +236,11 @@ StrictModes yes
 IgnoreRhosts yes
 ```
 
-As I don't use any configuration management (i.e: Ansible), It is kind of tedious to use a normal user and levrage privilege escalation (sudo) to do stuff in `root`. So I allow root login on the SSH server to make things easier to manage. If you plan to use a configuration management system, disable the root login authentification.
+As I don't use any configuration management (i.e: Ansible), It is kind of tedious to use a normal user and leverage privilege escalation (sudo) to do stuff in `root`. So I allow root login on the SSH server to make things easier to manage. If you plan to use a configuration management system, disable the root login authentication.
 
 Now let's use again our Makefile to automate the deployment of the config
 
-**Warnig** Be sure that your are correctly able to log with your ssh key before doing that or you will need to reinstall your machine/use the rescue console of your hosting provider to fix things
+**Warning** Be sure that you are correctly able to log with your ssh key before doing that or you will need to reinstall your machine/use the rescue console of your hosting provider to fix things
 
 ```bash
 ❯ Makefile
@@ -257,19 +257,19 @@ ssh:
 if you want to go a step further, you can
 
 * Change default ssh server port
-* Disallow root authentification
-* [Enable 2 factor authentification with google-authentificator](https://www.globo.tech/learning-center/setup-ssh-server-with-two-factor-authentication-ubuntu-debian/) (it does not contact google)
+* Disallow root authentication
+* [Enable 2-factor authentication with google-authentificator](https://www.globo.tech/learning-center/setup-ssh-server-with-two-factor-authentication-ubuntu-debian/) (it does not contact google)
 
 
 ### Secure Network access
 Last part of the plan is to secure the network by putting in place firewall rules.
 
-I want to stay close to the real things so I use directly iptables to create my firewall rules. This is at the cost of having to duplicate the rules for IPv4 and IPv6.
+I want to stay close to the real things, so I use directly iptables to create my firewall rules. This is at the cost of having to duplicate the rules for IPv4 and IPv6.
 
 **If you want to simplify you the task please use [UFW - Uncomplicated Firewall](https://www.digitalocean.com/community/tutorials/how-to-set-up-a-firewall-with-ufw-on-debian-9)**
 
 We want for our deployment of iptables rules to be idempotent, so we are going to create a custom chain to avoid messing with the default one.
-Also I am going to use `iptables` command directly instead of `iptable-restore`, because `iptables-restore` files need to be holistic and does not compose well when programs manage only a subpart of the firewall rules. As we are going to install kubernetes later on, it will allow us to avoid messing with proxy rules.
+Also, I am going to use `iptables` command directly instead of `iptable-restore`, because `iptables-restore` files need to be holistic and does not compose well when programs manage only a subpart of the firewall rules. As we are going to install Kubernetes later on, it will allow us to avoid messing with proxy rules.
 
 ```bash
 #!/bin/sh
@@ -319,11 +319,11 @@ iptables -A USER_CUSTOM -p tcp --dport 993 -j ACCEPT
 # Allow wireguard
 iptables -A USER_CUSTOM -p udp --dport 995 -j ACCEPT
 
-# Allow kubernetes k3S api server 
+# Allow kubernetes k3S api server
 iptables -A USER_CUSTOM -p tcp --dport 6443 -j ACCEPT
 
 
-# Add our custom chain 
+# Add our custom chain
 iptables -I INPUT 1 -j USER_CUSTOM
 
 # DROP INCOMING TRAFFIC by default if nothing match
@@ -335,8 +335,8 @@ iptables -P INPUT DROP
 #do the same thing with ip6tables instead of iptables
 ```
 
-I don't rate limit ssh connections, as most of the time it is me that is hit by that limit. Nowadays most bot scanning ssh servers are smart enough to time their attemps to avoid being rate limited.
-Even if we are only allowing public key authentification, some bot are going to try endlessly to connect to our SSH server, in hope that someday a breach appears. Like waves crashing tiressly on the shore.
+I don't rate limit ssh connections, as most of the time it is me that is hit by that limit. Nowadays most bot scanning ssh servers are smart enough to time their attempts to avoid being rate limited.
+Even if we are only allowing public key authentication, some bots are going to try endlessly to connect to our SSH server, in hope that someday a breach appears. Like waves crashing tirelessly on the shore.
 
 If you want to enable it anyway, you need to add those rules
 
@@ -347,7 +347,7 @@ If you want to enable it anyway, you need to add those rules
 -A USER_CUSTOM -p tcp -m conntrack --ctstate NEW --dport 22 -j ACCEPT
 ```
 
-We are going to deploy those rules in the `if-pre-up` to restore them automatically when the machine reboot. As those rule are idempotent we force their execution when invoked to be sure they are in place.
+We are going to deploy those rules in the `if-pre-up` to restore them automatically when the machine reboots. As those rules are idempotent we force their execution when invoked to be sure they are in place.
 
 ```bash
 iptables:
@@ -359,24 +359,24 @@ iptables:
 
 # Chose your registrar (DNS) <a name="dns"></a>
 
-Now that we have a server provisionned and a bit more secure, we want to assign it a cute DNS name instead of just its IP address.
+Now that we have a server provisioned and a bit more secure, we want to assign it a cute DNS name instead of just its IP address.
 If you don't know what is a DNS please refer to :
 * [Wikipedia](https://en.wikipedia.org/wiki/Domain_Name_System)
 * [Cloudflare blog post](https://www.cloudflare.com/learning/dns/what-is-dns/)
 
 Like for the server provider, you are free to chose whatever you want here.
 
-I personnaly use [GANDI.net](www.gandi.net), as they provide free mailbox with a domain name. While I run a postfix/mail server on my server to recieve and store emails, to avoid having to setup and manage a tedious DKIM I use GANDI SMTP mail server to send my emails and be trusted/not endup as spams. More on that later in setup your mail server.
+I personally use [GANDI.net](www.gandi.net), as they provide free mailbox with a domain name. While I run a postfix/mail server on my server to receive and store emails, to avoid having to set up and manage a tedious DKIM I use GANDI SMTP mail server to send my emails and be trusted/not end up as spams. More on that later in setup your mail server.
 
 
 
 If you don't know which one to take, here the point I look for:
 
 * Provide an API to manage DNS record
-* Propagation should be fast enough (if you plan to use let's DNS challenge for wildcard)
+* Propagation should be fast enough (if you plan to use let's encrypt DNS challenge for wildcard)
 * Provide DNSSEC (I don't use it personally)
 
-beside that every registrar are the same. I recommend you using 
+Beside that every registrar are the same. I recommend you using
 * Your hosting company for your registrar in order to centralize things
 * Use [Cloudflare](https://www.cloudflare.com) if you plan to setup a blog later on
 
@@ -411,18 +411,18 @@ Depending from your registrar, FAI and the TTL you set on your records, it can t
 
 # Installing Kubernetes k3s <a name="k3s"></a>
 
-We now have a server secured, with a domain name attached, and that we can re-deploy at ease. 
+We now have a server secured, with a domain name attached, and that we can re-deploy at ease.
 
-The next step is to install kubernetes on it. The choice of Kubernetes can be a bit controversial for only using it on a single machine. Kubernetes is a container orchestrator, so you can only levrage its full power when managing a fleet of servers.
-In addition, running vanilla Kubernetes require installing ETCD and other heavy weight components, plus some difficulties configuring every modules for them to work correctly together.
+The next step is to install Kubernetes on it. The choice of Kubernetes can be a bit controversial for only using it on a single machine. Kubernetes is a container orchestrator, so you can only leverage its full power when managing a fleet of servers.
+In addition, running vanilla Kubernetes require installing ETCD and other heavyweight components, plus some difficulties configuring every module for them to work correctly together.
 
-Luckily for us an alternative to this heavy and challenging vanilla installation exists. 
+Luckily for us an alternative to this heavy and challenging vanilla installation exists.
 
-Meet [K3S](https://k3s.io/), a trimmed and packaged kubernetes cluster in a single binary. This prodigee is bought to us by rancher labs, one of the big player in the container operator world. They took the decision for you (replacing ETCD by sqlite, network overlay, load balancer, ...) in order for k3s to be the smaller possible and easy to setup, while being a 100% compliant kubernetes cluster.
+Meet [K3S](https://k3s.io/), a trimmed and packaged Kubernetes cluster in a single binary. This prodigy is bought to us by rancher labs, one of the big player in the container operator world. They took the decision for you (replacing ETCD by SQLite, network overlay, load balancer, ...) in order for k3s to be the smaller possible and easy to setup, while being a 100% compliant Kubernetes cluster.
 
-The main benefit of having kubernetes installed on my server, is that it allow me to have a standard interface for all my deployments, have everything store in git and allows me to levrage other tools like [skaffold](https://skaffold.dev/) when I developping my projects.
+The main benefit of having Kubernetes installed on my server, is that it allow me to have a standard interface for all my deployments, have everything store in git and allows me to leverage other tools like [skaffold](https://skaffold.dev/) when I am developing my projects.
 
-**warning** With everything installed, just having the kubernetes server components running add a 10% CPU on my `Intel(R) Atom(TM) CPU  C2338  @ 1.74GHz`. So if you are already CPU bound, don't use it or scale up your server. 
+**Warning** With everything installed, just having the Kubernetes server components running add a 10% CPU on my `Intel(R) Atom(TM) CPU  C2338  @ 1.74GHz`. So if you are already CPU bound, don't use it or scale up your server.
 
 Let's start, to install K3S nothing more complicated than
 ```bash
@@ -435,23 +435,23 @@ We are disabling some more components as we don't need them. Specifically:
 
 * `servicelb` Everything will live on the same machine, so there is no need to load balance, most of the time we are going to avoid the network overlay also, by using the host network directly as much as possible
 
-* `traefik` I have more experience with Nginx/HAProxy for reverse-proxy, so I am going to use nginx ingress controller in place of Traefik 
+* `traefik` I have more experience with Nginx/HAProxy for reverse-proxy, so I am going to use nginx ingress controller in place of Traefik
 
-* `local-storage` this application is for creating automatically local volume (PV) for your hosts, as we have only one machine, we will bypass this complexity and just use HostPath volume
+* `local-storage` this application is for creating automatically local volume (PV) for your hosts, as we have only one machine, we will bypass this complexity and just use `HostPath` volume
 
-After running this command, you can ssh on your server and do a 
+After running this command, you can ssh on your server and do a
 ```bash
 sudo kubectl get nodes
-# logs are available with 
+# logs are available with
 # sudo journalctl -feu k3s
 ```
-and check that your server is in Ready state (it can take some time). If it is the case, congrats ! You have a kubernetes control plane working !
+and check that your server is in Ready state (it can take some time). If it is the case, congrats ! You have a Kubernetes control plane working !
 
 Now that this is done, we need to automate the setup of the kubeconfig installation.
 
-On your server copy the content of the kube config file `/etc/rancher/k3s/k3s.yaml` and encrypt it with sops under `secrets/kubernetes-config.yml`. **Be sure to Replace** 127.0.0.1 in the config by the ip/domain name of your server. 
+On your server copy the content of the kube config file `/etc/rancher/k3s/k3s.yaml` and encrypt it with sops under `secrets/kubernetes-config.yml`. **Be sure to Replace** 127.0.0.1 in the config by the ip/domain name of your server.
 
-After that in your Makefile add in the install section
+After that, in your Makefile add in the install section
 
 ```bash
 install:
@@ -460,9 +460,9 @@ install:
         sops -d --output ~/.kube/config secrets/kubernetes-config.yml
 ```
 
-If you made things correctly and that you have kubectl installed on your local machine, you should be able to do a 
+If you made things correctly and that you have kubectl installed on your local machine, you should be able to do a
 ```
-kubectl get nodes 
+kubectl get nodes
 ```
 and see your server ready !
 
@@ -471,21 +471,21 @@ and see your server ready !
 
 I have many small pet projects exposing an HTTP endpoint that I want to expose to the rest of the internet, as I have blocked every ingoing traffic other than for port 80 and 443, I need to multiplex every application under those two. For that I need to install a reverse proxy that will also do TLS termination.
 
-As I have disabled Traefik, the default reverse-proxy, during the k3s installation, I need to install my own. My choice went to Nginx. I know it well with HaProxy, knows it is relaiable and it is the most mature between the two on kubernetes.  
+As I have disabled Traefik, the default reverse-proxy, during the k3s installation, I need to install my own. My choice went to Nginx. I know it well with HaProxy, knows it is reliable and it is the most mature between the two on Kubernetes.  
 
 
-To install it on your K3s cluster either use the Helm chart or direcly with a kube apply. Refer for the installation guide for [baremetal](https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal) 
+To install it on your K3s cluster either use the Helm chart or directly with a kube apply. Refer for the installation guide for [baremetal](https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal)
 
 **WARNING**: Don't copy-paste directly from the documentation nginx-ingress annotations, the '-' is not a real '-' and your annotation will not be recognized :facepalm:
  
-I am going to install it directly from the yaml files available at 
+I am going to install it directly from the YAML files available at
 ```
 https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.40.2/deploy/static/provider/baremetal/deploy.yaml
 ```
-to avoid having to manage also helm deployment.
+To avoid having to manage also helm deployment.
 
-I am going also to edit the deployment in order for the Nginx reverse proxy to use HostNetwork and avoid going throught the network overlay.
-In the above yaml file, replace DNS policy value by `ClusterFirstWithHostNet` and add a new entry `hostNetwork: true` for the container to use directly your network card instead of a virtual interface.
+I am going also to edit the deployment in order for the Nginx reverse proxy to use `HostNetwork` and avoid going thought the network overlay.
+In the above YAML file, replace DNS policy value by `ClusterFirstWithHostNet` and add a new entry `hostNetwork: true` for the container to use directly your network card instead of a virtual interface.
 
 
 ```yaml
@@ -500,7 +500,7 @@ kind: Deployment
 ...
 ```
 If you are using the helm chart, there is a variable/flag to toggle the usage of host network.
-Save your yaml file in your repository and update your Makefile to deploy it
+Save your YAML file in your repository and update your Makefile to deploy it
 
 ```Bash
 k8s:
@@ -617,30 +617,30 @@ spec:
 
 ```
 
-This deployment, will start a python simple http server on port 8083 on host network, a service will reference this deployment and the ingress (the configuration for our reverse proxy) will be configured to point toward it on path `/`
+This deployment, will start a python simple HTTP server on port 8083 on host network, a service will reference this deployment and the ingress (the configuration for our reverse proxy) will be configured to point toward it on path `/`
 
 To debug you can check
 ```bash
 # To investigate python simple http server pod issue
-kubectl describe pod test 
+kubectl describe pod test
 # To see endpoints listed by the service
 kubectl describe service test
-# To see ingress issue 
+# To see ingress issue
 kubectl describe service test
 # To check the config of nginx
 kubectl exec -ti -n ingress-nginx ingress-nginx-controller-5f89b4b887-5wxmd -- cat /etc/nginx/nginx.conf
 ```
 
-# CertManager with let's encrypt for issuing TLS certificats  <a name="letsencrypt"></a>
+# CertManager with let's encrypt for issuing TLS certificates  <a name="letsencrypt"></a>
 
-We have our reverse proxy working, now we want our k3s cluster to be able to generate on the fly certificats for our deployments. For that we are going to use the standard [CertManager](https://github.com/jetstack/cert-manager) with [let's encrypt](https://letsencrypt.org/fr/) as a backend/issuer.
+We have our reverse proxy working, now we want our k3s cluster to be able to generate on the fly certificates for our deployments. For that we are going to use the standard [CertManager](https://github.com/jetstack/cert-manager) with [let's encrypt](https://letsencrypt.org/fr/) as a backend/issuer.
 
-to install it simply do a 
+to install it simply do a
 ```bash
 kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.0.4/cert-manager.yaml
 ```
 
-to automate the deployment we are going to add it in the repository and add a few line in our Makefile
+to automate the deployment we are going to add it in the repository and add a few lines in our Makefile
 
 ```bash
 k8s:
@@ -648,7 +648,7 @@ k8s:
         kubectl apply --validate=false -f k8s/cert-manager-v1.0.4.yml
 ```
 
-You can verify the installation with 
+You can verify the installation with
 ```bash
 $ kubectl get pods --namespace cert-manager
 
@@ -658,9 +658,9 @@ cert-manager-cainjector-577f6d9fd7-tr77l   1/1     Running   0          2m
 cert-manager-webhook-787858fcdb-nlzsq      1/1     Running   0          2m
 ```
 
-Once Cert-Manager is deployed we need to configure an Issuer that is going to generate valid TLS certificats. For that we are going to use the free let's encrypt !
+Once Cert-Manager is deployed we need to configure an Issuer that is going to generate valid TLS certificates. For that we are going to use the free let's encrypt !
 
-To do that simply deploy a new ressource on the cluster
+To do that simply deploy a new resource on the cluster
 ```yaml
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -678,11 +678,11 @@ spec:
         ingress:
           class: nginx
 ```
-It will tell cert manager, that we are going to use the acme http challenges of let's encrypt and use nginx as ingress for that.
-The issuer is configured for the whole cluster (with kind: ClusterIssuer) so it is going to 
-1. Watch on all namespaces for the annotation `cert-manager.io/cluster-issuer: "letsencrypt-prod"generate tls certificat
-2. Request a challenge from let's encrypt to (re-)generate tls certificats
-3. Create a secret with those new certificats upon challenge success 
+It will tell cert manager, that we are going to use the acme HTTP challenges of let's encrypt and use nginx as ingress for that.
+The issuer is configured for the whole cluster (with kind: `ClusterIssuer`) so it is going to
+1. Watch on all namespaces for the annotation `cert-manager.io/cluster-issuer: "letsencrypt-prod"generate TLS certificate
+2. Request a challenge from let's encrypt to (re-)generate TLS certificate
+3. Create a secret with those new certificate upon challenge success
 
 
 In our Makefile
@@ -692,10 +692,10 @@ k8s:
         kubectl apply -f k8s/lets-encrypt-issuer.yml
 ```
 
-**Warning**: Be sure that your DNS name is valid/pointing to the correct machine before doing that, as it is easy to be blacklisted/throttled by let's encrypt. Especially if you are using DNS challenge for getting wildcard certificats.
+**Warning**: Be sure that your DNS name is valid/pointing to the correct machine before doing that, as it is easy to be blacklisted/throttled by let's encrypt. Especially if you are using DNS challenge for getting wildcard certificates.
 
-If you configured everything correctly editing our previous ingress and adding 
-a cluster issuer annotation and a tls section in the spec is enough.
+If you configured everything correctly editing our previous ingress and adding
+a cluster issuer annotation and a TLS section in the spec is enough.
 ```yaml
 ---
 apiVersion: extensions/v1beta1
@@ -719,34 +719,34 @@ spec:
           servicePort: 8083
 ```
 
-After applying the new version of the ingress, the cert manager should detect the annotation and launch a challenge. (You can check the pods for ACME challenge being spawned) and after a few minutes getting your tls certficats deployed as a secret.
+After applying the new version of the ingress, the cert manager should detect the annotation and launch a challenge. (You can check the pods for ACME challenge being spawned) and after a few minutes getting your TLS certificate deployed as a secret.
 
 ```
 $ kubectl get secrets test-tls
 ```
  
-if everything is ok, simply use your browser to go to `https://domain.name` to see our simple python backend being deployed with a valid TLS certificat !!!
+If everything is ok, simply use your browser and visit `https://domain.name` to see our simple python backend being deployed with a valid TLS certificate !!!
 
 
 # Mail Server with Postfix + Dovecot + Fetchmail + SpamAssassin <a name="mail"></a>
 
 Now I am going to install a mail server on my machine with a few caveats.
 
-I am not going to use this SMTP server as an outgoing mail server, because nowadays it suppose to setup and maintain DKIM,SPF,DMARC and even when I have done so, sometimes my emails were ending-up in spam. 
-The cost is not worth it, so I am using my registrar gandi.net smtp server as relay to send my emails.
+I am not going to use this SMTP server as an outgoing mail server, because nowadays it supposes to setup and maintain DKIM, SPF, DMARC and even when I have done so, sometimes my emails were ending-up in spam.
+The cost is not worth it, so I am using my registrar gandi.net SMTP server as relay to send my emails.
 
-I am not going to enter into the details of how to configure postfix + dovecot + fetchmail + spamassassin as there are already plenty of guide available for that on the internet. My goal is to explain how I use kubernetes to make them all work together. 
+I am not going to enter into the details of how to configure postfix + dovecot + fetchmail + spamassassin as there are already plenty of guides available for that on the internet. My goal is to explain how I use Kubernetes to make them all work together.
 
 For more information you can refer to my repository to look into the detail. The high level overview is :
 
-* Cert-Manager issue valid TLS certificats that are used by dovecot and postfix
+* Cert-Manager issue valid TLS certificate that are used by dovecot and postfix
 * Postfix is configured with virtual alias to allow emails from `*@my_domain.name`
 * Postfix does not use any database (so no MySQL)
-* Every mail are redirected to a single user, that run `procmail` with a custom program [hmailfilter](https://github.com/erebe/hmailfilter) to triage automatically my email (**Warning** procmail is since a few years unmaintened and contains CVEs)
-* Emails are stored in the maildir format
+* Every mail are redirected to a single user, that run `procmail` with a custom program [hmailfilter](https://github.com/erebe/hmailfilter) to triage automatically my email (**Warning** procmail is since a few years unmaintained and contains CVEs)
+* Emails are stored in the `maildir` format
 * Dovecot and postfix communicate by sharing this single maildir by mounting the same hostPath volume in both container
-* I don't tag my custom container images, github action is configured on every push to rebuild the image of {postfix, dovecot} and to pusblish them under `latest`
-* I use trunk deployment for my images. I simply delete the current pod and let it recreate itself with the use of`imagePullPolicy: Always` to get the lastest version
+* I don't tag my custom container images, GitHub action is configured on every push to rebuild the image of {postfix, dovecot} and to publish them under `latest`
+* I use trunk deployment for my images. I simply delete the current pod and let it recreate itself with the use of`imagePullPolicy: Always` to get the latest version
 
 
 So let's start, first update your MX DNS record to point to your server
@@ -755,14 +755,14 @@ So let's start, first update your MX DNS record to point to your server
 @ 10800 IN MX 10 spool.mail.gandi.net.
 @ 10800 IN MX 50 fb.mail.gandi.net.
 ```
-In my setup I add my registrar smtp server as a safety net in case my server is down. Fetchmail is configured to retrieve from it any emails it may have recieved for me.
+In my setup I add my registrar SMTP server as a safety net in case my server is down. Fetchmail is configured to retrieve from it any emails it may have received for me.
 
 
-Next step is to create valid TLS certificat for both:
+Next step is to create a valid TLS certificate for both:
 * Postfix as we want to support STARTTLS/SSL
-* Dovecot, I only allow IMAPs and don't want self-signed certificat warning pop-ups
+* Dovecot, I only allow IMAPs and don't want self-signed certificate warning pop-ups
 
-For that we simply use kubernetes cert-manager and create a Certificate resource
+For that we simply use Kubernetes cert-manager and create a Certificate resource
 
 ```yaml
 apiVersion: cert-manager.io/v1
@@ -799,8 +799,8 @@ spec:
 
 ```
 
-With that the cert-manager will issue a certificat under the secret `dovecot-tls` signed by let's encrypt.
-After a few minutes, your secret will be avaible
+With that the cert-manager will issue a certificate under the secret `dovecot-tls` signed by let's encrypt.
+After a few minutes, your secret will be available
 
 ```bash
 ❯ kubectl describe secret dovecot-tls
@@ -824,7 +824,7 @@ tls.crt:  3554 bytes
 tls.key:  1679 bytes
 ```
 
-after that we can inject those certificats in the container thanks to volumes in our deployment
+after that we can inject those certificate in the container thanks to volumes in our deployment
 
 ```yaml
 apiVersion: apps/v1
@@ -875,11 +875,11 @@ spec:
           type: Directory
 ```
 
-In my deployments: 
+In my deployments:
 * We are using host network
-* All the data are stored on the host filesystem under `/opt/xxx` in order to easily backup it
+* All the data are stored on the host file system under `/opt/xxx` in order to easily backup it
 * All the container use the same created user ID 1000 for writing data to avoid conflicting rights
-* Password are stored as kubernetes secrets and commited inside the repository thanks to sops
+* Password are stored as Kubernetes secrets and committed inside the repository thanks to sops
 
 ```yaml
 apiVersion: v1
@@ -891,7 +891,7 @@ stringData:
     users: 'erebe:{MD5-CRYPT}xxxxx.:1000:1000::::/bin/false::'
 ```
 
-In the end, deploying dovecot from our makefile is a simple 
+In the end, deploying dovecot from our makefile is a simple
 
 ```bash
 dovecot:
@@ -900,7 +900,7 @@ dovecot:
         kubectl apply -f dovecot/dovecot.yml
 ```
 
-For postfix it is the same and we are reusing the previous created TLS certificat for providing STARTTLS/SSL support for the SMTP server 
+For postfix it is the same, and we are reusing the previous created TLS certificate for providing STARTTLS/SSL support for the SMTP server
 
 ```yaml
 apiVersion: apps/v1
@@ -962,10 +962,10 @@ postfix:
 ```
 
 
-# Automating build and push of our images with github actions <a name="build"></a>
+# Automating build and push of our images with GitHub actions <a name="build"></a>
 
-When I do a change, I want my custom images to be rebuild and push automatically on docker hub. 
-To achieve it I rely on a 3rd party, [github actions](https://github.com/features/actions) !
+When I do a change, I want my custom images to be rebuilt and push automatically on docker hub.
+To achieve it I rely on a 3rd party, [GitHub actions](https://github.com/features/actions) !
 
 ```yaml
 #.github/workflows/docker-dovecot.yml
@@ -1003,20 +1003,20 @@ jobs:
 
 ```
 
-When an file under `dovecot/**` is modified during a commit, the Github Actions CI will trigger the job that re-build the docker image and push it to the [github container registry](https://github.com/features/packages).
-I use github container registry in order to centralize things as much as possible and avoid adding docker hub as an other external dependencies.
+When a file under `dovecot/**` is modified during a commit, the Github Actions CI will trigger the job that re-build the docker image and push it to the [GitHub container registry](https://github.com/features/packages).
+I use GitHub container registry in order to centralize things as much as possible and avoid adding docker hub as another external dependencies.
 
 The part left to do yet, is automatic deployment when a new image is build.
-Ideally, I would like to avoid having to store my kubeconfig inside github secrets and code an app that support webhook in order to trigger a new deployment. But for now I am still thinking of how to do that properly, so I am left to delete manually my pod to re-fetch the latest image until then ¯\_(ツ)_/¯
+Ideally, I would like to avoid having to store my kubeconfig inside GitHub secrets and code an app that support web hook in order to trigger a new deployment. But for now I am still thinking of how to do that properly, so I am left to delete manually my pod to re-fetch the latest image until then ¯\_(ツ)_/¯
 
-# Hosting your own cloud with nextcloud <a name="cloud"></a>
+# Hosting your own cloud with Nextcloud <a name="cloud"></a>
 
 # Backups <a name="backup"></a>
 
 My backups are simplistic, as I store all the data under `/opt` of the host machine and that I am not running any dedicated database.
 The Backup of the data consist of:
-1. Running a cron-job every night inside kubernetes that is spawning a container
-2. Mouting the whole `/opt` folder inside the container as a volume
+1. Running a cron-job every night inside Kubernetes that is spawning a container
+2. Mounting the whole `/opt` folder inside the container as a volume
 3. Creating a tar of `/opt`
 4. Pushing the tarball to the ftp server that my hosting company provide me
 
@@ -1075,15 +1075,15 @@ spec:
 
 My next step is to setup a VPN with [wireguard](https://www.wireguard.com/) to :
 * Remove the access of the kube api server from internet
-* Connect machines (raspberrypi) that can't be reached from internet
-* Manage my RaspberryPi as simple nodes inside the k3s cluster
-* Route my traffic toward a safe network when in café,airports,etc (almost never...)
+* Connect machines (Raspberry Pi) that can't be reached from internet
+* Manage my Raspberry Pi as simple nodes inside the k3s cluster
+* Route my traffic toward a safe network when in café, airports, etc (almost never...)
 
-We are not going to install wireguard a kubernetes deployment as it requires a kernel module in order to work correctly. The only way is to install it directly on the host machine !
+We are not going to install WireGuard a Kubernetes deployment as it requires a kernel module in order to work correctly. The only way is to install it directly on the host machine !
 
-Follow this [guide](https://www.cyberciti.biz/faq/debian-10-set-up-wireguard-vpn-server/) in order install and configure wireguard for Debian.
+Follow this [guide](https://www.cyberciti.biz/faq/debian-10-set-up-wireguard-vpn-server/) in order install and configure WireGuard for Debian.
 
-The only change I made is to add postUp and postDown rules to the `wg0.conf` in order to forward and masquerade traffic that are targeting network outside of the VPN. This setup allow me to route all my local machine traffic trought the VPN (i.e: When using my phone) when I want to.
+The only change I made is to add `postUp` and `postDown` rules to the `wg0.conf` in order to forward and masquerade traffic that are targeting network outside the VPN. This setup allows me to route all my local machine traffic through the VPN (i.e: When using my phone) when I want to.
 
 wstunnel !!!
 
@@ -1110,7 +1110,7 @@ AllowedIPs = 10.200.200.4/32
 
 ```
 
-On my phone for example, to route all the traffic trought the VPN. I am going to have a setup like this one
+On my phone for example, to route all the traffic trough the VPN. I am going to have a setup like this one
 ```ini
 [Interface]
 # Client
@@ -1133,13 +1133,13 @@ wireguard:
         ssh ${HOST} 'systemctl enable wg-quick@wg0'
 ```
 
-# Installing K3S on our raspberryPI using your Wireguard VPN <a name="raspberry"></a>
+# Installing K3S on our Raspberry Pi using your Wireguard VPN <a name="raspberry"></a>
 
-I want my raspberryPi that is living inside my home network to be manageable like a simple node inside the kubernetes cluster. For that I am going to setup wireguard on my raspberry pi and install the k3s agent on it.
+I want my Raspberry Pi that is living inside my home network to be manageable like a simple node inside the Kubernetes cluster. For that I am going to setup Wireguard on my Raspberry Pi and install the k3s agent on it.
 
-1. Installation Raspbian on your raspberry - [Tuto](https://www.raspberrypi.org/documentation/installation/installing-images/)
-2. Setup wireguard on the raspberry - [Tuto](https://www.sigmdel.ca/michel/ha/wireguard/wireguard_02_en.html#installing_wg_raspbian)
-3. Configure wireguard
+1. Installation Raspbian on your raspberry - [Tutorial](https://www.raspberrypi.org/documentation/installation/installing-images/)
+2. Setup Wireguard on the raspberry - [Tutorial](https://www.sigmdel.ca/michel/ha/wireguard/wireguard_02_en.html#installing_wg_raspbian)
+3. Configure Wireguard
 ```ini
 [Interface]
 PrivateKey = xxx
@@ -1156,12 +1156,12 @@ Endpoint = domain.name:995
 PersistentKeepalive = 20
 ```
 5. Start wireguard and test it is working properly
-6. On the `/boot/cmdline.txt` of the raspberrypi add those 2 boot options
+6. On the `/boot/cmdline.txt` of the Raspberry Pi add those 2 boot options
 ```bash
 cgroup_memory=1 cgroup_enable=memory
 ```
 7. Reboot the raspberry
-8. On the server edit `/etc/systemd/system/k3s.service` and add the argment
+8. On the server edit `/etc/systemd/system/k3s.service` and add the argument
 ```
 --advertise-address 10.200.200.1
 ```
@@ -1173,20 +1173,20 @@ curl -sfL https://get.k3s.io | K3S_URL=https://10.200.200.1:6443 K3S_TOKEN="xxxx
 
 # Check that the node is correctly pop-in up when doing kubectl get nodes
 vim /etc/systemd/system/k3s-agent.service
-# Add to the agent command line 
+# Add to the agent command line
 --node-ip 10.200.200.2 # replace by your raspberry VPN ip
 --node-taint "kubernetes.io/hostname=raspberrypi:NoSchedule" # To avoid anything to be scheduled on the raspberryPI without being specified to
 
 systemctl daemon-reload
 systemctl restart k3s-agent
 ```
-9. Check that your raspberry is in Ready state with its ip
+9. Check that your raspberry is in Ready state with its IP
 
-# Deploying PiHole on your RaspberryPI <a name="pihole"></a>
+# Deploying PiHole on your Raspberry Pi <a name="pihole"></a>
 
-We have our raspberry Ready to use now inside our kubernetes cluster.
+We have our raspberry Ready to use now inside our Kubernetes cluster.
 It is time now to use it by deploying [PiHole](https://pi-hole.net/) as a DNS server inside our home local network.
-PiHole allows to block tracker by not responding to dns requests. It is like having ad-block on your network instead of your browser.
+PiHole allows blocking trackers by not responding to DNS requests. It is like having ad-block on your network instead of your browser.
 
 This is a standard deployment, with only 3 specificity:
 
@@ -1223,7 +1223,7 @@ This is a standard deployment, with only 3 specificity:
         effect: "NoExecute"
 ```
 
-Full yaml
+Full YAML
 ```yaml
 ---
 apiVersion: apps/v1
