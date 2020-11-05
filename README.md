@@ -1173,7 +1173,7 @@ cgroup_memory=1 cgroup_enable=memory
 ```bash
 # ssh on the raspberry, endpoint should be the ip of the server on the VPN network
 # token can be found on the server at cat /var/lib/rancher/k3s/server/token
-curl -sfL https://get.k3s.io | K3S_URL=https://10.200.200.1:6443 K3S_EXEC="--node-ip 10.200.200.2 --node-taint 'kubernetes.io/hostname=raspberrypi:NoSchedule'" K3S_TOKEN="xxxx" sh -
+curl -sfL https://get.k3s.io | K3S_URL=https://10.200.200.1:6443 INSTALL_K3S_EXEC="--node-ip 10.200.200.2 --node-taint 'kubernetes.io/hostname=raspberrypi:NoSchedule'" K3S_TOKEN="xxxx" sh -
 
 # --node-ip is to force using interface of wireguard to communicate with the node
 # --node-taint is to disallow random container to end up on the raspberry, a toleration need to target it specifically
@@ -1312,7 +1312,7 @@ spec:
 ```
 
 
-# Deploying PiHole on your RaspberryPI <a name="conclusion"></a>
+# Conclusion <a name="conclusion"></a>
 
 
 # If you want more Freedom <a name="freedom"></a>
