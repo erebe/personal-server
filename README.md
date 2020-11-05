@@ -727,11 +727,11 @@ metadata:
     kubernetes.io/ingress.class: "nginx"
     cert-manager.io/cluster-issuer: "letsencrypt-prod" #Here
 spec:
-  rules:
   tls: # here
   - hosts:
     - domain.name
     secretName: test-tls
+  rules:
   - http:
       paths:
       - path: /
