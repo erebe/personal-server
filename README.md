@@ -1173,16 +1173,10 @@ cgroup_memory=1 cgroup_enable=memory
 ```bash
 # ssh on the raspberry, endpoint should be the ip of the server on the VPN network
 # token can be found on the server at cat /var/lib/rancher/k3s/server/token
-curl -sfL https://get.k3s.io | K3S_URL=https://10.200.200.1:6443 K3S_TOKEN="xxxx" sh -
+curl -sfL https://get.k3s.io | K3S_URL=https://10.200.200.1:6443 K3S_EXEC="--node-ip 10.200.200.2 --node-taint 'kubernetes.io/hostname=raspberrypi:NoSchedule'" K3S_TOKEN="xxxx" sh -
 
-# Check that the node is correctly pop-in up when doing kubectl get nodes
-vim /etc/systemd/system/k3s-agent.service
-# Add to the agent command line
---node-ip 10.200.200.2 # replace by your raspberry VPN ip
---node-taint "kubernetes.io/hostname=raspberrypi:NoSchedule" # To avoid anything to be scheduled on the raspberryPI without being specified to
-
-systemctl daemon-reload
-systemctl restart k3s-agent
+# --node-ip is to force using interface of wireguard to communicate with the node
+# --node-taint is to disallow random container to end up on the raspberry, a toleration need to target it specifically
 ```
 9. Check that your raspberry is in Ready state with its IP
 
