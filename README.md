@@ -1317,7 +1317,8 @@ spec:
 
 # If you want more Freedom <a name="freedom"></a>
 
-* Manage dkimm to not rely on the SMTP relay
+* Host the machine at Home, if you have fiber you may have more bandwidth than a provider
+* Manage dkim to not rely on the SMTP relay
 * Host Gitlab to avoid relying on Github for git
     * Can be used to mirror your github repository
     * Can be used to have your own git actions
