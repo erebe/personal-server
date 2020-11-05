@@ -12,9 +12,9 @@ ifdef ARGS
 endif
 		
 install:
-	sops -d --extract '["public_key"]' --output ~/.ssh/erebe_rsa.pub secrets/ssh.yml
-	sops -d --extract '["private_key"]' --output ~/.ssh/erebe_rsa.key secrets/ssh.yml
-	chmod 600 ~/.ssh/erebe_rsa.*
+	sops -d --extract '["public_key"]' --output ~/.ssh/erebe_eu.pub secrets/ssh.yml
+	sops -d --extract '["private_key"]' --output ~/.ssh/erebe_eu secrets/ssh.yml
+	chmod 600 ~/.ssh/erebe_eu*
 	grep -q erebe.eu ~/.ssh/config > /dev/null 2>&1 || cat config/ssh_client_config >> ~/.ssh/config
 	mkdir ~/.kube || exit 0
 	sops -d --output ~/.kube/config secrets/kubernetes-config.yml
