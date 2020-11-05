@@ -23,7 +23,7 @@ spec:
         image: ghcr.io/erebe/wstunnel:latest
         imagePullPolicy: Always
         args:
-        - "./wstunnel"
+        - "/wstunnel"
         - "--server"
         - "ws://0.0.0.0:8084"
         - "-r"
