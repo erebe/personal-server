@@ -1317,11 +1317,8 @@ spec:
 
 # If you want more Freedom <a name="freedom"></a>
 
-
-### Setup dkim for your mail
-[Google SMTP server](https://www.digitalocean.com/community/tutorials/how-to-use-google-s-smtp-server)
-[mailjet](https://www.mailjet.com/pricing/)
-
-### Host your own docker registry
-
-### Use gitlab CI instead of github actions
+* Manage dkimm to not rely on the SMTP relay
+* Host Gitlab to avoid relying on Github for git
+    * Can be used to mirror your github repository
+    * Can be used to have your own git actions
+    * Can be used to have your own Docker repositry
