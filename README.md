@@ -387,7 +387,7 @@ If you don't know what is a DNS please refer to :
 
 Like for the server provider, you are free to chose whatever you want here.
 
-I personally use [GANDI.net](www.gandi.net), as they provide free mailbox with a domain name. While I run a postfix/mail server on my server to receive and store emails, to avoid having to set up and manage a tedious DKIM I use GANDI SMTP mail server to send my emails and be trusted/not end up as spams. More on that later in setup your mail server.
+I personally use [GANDI.net](https://www.gandi.net), as they provide free mailbox with a domain name. While I run a postfix/mail server on my server to receive and store emails, to avoid having to set up and manage a tedious DKIM I use GANDI SMTP mail server to send my emails and be trusted/not end up as spams. More on that later in setup your mail server.
 
 
 
