@@ -37,6 +37,11 @@ package:
 	ssh ${HOST} 'apt-get update && apt-get install -y curl htop mtr tcpdump ncdu vim dnsutils strace linux-perf iftop wireguard'
 	# Enable automatic security Updates
 	ssh ${HOST} 'echo "unattended-upgrades unattended-upgrades/enable_auto_updates boolean true" | debconf-set-selections && apt-get install unattended-upgrades -y'
+	# IPv6
+	sops -d --output secrets_decrypted/dhclient6.conf secrets/dhclient6.conf
+	scp secrets_decrypted/dhclient6.conf ${HOST}:/etc/dhcp/dhclient6.conf
+	scp config/dhclient6.service ${HOST}:/etc/systemd/system/
+	ssh ${HOST} 'systemctl daemon-reload && systemctl enable dhclient6.service && systemctl restart dhclient6.service'
 
 iptables:	
 	scp config/iptables ${HOST}:/etc/network/if-pre-up.d/iptables-restore
