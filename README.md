@@ -716,7 +716,7 @@ k8s:
 **Warning**: Be sure that your DNS name is valid/pointing to the correct machine before doing that, as it is easy to be blacklisted/throttled by let's encrypt. Especially if you are using DNS challenge for getting wildcard certificates.
 
 If you configured everything correctly editing our previous ingress and adding
-a cluster issuer annotation and a TLS section in the spec is enough.
+a cluster issuer annotation, a TLS section in the spec and a host in the rules is enough.
 ```yaml
 ---
 apiVersion: extensions/v1beta1
@@ -732,7 +732,8 @@ spec:
     - domain.name
     secretName: test-tls
   rules:
-  - http:
+  - host: domain.name # here
+    http:
       paths:
       - path: /
         backend:
