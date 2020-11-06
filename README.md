@@ -23,6 +23,7 @@ My goals for this setup are:
 * Simple to deploy, manage and update
 * Everything should live inside the git repository
 * Automating as much as possible with free tier service (GitHub actions) but reproducible locally
+* Package and deploy the same way system application and my own projects
 
 # Table of Contents
 
@@ -1567,6 +1568,7 @@ spec:
    * Secrets are not separated from the code and derived from a GPG key
    * Configuration and deployment are together thanks to container and kubernetes
    * Deployment can be triggered from the makefile
+   * Common way to package and deploy system package and my own projects
 * A single interface/control plane to control several machines
    * Container allow each component to be isolated
    * Kubernetes allow to manage multiple servers and provide a clean interface
