@@ -73,7 +73,7 @@ I had found my cruise boat and sailed peacefully with it until the dependencies 
 
 While avoiding system upgrade, I spent some time playing with Kvm/Xen, FreeBSD jails, Illumos, micro-kernel (I thought it will be the future :x) and the new player in town Docker ! I ended-up using Docker due to being too busy/lazy to reinstall everything on something new and Docker allowed me to progressively isolate/patch the software that were annoying me. Hello Python projects !
 
-This hybrid setup worked for a while, but it felt clunky to manage, especially with Ansible in the mix. I ended-up moving everything into containers, not without hassle, and now Ansible was felling at odd and the integration between systemd and Docker weird, I was just spending time gluing trivial things.
+This hybrid setup worked for a while, but it felt clunky to manage, especially with Ansible in the mix. I ended-up moving everything into containers, not without hassle :kiss: postfix, and now Ansible was felling at odd and the integration between systemd and Docker weird, I was just spending time gluing trivial things.
 
 So I spent a bit of time this month to create and share with you my perfect new setup for managing a personal server in 2020 !
 
