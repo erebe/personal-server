@@ -1033,6 +1033,123 @@ Ideally, I would like to avoid having to store my kubeconfig inside GitHub secre
 
 # Hosting your own cloud with Nextcloud <a name="cloud"></a>
 
+[Nextcloud](https://nextcloud.com/) allows you to get a dropbox/google drive at home and many more feature if you want to (caldav, todos, ...). The Web UI is working well and they provide also great mobile application for IO/Android.
+
+To deploy is nothing fancy, it is a standard deployment with its ingress. The only specifities are:
+
+  * We add nginx annotation to increase body max payload `nginx.ingress.kubernetes.io/proxy-body-size: "10G"`
+  * We override the default configuration of the nginx bundled inside the image with a ConfigMap in order to make it behave well with our ingress
+
+
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: nextcloud-nginx-siteconfig
+data:
+    default: |
+      upstream php-handler {
+          server 127.0.0.1:9000;
+      }
+      server {
+          listen 8083;
+          listen [::]:8083;
+          server_name cloud.erebe.eu;
+...
+```
+
+The deployment
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nextcloud
+  labels:
+    app: nextcloud
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nextcloud
+  template:
+    metadata:
+      labels:
+        app: nextcloud
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: nextcloud
+        image: linuxserver/nextcloud:amd64-version-20.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8083
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: config
+          mountPath: /config
+        - name: nginx-siteconfig
+          mountPath: /config/nginx/site-confs
+      volumes:
+      - name: nginx-siteconfig
+        configMap:
+          name: nextcloud-nginx-siteconfig
+      - name: data
+        hostPath:
+          path: /opt/nextcloud/data
+          type: Directory
+      - name: config
+        hostPath:
+          path: /opt/nextcloud/config
+          type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nextcloud
+spec:
+  selector:
+    app: nextcloud
+  ports:
+    - name: http
+      port: 8083
+      protocol: TCP
+  type: ClusterIP
+  clusterIP: None
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: nextcloud-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10G"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - cloud.erebe.eu
+    secretName: nextcloud-tls
+  rules:
+  - host: cloud.erebe.eu
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: nextcloud
+          servicePort: http
+
+```
+
+
+
+
 # Backups <a name="backup"></a>
 
 My backups are simplistic, as I store all the data under `/opt` of the host machine and that I am not running any dedicated database.
