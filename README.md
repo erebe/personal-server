@@ -1033,7 +1033,9 @@ Ideally, I would like to avoid having to store my kubeconfig inside GitHub secre
 
 [Nextcloud](https://nextcloud.com/) allows you to get a dropbox/google drive at home and many more feature if you want to (caldav, todos, ...). The Web UI is working well and they provide also great mobile application for IO/Android.
 
-To deploy is nothing fancy, it is a standard deployment with its ingress. The only specifities are:
+**Warning** If you only care about storaging your data, buying a NAS or paying for DropBox/OneDrive/GoogleDrive plan will be much worth of your bucks. 
+
+To deploy nothing fancy, it is a standard deployment with its ingress. The only specifities are:
 
   * We add nginx annotation to increase body max payload `nginx.ingress.kubernetes.io/proxy-body-size: "10G"`
   * We override the default configuration of the nginx bundled inside the image with a ConfigMap in order to make it behave well with our ingress
