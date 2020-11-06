@@ -53,8 +53,6 @@ My goals for this setup are:
 # The road so far <a name="background"></a>
 
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/P5ZJui3aPoQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
 <p></p>
 
 It has been more than 15 years now that I manage my own dedicated server, I am in my thirties, and it all started thanks to a talk from Benjamin Bayart [Internet libre, ou minitel 2.0](https://www.youtube.com/watch?v=AoRGoQ76PK8) or for the non-French "Free internet or minitel 2.0". For those who don't know what is a minitel, let me quote for you Wikipedia.
