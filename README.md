@@ -1032,6 +1032,7 @@ Ideally, I would like to avoid having to store my kubeconfig inside GitHub secre
 # Hosting your own cloud with Nextcloud <a name="cloud"></a>
 
 [Nextcloud](https://nextcloud.com/) allows you to get a dropbox/google drive at home and many more feature if you want to (caldav, todos, ...). The Web UI is working well and they provide also great mobile application for IO/Android.
+With an extra module we can mount external storage (sftp, ftp, s3, ...) which allows to have nextcloud as a central point for managing our data. 
 
 **Warning** If you only care about storaging your data, buying a NAS or paying for DropBox/OneDrive/GoogleDrive plan will be much worth of your bucks. 
 
