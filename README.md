@@ -189,7 +189,8 @@ Personally I use a 1st tier [dedibox](https://www.scaleway.com/fr/dedibox/tarifs
 * **IPv6**: They should provide IPv6, not mandatory but it is 2020
 * **Domain name/Free mail account**: If you plan to use them as a registrar for your domain name, look if they can provide you email account storage in order to configure them as fallback to not lose mail
 
-Once you have your server provider, do the installation and choose Debian for the OS. At some point we will ask you for your ssh key, so provide the one you created earlier. If you have the possibility to select your filesystem use XFS instead of ext4 as it provides good support  
+Once you have your server provider, do the installation and choose Debian for the OS. At some point they will ask you for your ssh key, so provide the one you created earlier. 
+If you have the possibility to select your filesystem use XFS instead of ext4 as it provides good support for container runtime.  
 
 If everything is installed correctly you should be able to do a
 
@@ -223,11 +224,13 @@ linux-perf iftop'
 bconf-set-selections && apt-get install unattended-upgrades -y'
 
 ```
-With that the machine will install security update by its own, without requesting us to type manually `apt-get update && apt-get upgrade`
+With that the machine is installing security update by its own, without requesting us to type manually `apt-get update && apt-get upgrade`
 
 ### Secure SSH server
-Next is improving the security of our ssh server. We are going to disable password authentication and allowing only public key authentication.
-As our ssh keys are encrypted in our repository, they will be always available to us if needed, as long as we have the GPG key.
+Next is improving the security of our ssh server.
+
+We are going to disable password authentication and allowing only public key authentication.
+As our ssh keys are encrypted in our repository, they will be always available to us if needed (as long as we have the GPG key).
 
 The main config options for your sshd_config
 ```bash
@@ -280,7 +283,7 @@ Also, I am going to use `iptables` command directly instead of `iptable-restore`
 # Execute only when it is for our main NIC
 [ "$IFACE" != "enp1s0" ] || exit 0
 
-# In order to get an IPv6 lease from online.net
+# In order to get an IPv6 lease/route from online.net
 sysctl -w net.ipv6.conf.enp1s0.accept_ra=2
 
 ###########################
@@ -327,6 +330,7 @@ iptables -A USER_CUSTOM -p tcp --dport 993 -j ACCEPT
 iptables -A USER_CUSTOM -p udp --dport 995 -j ACCEPT
 
 # Allow kubernetes k3S api server
+# We are going to disable it after setting up our VPN to not expose it to internet
 iptables -A USER_CUSTOM -p tcp --dport 6443 -j ACCEPT
 
 
@@ -425,25 +429,25 @@ api 10800 IN AAAA 2001:bc8:3d8f::cafe
 ...
 ```
 
-Depending from your registrar, FAI and the TTL you set on your records, it can take quite some times for the new record to be propagated/updated everywhere, so be patient !
+Depending from your registrar, FAI and the TTL you set on your records, it can take quite some time for the new record to be propagated/updated everywhere, so be patient !
 
 
 # Installing Kubernetes k3s <a name="k3s"></a>
 
-We now have a server secured, with a domain name attached, and that we can re-deploy at ease.
+We now have a server secured, with a domain name attached, and that we can re-install at ease.
 
 The next step is to install Kubernetes on it. The choice of Kubernetes can be a bit controversial for only using it on a single machine. Kubernetes is a container orchestrator, so you can only leverage its full power when managing a fleet of servers.
 In addition, running vanilla Kubernetes require installing ETCD and other heavyweight components, plus some difficulties configuring every module for them to work correctly together.
 
-Luckily for us an alternative to this heavy and challenging vanilla installation exists.
+Luckily for us an alternative to this heavy/production vanilla installation exists.
 
-Meet [K3S](https://k3s.io/), a trimmed and packaged Kubernetes cluster in a single binary. This prodigy is bought to us by rancher labs, one of the big player in the container operator world. They took the decision for you (replacing ETCD by SQLite, network overlay, load balancer, ...) in order for k3s to be the smaller possible and easy to setup, while being a 100% compliant Kubernetes cluster.
+Meet [K3S](https://k3s.io/), a trimmed and packaged Kubernetes cluster in a single binary. This prodigy is bought to us by rancher labs, one of the big player in the container operator world. They took the decision for you (replacing ETCD by SQLite, network overlay, load balancer, ...) in order for k3s to be the smallest possible and easy to setup. Yet it is a 100% compliant Kubernetes cluster.
 
-The main benefit of having Kubernetes installed on my server, is that it allow me to have a standard interface for all my deployments, have everything store in git and allows me to leverage other tools like [skaffold](https://skaffold.dev/) when I am developing my projects.
+The main benefit of having Kubernetes installed on my server, is that it allow me to have a standard interface for all my deployments, have everything store in git and allows me to leverage other tools like [skaffold](https://skaffold.dev/) when I am developing my projects. My server is also my playground, so it is great to stay in touch with the fancy stuff of the moment.
 
-**Warning** With everything installed, just having the Kubernetes server components running add a 10% CPU on my `Intel(R) Atom(TM) CPU  C2338  @ 1.74GHz`. So if you are already CPU bound, don't use it or scale up your server.
+**Warning** With everything installed, just having the Kubernetes server components running add a {5%, 10%} CPU on my `Intel(R) Atom(TM) CPU  C2338  @ 1.74GHz 2cores`. So if you are already CPU bound, don't use it or scale up your server.
 
-Let's start, to install K3S nothing more complicated than
+Let's start, to install K3s nothing more complicated than
 ```bash
 kubernetes_install:
         ssh ${HOST} 'export INSTALL_K3S_EXEC=" --no-deploy servicelb --no-deploy traefik --no-deploy local-storage"; \
@@ -454,7 +458,7 @@ We are disabling some more components as we don't need them. Specifically:
 
 * `servicelb` Everything will live on the same machine, so there is no need to load balance, most of the time we are going to avoid the network overlay also, by using the host network directly as much as possible
 
-* `traefik` I have more experience with Nginx/HAProxy for reverse-proxy, so I am going to use nginx ingress controller in place of Traefik
+* `traefik` I have more experience with Nginx/HAProxy for reverse-proxy, so I am going to use nginx ingress controller in place of Traefik. Feel free to use it if you want
 
 * `local-storage` this application is for creating automatically local volume (PV) for your hosts, as we have only one machine, we will bypass this complexity and just use `HostPath` volume
 
@@ -488,7 +492,7 @@ and see your server ready !
 
 # Nginx as Ingress controller for Kubernetes  <a name="ingress"></a>
 
-I have many small pet projects exposing an HTTP endpoint that I want to expose to the rest of the internet, as I have blocked every ingoing traffic other than for port 80 and 443, I need to multiplex every application under those two. For that I need to install a reverse proxy that will also do TLS termination.
+I have many small pet projects exposing an HTTP endpoint that I want to expose to the rest of the internet. As I have blocked every ingoing traffic other than for port 80 and 443, I need to multiplex every application under those two. For that I need to install a reverse proxy that will also do TLS termination.
 
 As I have disabled Traefik, the default reverse-proxy, during the k3s installation, I need to install my own. My choice went to Nginx. I know it well with HaProxy, knows it is reliable and it is the most mature between the two on Kubernetes.  
 
@@ -497,13 +501,13 @@ To install it on your K3s cluster either use the Helm chart or directly with a k
 
 **WARNING**: Don't copy-paste directly from the documentation nginx-ingress annotations, the '-' is not a real '-' and your annotation will not be recognized :facepalm:
  
-I am going to install it directly from the YAML files available at
+To avoid having to manage also helm deployment, I am going to install it directly from the YAML files available at
 ```
 https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.40.2/deploy/static/provider/baremetal/deploy.yaml
 ```
-To avoid having to manage also helm deployment.
 
-I am going also to edit the deployment in order for the Nginx reverse proxy to use `HostNetwork` and avoid going thought the network overlay.
+
+I am just editing the deployment in order for the Nginx reverse proxy to use `HostNetwork` and avoid going thought the network overlay.
 In the above YAML file, replace DNS policy value by `ClusterFirstWithHostNet` and add a new entry `hostNetwork: true` for the container to use directly your network card instead of a virtual interface.
 
 
@@ -616,6 +620,7 @@ spec:
   ports:
     - protocol: TCP
       port: 8083
+      name: http
   clusterIP: None
   type: ClusterIP
 ---
@@ -632,7 +637,7 @@ spec:
       - path: /
         backend:
           serviceName: test
-          servicePort: 8083
+          servicePort: http
 
 ```
 
@@ -697,9 +702,9 @@ spec:
         ingress:
           class: nginx
 ```
-It will tell cert manager, that we are going to use the acme HTTP challenges of let's encrypt and use nginx as ingress for that.
+It will tell cert manager, that we are going to use the acme HTTP challenge of let's encrypt and use nginx as ingress for that.
 The issuer is configured for the whole cluster (with kind: `ClusterIssuer`) so it is going to
-1. Watch on all namespaces for the annotation `cert-manager.io/cluster-issuer: "letsencrypt-prod"generate TLS certificate
+1. Watch on all namespaces for the annotation `cert-manager.io/cluster-issuer: "letsencrypt-prod"`
 2. Request a challenge from let's encrypt to (re-)generate TLS certificate
 3. Create a secret with those new certificate upon challenge success
 
@@ -980,11 +985,26 @@ postfix:
         kubectl apply -f secrets_decrypted/fetchmail.yml
         kubectl apply -f postfix/postfix.yml
 ```
+and for the fetchmail config
+```
+defaults:
+timeout 300
+antispam -1
+batchlimit 100
+set postmaster erebe
 
+poll mail.gandi.net
+        protocol POP3
+        no envelope
+        user "your_login" there
+        with password "xxxx"
+        is erebe here
+        no keep
+```
 
 # Automating build and push of our images with GitHub actions <a name="build"></a>
 
-When I do a change, I want my custom images to be rebuilt and push automatically on docker hub.
+When I do a change, I want my custom images to be rebuilt and push automatically in a registry.
 To achieve it I rely on a 3rd party, [GitHub actions](https://github.com/features/actions) !
 
 ```yaml
@@ -1031,10 +1051,10 @@ Ideally, I would like to avoid having to store my kubeconfig inside GitHub secre
 
 # Hosting your own cloud with Nextcloud <a name="cloud"></a>
 
-[Nextcloud](https://nextcloud.com/) allows you to get a dropbox/google drive at home and many more feature if you want to (caldav, todos, ...). The Web UI is working well and they provide also great mobile application for IO/Android.
+[Nextcloud](https://nextcloud.com/) allows you to get a dropbox/google drive at home and many more feature if you want to (caldav, todos, ...). The Web UI is working well and they provide also great mobile application for IOs/Android.
 With an extra module we can mount external storage (sftp, ftp, s3, ...) which allows to have nextcloud as a central point for managing our data. 
 
-**Warning** If you only care about storaging your data, buying a NAS or paying for DropBox/OneDrive/GoogleDrive plan will be much worth of your bucks. 
+**Warning** If you only care about storaging your data, buying a NAS or paying for DropBox/OneDrive/GoogleDrive plan will be much worth of your bucks/time.
 
 To deploy nothing fancy, it is a standard deployment with its ingress. The only specifities are:
 
@@ -1225,8 +1245,6 @@ Follow this [guide](https://www.cyberciti.biz/faq/debian-10-set-up-wireguard-vpn
 
 The only change I made is to add `postUp` and `postDown` rules to the `wg0.conf` in order to forward and masquerade traffic that are targeting network outside the VPN. This setup allows me to route all my local machine traffic through the VPN (i.e: When using my phone) when I want to.
 
-wstunnel !!!
-
 ```ini
 #wg0.conf
 [Interface]
@@ -1275,7 +1293,7 @@ wireguard:
 
 # Bypass firewalls with WsTunnel <a name="wstunnel"></a>
 
-Sometimes is it not possible to connect to my VPN due to some firewalls, because Wireguard uses UDP traffic and it is not allowed, or because the port 995 (POP3s) I bind it on is forbiden.
+Sometimes is it not possible to connect to my VPN due to some firewalls, because Wireguard uses UDP traffic and it is not allowed, or the port 995 (POP3s) I bind it on is forbiden.
 
 To bypass those firewalls and allow me to reach my private network I use [WsTunnel](https://github.com/erebe/wstunnel), a websocket tunneling utility that I wrote. Basically, wstunnel leverage Websocket protocol that is using HTTP in order to tunnel TCP/UDP traffic through it.
 With that, 99.9% of the time I can connect to my VPN network, at the cost of 3 layer of encapsulation (data -> WebSocket -> Wireguard -> Ip) :x
@@ -1287,7 +1305,7 @@ Check the [readme](https://github.com/erebe/wstunnel/blob/master/README.md) for 
 wstunnel -u --udpTimeout=-1 -L 1995:127.0.0.1:995 -v ws://ws.erebe.eu
 # in your wg0.conf point the peer address to 127.0.0.1:995 instead of domain.name
 ```
-On the server 
+On the server, the only specifity are on the ingress. 
 
 ```yaml
 apiVersion: apps/v1
@@ -1364,7 +1382,7 @@ spec:
 
 # Installing K3S on our Raspberry Pi using your Wireguard VPN <a name="raspberry"></a>
 
-I want my Raspberry Pi that is living inside my home network to be manageable like a simple node inside the Kubernetes cluster. For that I am going to setup Wireguard on my Raspberry Pi and install the k3s agent on it.
+I want my Raspberry Pi that is living inside my home network and not reachable from internet to be manageable like a simple node inside the Kubernetes cluster. For that I am going to setup Wireguard on my Raspberry Pi and install the k3s agent on it.
 
 1. Installation Raspbian on your raspberry - [Tutorial](https://www.raspberrypi.org/documentation/installation/installing-images/)
 2. Setup Wireguard on the raspberry - [Tutorial](https://www.sigmdel.ca/michel/ha/wireguard/wireguard_02_en.html#installing_wg_raspbian)
