@@ -125,7 +125,7 @@ To decrypt your secrets just do a
 sops -d --output secrets_decrypted/foobar.yml secrets/foorbar.yml
 ```
 
-**Info** If you and issue like this one below when trying to decrypt
+**Info** If you have an issue like this one below when trying to decrypt
 ```
     - | could not decrypt data key with PGP key:
       | golang.org/x/crypto/openpgp error: Could not load secring:
@@ -133,7 +133,7 @@ sops -d --output secrets_decrypted/foobar.yml secrets/foorbar.yml
       | directory; GPG binary error: exit status 2
 ```
 
-Try doing a
+Try doing in your terminal
 ```
 GPG_TTY=$(tty)
 export GPG_TTY
