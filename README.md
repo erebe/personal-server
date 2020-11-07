@@ -124,7 +124,7 @@ To decrypt your secrets just do a
 ```bash
 sops -d --output secrets_decrypted/foobar.yml secrets/foorbar.yml
 ```
-
+----------
 **Info** If you have an issue like this one below when trying to decrypt
 ```
     - | could not decrypt data key with PGP key:
@@ -139,6 +139,8 @@ GPG_TTY=$(tty)
 export GPG_TTY
 ```
 https://github.com/mozilla/sops/issues/304#issuecomment-377195341
+
+---------
 
 
 There are other commands that allow you to avoid dumping your decrypted secrets onto the file system. If you are interested in this feature look at
