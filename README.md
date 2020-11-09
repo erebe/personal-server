@@ -104,7 +104,7 @@ To use it, create a config file at the root of your repository
 ```bash
 ❯ cat .sops.yaml
 creation_rules:
-    - gpg: >-
+    - pgp: >-
         YOUR_PGP_FINGERPRINT_WITHOUT_SPACE
 ```
 
