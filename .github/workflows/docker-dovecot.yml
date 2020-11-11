@@ -29,4 +29,9 @@ jobs:
           tags: ghcr.io/erebe/dovecot:latest
       - name: Dovecot Image digest
         run: echo Dovecot ${{ steps.docker_build_dovecot.outputs.digest }}
+      - name: Trigger deployer
+        run: |
+          payload='{ "application_name": "dovecot" }'
+          token='X-Webhook-Token: ${{ secrets.WEBHOOK_SECRET }}'
+          curl -v -X POST -H 'Content-Type: application/json' -H "${token}"  -d "${payload}" https://hooks.erebe.eu/hooks/deploy
 
