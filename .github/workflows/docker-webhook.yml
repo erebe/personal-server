@@ -1,4 +1,4 @@
-name: Publish Postfix Image
+name: Publish Webhook Image
 on:
   push:
     paths:
