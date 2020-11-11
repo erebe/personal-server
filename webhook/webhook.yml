@@ -1,3 +1,32 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deployer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: deployer
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["pods"]
+  verbs: ["get", "watch", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployer
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: deployer
+  namespace: default
+roleRef:
+  kind: Role 
+  name: deployer
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,10 +47,11 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: deployer
       containers:
       - name: webhook
-        image: almir/webhook:2.7.0
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/erebe/webhook:latest
+        imagePullPolicy: Always
         args:
         - "-hooks=/data/hook.json"
         - "-http-methods=POST"
@@ -96,7 +126,7 @@ data:
         "trigger-rule": {
           "match": {
             "type": "value",
-            "value": "mysecret",
+            "value": "__DEPLOYER_SECRET__",
             "parameter": {
               "source": "header",
               "name": "X-Webhook-Token"
@@ -108,4 +138,9 @@ data:
 
   deploy.sh: |
     #!/bin/sh
-    echo 'lol'
+
+    [[ -z "$1" ]] && exit 1
+
+    app_name="$1"
+    kubectl delete pod -n default -l app=${app_name}
+    kubectl wait --for=condition=Ready --timeout=-1s -n default -l app=${app_name} pod
