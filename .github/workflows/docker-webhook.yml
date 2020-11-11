@@ -6,7 +6,7 @@ on:
    
 jobs:
   buildAndPush:
-    name: Webhook: Build And Push docker images
+    name: "Webhook - Build And Push docker images"
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo

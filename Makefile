@@ -3,7 +3,7 @@ RASPBERRY='pi@10.200.200.2'
 
 .PHONY: install deploy release dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app wireguard pihole webhook
 
-deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud backup wireguard
+deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud webhook backup wireguard
 
 release:
 ifdef ARGS
