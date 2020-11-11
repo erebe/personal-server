@@ -85,7 +85,7 @@ backup:
 
 webhook:
 	sops exec-env secrets/webhook.yml 'cp webhook/webhook.yml secrets_decrypted/; for i in $$(env | grep _SECRET | cut -d = -f1); do sed -i "s#__$${i}__#$${!i}#g" secrets_decrypted/webhook.yml ; done'
-	#kubectl apply -f secrets_decrypted/webhook.yml
+	kubectl apply -f secrets_decrypted/webhook.yml
 
 app:
 	kubectl apply -f app/couber.yml
