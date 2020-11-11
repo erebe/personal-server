@@ -10,7 +10,7 @@ RUN apk update && \
     adduser -D erebe && \
     mkdir /data && chmod 777 -R /data && \
 
-    # Disable imap port, only allow imaps
+    # Disable imap port, only allow IMAPs
     sed -i 's/#port = 143/port = 0/' /etc/dovecot/conf.d/10-master.conf && \
 
     # The only one user will have its mailbox at /data
