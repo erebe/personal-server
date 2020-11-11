@@ -29,3 +29,8 @@ jobs:
           tags: ghcr.io/erebe/webhook:latest
       - name: webhook Image digest
         run: echo webhook ${{ steps.docker_build_webhook.outputs.digest }}
+      - name: Trigger deployer
+        run: |
+          payload='{ "application_name": "webhook", "image_digest": "${{ steps.docker_build.outputs.digest }}", "image_tag": "latest" }'
+          token='X-Webhook-Token: ${{ secrets.WEBHOOK_SECRET }}'
+          curl -i -X POST -H 'Content-Type: application/json' -H "${token}"  -d "${payload}" https://hooks.erebe.eu/hooks/deploy

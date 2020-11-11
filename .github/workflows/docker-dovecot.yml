@@ -20,7 +20,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.CR_PAT }}
       - name: Dovecot
-        id: docker_build_dovecot
+        id: docker_build
         uses: docker/build-push-action@v2
         with:
           context: dovecot
@@ -28,10 +28,10 @@ jobs:
           push: true
           tags: ghcr.io/erebe/dovecot:latest
       - name: Dovecot Image digest
-        run: echo Dovecot ${{ steps.docker_build_dovecot.outputs.digest }}
+        run: echo Dovecot ${{ steps.docker_build.outputs.digest }}
       - name: Trigger deployer
         run: |
-          payload='{ "application_name": "dovecot" }'
+          payload='{ "application_name": "dovecot", "image_digest": "${{ steps.docker_build.outputs.digest }}", "image_tag": "latest" }'
           token='X-Webhook-Token: ${{ secrets.WEBHOOK_SECRET }}'
-          curl -v -X POST -H 'Content-Type: application/json' -H "${token}"  -d "${payload}" https://hooks.erebe.eu/hooks/deploy
+          curl -X POST -H 'Content-Type: application/json' -H "${token}"  -d "${payload}" https://hooks.erebe.eu/hooks/deploy
 

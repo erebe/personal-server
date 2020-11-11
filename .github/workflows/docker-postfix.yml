@@ -20,7 +20,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.CR_PAT }}
       - name: Postfix
-        id: docker_build_postfix
+        id: docker_build
         uses: docker/build-push-action@v2
         with:
           context: postfix
@@ -28,4 +28,9 @@ jobs:
           push: true
           tags: ghcr.io/erebe/postfix:latest
       - name: Postfix Image digest
-        run: echo Postfix ${{ steps.docker_build_postfix.outputs.digest }}
+        run: echo Postfix ${{ steps.docker_build.outputs.digest }}
+      - name: Trigger deployer
+        run: |
+          payload='{ "application_name": "postfix", "image_digest": "${{ steps.docker_build.outputs.digest }}", "image_tag": "latest" }'
+          token='X-Webhook-Token: ${{ secrets.WEBHOOK_SECRET }}'
+          curl -i -X POST -H 'Content-Type: application/json' -H "${token}"  -d "${payload}" https://hooks.erebe.eu/hooks/deploy
