@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook
+  labels:
+    app: webhook
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate 
+  selector:
+    matchLabels:
+      app: webhook
+  template:
+    metadata:
+      labels:
+        app: webhook
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: webhook
+        image: almir/webhook:2.7.0
+        imagePullPolicy: IfNotPresent
+        args:
+        - "-hooks=/data/hook.json"
+        - "-http-methods=POST"
+        - "-port=8085"
+        - "-verbose"
+        - "-hotreload"
+        ports:
+        - containerPort: 8085
+        volumeMounts:
+        - name: config
+          mountPath: /data
+      volumes:
+      - name: config
+        configMap:
+          name: webhook
+          defaultMode: 0777
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook
+spec:
+  selector:
+    app: webhook
+  ports:
+    - protocol: TCP
+      port: 8085
+      name: http
+  clusterIP: None
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: webhook-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "1800"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - hooks.erebe.eu
+    secretName: webhook-tls
+  rules:
+  - host: hooks.erebe.eu
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: webhook
+          servicePort: http
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhook
+data:
+  hook.json: |
+    [
+      {
+        "id": "deploy",
+        "execute-command": "/data/deploy.sh",
+        "command-working-directory": "/var/run/",
+        "pass-arguments-to-command":
+        [{
+          "source": "payload",
+           "name": "application_name"
+        }],
+        "trigger-rule": {
+          "match": {
+            "type": "value",
+            "value": "mysecret",
+            "parameter": {
+              "source": "header",
+              "name": "X-Webhook-Token"
+            }
+          }
+        }
+      }
+    ]
+
+  deploy.sh: |
+    #!/bin/sh
+    echo 'lol'
