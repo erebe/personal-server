@@ -41,15 +41,16 @@ My goals for this setup are:
 12. [CertManager with let's encrypt for issuing TLS certificates](#letsencrypt)
 13. [Mail Server with Postfix + Dovecot + Fetchmail + SpamAssassin](#mail)
 14. [Automating build and push of our images with GitHub actions](#build)
-15. [Hosting your own cloud with nextcloud](#cloud)
-16. [Backups](#backup)
-17. [TODO] [Monitoring with netdata](#monitoring)
-18. [VPN with Wireguard](#wireguard)
-19. [Bypass firewalls with WsTunnel](#wstunnel)
-20. [Raspberry Pi as k8S node using your Wireguard VPN](#raspberry)
-21. [Deploying PiHole on your Raspberry Pi](#pihole)
-22. [Conclusion](#conclusion)
-23. [If you want more freedom](#freedom)
+15. [Automatic deployment](#deployment)
+16. [Hosting your own cloud with nextcloud](#cloud)
+17. [Backups](#backup)
+18. [TODO] [Monitoring with netdata](#monitoring)
+19. [VPN with Wireguard](#wireguard)
+20. [Bypass firewalls with WsTunnel](#wstunnel)
+21. [Raspberry Pi as k8S node using your Wireguard VPN](#raspberry)
+22. [Deploying PiHole on your Raspberry Pi](#pihole)
+23. [Conclusion](#conclusion)
+24. [If you want more freedom](#freedom)
 
 # The road so far <a name="background"></a>
 
@@ -1067,6 +1068,180 @@ I use GitHub container registry in order to centralize things as much as possibl
 
 The part left to do yet, is automatic deployment when a new image is build.
 Ideally, I would like to avoid having to store my kubeconfig inside GitHub secrets and code an app that support web hook in order to trigger a new deployment. But for now I am still thinking of how to do that properly, so I am left to delete manually my pod to re-fetch the latest image until then ¯\\_(ツ)_/¯
+
+# Automatic deployment <a name="deployment"></a>
+
+Next step is to automatically deploy new releases of my images/application. I chose to not automate the change in my infrastructure code (Kubernetes configs) as when I am doing those changes, I am already behind the screen touching this part of the code/repository, so deploying it is just a `make xxx` away.
+
+In my case what I want to automate is the deployment of new release of my software. For example, when I working on a project (not in this repository), I don't want to go back to this repository to bump something or do a `make xxx`. I just want to release of new version of my application images and it being deployed automatically.
+
+For that, I am going to put in place a webhook thanks to [this great project](https://github.com/adnanh/webhook). It will allow me to
+
+  * Make automatic deployment possible while my kubernetes api-server is not reachable from internet
+  * Centralize my deployment logic inside this repository
+  * While making possible for external project to call this deployer with a simple HTTP call
+ 
+**Warning**: If your kube-apiserver is reachable from internet and that you want to also automate the deployment of your infra, please use [skaffold](https://skaffold.dev/docs/pipeline-stages/deployers/). The tool have been made for that and allow to streamline things easily.
+
+
+As I don't tag my personal images, I always use latest (an equivalent for prod if you want) my deployments are pretty simple. 
+1. Delete the current pod 
+2. Kubernetes will start a new one and pull the new image
+3. Wait for the new pod to be running
+
+```bash
+    #!/bin/sh
+    [[ -z "$1" ]] && exit 1
+    app_name="$1"
+    kubectl delete pod -n default -l app=${app_name}
+    kubectl wait --for=condition=Ready --timeout=-1s -n default -l app=${app_name} pod
+ ```
+ 
+ So the only thing our deployer need is kubectl and a access to the kube-api.
+ Let's start by building the deployer image. As mentionned I am going to
+  
+  * Use [webhook](https://github.com/adnanh/webhook)
+  * Add the kubectl image (sadly we can't pin the kubectl version with alpine due to the package being present only in testing))
+  * Create a new user and use it to avoid my image/process running as root
+  * Add a new github action to build and publish this new image
+
+```
+FROM almir/webhook:2.7.0
+LABEL org.opencontainers.image.source https://github.com/erebe/personal-server
+
+RUN adduser -D -u 1000 abc && \
+    apk add --no-cache kubectl --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing
+
+USER abc
+```
+
+The config of my webhook will live inside a ConfigMap. It will run my deploy script only if the `X-Webhook-Token` with the correct secret is present and pass as argument to the script the value of the variable `application_name` of the json payload.
+
+```yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhook
+data:
+  hook.json: |
+    [
+      {
+        "id": "deploy",
+        "execute-command": "/data/deploy.sh",
+        "command-working-directory": "/var/run/",
+        "pass-arguments-to-command":
+        [{
+          "source": "payload",
+           "name": "application_name"
+        }],
+        "trigger-rule": {
+          "match": {
+            "type": "value",
+            "value": "__DEPLOYER_SECRET__",
+            "parameter": {
+              "source": "header",
+              "name": "X-Webhook-Token"
+            }
+          }
+        }
+      }
+    ]
+  deploy.sh: |
+    #!/bin/sh
+    [[ -z "$1" ]] && exit 1
+    app_name="$1"
+    kubectl delete pod -n default -l app=${app_name}
+    kubectl wait --for=condition=Ready --timeout=-1s -n default -l app=${app_name} pod
+```
+
+By default pods are not allowed to connect to the kubernetes-api and do operation on it for obvious security concern.
+Thanks to [RBAC - Role Base Access Control](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) it is possible to define Role/User and give them access to certain operations on the kube-api.
+
+
+```yaml
+# Service account are our new "user"
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deployer
+---
+
+# A role is an object where we can assign some access
+# A role is specific to a single namespace. If you want cluster wide role, use ClusterRole instead of just Role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: deployer
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["pods"] # Ressources that we are allowed to acess
+  verbs: ["get", "watch", "list", "delete"] # Actions we allow on those objects
+---
+
+# A RoleBinding associate a Role to a User, in our case the "deployer" role, to the "deployer" ServiceAccount/User
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployer
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: deployer
+  namespace: default
+roleRef:
+  kind: Role 
+  name: deployer
+  apiGroup: rbac.authorization.k8s.io
+---
+```
+
+After that we only need to say that our deployment is done under our custom ServiceAccount instead of the default one
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook
+  labels:
+    app: webhook
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate 
+  selector:
+    matchLabels:
+      app: webhook
+  template:
+    metadata:
+      labels:
+        app: webhook
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: deployer # HERE
+....
+```
+
+Once everything is set-up, we only need to add in our github action a call to curl to trigger a deployment of our new release
+```yaml
+....
+      - name: Dovecot
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: dovecot
+          file: dovecot/Dockerfile
+          push: true
+          tags: ghcr.io/erebe/dovecot:latest
+...
+      - name: Trigger deployer # Here to deploy
+        run: |
+          payload='{ "application_name": "dovecot", "image_digest": "${{ steps.docker_build.outputs.digest }}", "image_tag": "latest" }'
+          token='X-Webhook-Token: ${{ secrets.WEBHOOK_SECRET }}'
+          curl -X POST -H 'Content-Type: application/json' -H "${token}"  -d "${payload}" https://hooks.erebe.eu/hooks/deploy
+```
+
 
 # Hosting your own cloud with Nextcloud <a name="cloud"></a>
 
