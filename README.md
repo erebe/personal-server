@@ -4,6 +4,10 @@
   <img src="https://github.com/erebe/personal-server/raw/master/logo.jpeg" alt="logo"/>
 </p>
 
+# Updates:
+ * 12 November 2020 - Add automatic deployment
+ 
+ 
 # Summary
 
 This document is going to describe how I manage my personal server in 2020. It will talk about
