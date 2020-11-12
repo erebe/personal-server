@@ -4,7 +4,7 @@
   <img src="https://github.com/erebe/personal-server/raw/master/logo.jpeg" alt="logo"/>
 </p>
 
-# Updates:
+### Updates:
  * 12 November 2020 - Add automatic deployment
  
  
