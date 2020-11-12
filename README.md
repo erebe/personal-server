@@ -1071,18 +1071,17 @@ Ideally, I would like to avoid having to store my kubeconfig inside GitHub secre
 
 # Automatic deployment <a name="deployment"></a>
 
-Next step is to automatically deploy new releases of my images/application. I chose to not automate the change in my infrastructure code (Kubernetes configs) as when I am doing those changes, I am already behind the screen touching this part of the code/repository, so deploying it is just a `make xxx` away.
+Next step is to automatically deploy new releases of my images/application. I chose to not automate the change in my infrastructure code (Kubernetes configs) as when I am doing those changes, I am already behind the screen touching this part of the code/repository, so deploying it is just a make xxx away.
 
-In my case what I want to automate is the deployment of new release of my software. For example, when I working on a project (not in this repository), I don't want to go back to this repository to bump something or do a `make xxx`. I just want to release of new version of my application images and it being deployed automatically.
+In my case what I want to automate is the deployment of new release of my software. For example, when I am working on a project (not in this repository), I don't want to go back to this repository to bump something or do a make xxx. I just want to release of a new version of my application images and it being deployed automatically.
 
-For that, I am going to put in place a webhook thanks to [this great project](https://github.com/adnanh/webhook). It will allow me to
+For that, I am going to put in place a webhook thanks to this great project. It will allow me to
 
-  * Make automatic deployment possible while my kubernetes api-server is not reachable from internet
-  * Centralize my deployment logic inside this repository
-  * While making possible for external project to call this deployer with a simple HTTP call
- 
-**Warning**: If your kube-apiserver is reachable from internet and that you want to also automate the deployment of your infra, please use [skaffold](https://skaffold.dev/docs/pipeline-stages/deployers/). The tool have been made for that and allow to streamline things easily.
+ * Make automatic deployment possible while my kubernetes api-server is not reachable from internet
+ * Centralize my deployment logic inside this repository
+ * While making possible for external project to call this deployer with a simple HTTP call
 
+**Warning**: If your kube-apiserver is reachable from internet and that you want to also automate the deployment of your infra, please use Skaffold. The tool have been made for that and allow streamlining things easily.
 
 As I don't tag my personal images, I always use latest (an equivalent for prod if you want) my deployments are pretty simple. 
 1. Delete the current pod 
@@ -1243,6 +1242,8 @@ Once everything is set-up, we only need to add in our github action a call to cu
           token='X-Webhook-Token: ${{ secrets.WEBHOOK_SECRET }}'
           curl -X POST -H 'Content-Type: application/json' -H "${token}"  -d "${payload}" https://hooks.erebe.eu/hooks/deploy
 ```
+
+Final version of the deployment is [here](https://github.com/erebe/personal-server/blob/master/webhook/webhook.yml)
 
 
 # Hosting your own cloud with Nextcloud <a name="cloud"></a>
