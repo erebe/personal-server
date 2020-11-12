@@ -1075,9 +1075,9 @@ Ideally, I would like to avoid having to store my kubeconfig inside GitHub secre
 
 # Automatic deployment <a name="deployment"></a>
 
-Next step is to automatically deploy new releases of my images/application. I chose to not automate the change in my infrastructure code (Kubernetes configs) as when I am doing those changes, I am already behind the screen touching this part of the code/repository, so deploying it is just a make xxx away.
+Next step is to automatically deploy new releases of my images/application. I chose to not automate the change in my infrastructure code (Kubernetes configs) as when I am doing those changes, I am already behind the screen touching this part of the code/repository, so deploying it is just a `make xxx` away.
 
-In my case what I want to automate is the deployment of new release of my software. For example, when I am working on a project (not in this repository), I don't want to go back to this repository to bump something or do a make xxx. I just want to release of a new version of my application images and it being deployed automatically.
+In my case what I want to automate is the deployment of new release of my software. For example, when I am working on a project (not in this repository), I don't want to go back to this repository to bump something or do a `make xxx`. I just want to release of a new version of my application images and it being deployed automatically.
 
 For that, I am going to put in place a webhook thanks to this great project. It will allow me to
 
