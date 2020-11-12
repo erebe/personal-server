@@ -1098,6 +1098,7 @@ As I don't tag my personal images, I always use latest (an equivalent for prod i
  ```
  
  So the only thing our deployer need is kubectl and a access to the kube-api.
+ 
  Let's start by building the deployer image. As mentionned I am going to
   
   * Use [webhook](https://github.com/adnanh/webhook)
@@ -1156,6 +1157,7 @@ data:
 ```
 
 By default pods are not allowed to connect to the kubernetes-api and do operation on it for obvious security concern.
+
 Thanks to [RBAC - Role Base Access Control](https://kubernetes.io/docs/reference/access-authn-authz/rbac/) it is possible to define Role/User and give them access to certain operations on the kube-api.
 
 
