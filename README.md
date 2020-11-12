@@ -1079,7 +1079,7 @@ Next step is to automatically deploy new releases of my images/application. I ch
 
 In my case what I want to automate is the deployment of new release of my software. For example, when I am working on a project (not in this repository), I don't want to go back to this repository to bump something or do a `make xxx`. I just want to release of a new version of my application images and it being deployed automatically.
 
-For that, I am going to put in place a webhook thanks to this great project. It will allow me to
+For that, I am going to put in place a webhook [thanks to this great project](https://github.com/adnanh/webhook). It will allow me to
 
  * Make automatic deployment possible while my kubernetes api-server is not reachable from internet
  * Centralize my deployment logic inside this repository
