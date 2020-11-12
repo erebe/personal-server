@@ -45,7 +45,7 @@ My goals for this setup are:
 12. [CertManager with let's encrypt for issuing TLS certificates](#letsencrypt)
 13. [Mail Server with Postfix + Dovecot + Fetchmail + SpamAssassin](#mail)
 14. [Automating build and push of our images with GitHub actions](#build)
-15. [Automatic deployment](#deployment)
+15. [Automatic deployment with Webhook](#deployment)
 16. [Hosting your own cloud with nextcloud](#cloud)
 17. [Backups](#backup)
 18. [TODO] [Monitoring with netdata](#monitoring)
@@ -1073,7 +1073,7 @@ I use GitHub container registry in order to centralize things as much as possibl
 The part left to do yet, is automatic deployment when a new image is build.
 Ideally, I would like to avoid having to store my kubeconfig inside GitHub secrets and code an app that support web hook in order to trigger a new deployment. But for now I am still thinking of how to do that properly, so I am left to delete manually my pod to re-fetch the latest image until then ¯\\_(ツ)_/¯
 
-# Automatic deployment <a name="deployment"></a>
+# Automatic deployment with Webhook <a name="deployment"></a>
 
 Next step is to automatically deploy new releases of my images/application. I chose to not automate the change in my infrastructure code (Kubernetes configs) as when I am doing those changes, I am already behind the screen touching this part of the code/repository, so deploying it is just a `make xxx` away.
 
