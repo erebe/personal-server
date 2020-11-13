@@ -7,8 +7,12 @@ deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud webhook back
 
 release:
 ifdef ARGS
-	kubectl delete pod -n default -l app=$(ARGS) 
-	kubectl wait --for=condition=Ready --timeout=-1s -n default -l app=$(ARGS) pod
+	$(eval SECRET := $(shell sops exec-env secrets/webhook.yml 'echo $${DEPLOYER_SECRET}'))
+	curl -i -X POST  \
+		-H 'Content-Type: application/json' \
+		-H 'X-Webhook-Token: '${SECRET} \
+		-d '{ "application_name": "$(ARGS)", "image_tag": "latest" }' \
+		-s https://hooks.erebe.eu/hooks/deploy 
 endif
 		
 install:
