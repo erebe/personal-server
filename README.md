@@ -32,6 +32,9 @@ My goals for this setup are:
 # Table of Contents
 
 1. [The road so far](#background)
+
+**PART I**: The Setup
+
 2. [Creating GPG key](#gpg)
 3. [Encrypting secrets with Sops](#sops)
 4. [Generating a new ssh key](#ssh)
@@ -43,16 +46,28 @@ My goals for this setup are:
 10. [Installing Kubernetes K3S](#k3s)
 11. [Nginx as Ingress controller for Kubernetes](#ingress)
 12. [CertManager with let's encrypt for issuing TLS certificates](#letsencrypt)
+
+**PART II**: Build, Deploy and Automate 
+
 13. [Mail Server with Postfix + Dovecot + Fetchmail + SpamAssassin](#mail)
 14. [Automating build and push of our images with GitHub actions](#build)
 15. [Automatic deployment with Webhook](#deployment)
 16. [Hosting your own cloud with nextcloud](#cloud)
+
+**PART III**: Reliability and Observability
+
 17. [Backups](#backup)
 18. [TODO] [Monitoring with netdata](#monitoring)
+
+**PART IV**: Scale with RaspberryPI
+
 19. [VPN with Wireguard](#wireguard)
 20. [Bypass firewalls with WsTunnel](#wstunnel)
 21. [Raspberry Pi as k8S node using your Wireguard VPN](#raspberry)
 22. [Deploying PiHole on your Raspberry Pi](#pihole)
+
+**PART V**: The end
+
 23. [Conclusion](#conclusion)
 24. [If you want more freedom](#freedom)
 
