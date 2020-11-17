@@ -1,7 +1,7 @@
 HOST='root@erebe.eu'
 RASPBERRY='pi@10.200.200.2'
 
-.PHONY: install deploy release dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app wireguard pihole webhook
+.PHONY: install deploy release dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app wireguard pihole webhook postgres
 
 deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud webhook backup wireguard
 
@@ -73,6 +73,11 @@ postfix:
 	sops -d --output secrets_decrypted/fetchmail.yml secrets/fetchmail.yml
 	kubectl apply -f secrets_decrypted/fetchmail.yml
 	kubectl apply -f postfix/postfix.yml
+
+postgres:
+	sops -d --output secrets_decrypted/postgres.yml secrets/postgres.yml
+	kubectl apply -f secrets_decrypted/postgres.yml
+	kubectl apply -f postgres/postgres.yml
 
 
 nextcloud:
