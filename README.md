@@ -106,7 +106,7 @@ So let's start. The first step is to create a GPG key. This key will serve to en
 gpg --full-generate-key
 ```
 
-This GPG key will be the guardian of your infrastructure, if it leaks, anybody will be able to access your infra. So store it somewhere safe
+This GPG key will be the guardian of your infrastructure, if it leaks, anybody will be able to access your infra. So store it somewhere safe [i.e on a YubiKey](https://www.yubico.com/)
 
 ```bash
 gpg --armor --export erebe@erebe.eu > pub.asc
