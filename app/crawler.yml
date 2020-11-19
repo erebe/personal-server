@@ -87,28 +87,28 @@ data:
   crawler.cfg: |
     [services]
     youtube = [  # "UCLvppPP2RucGfgeoZlq68fg" # hearthstonefr
-                "UCOebzxn69hMid8LUHo1vasQ" # gif with sound
-              , "UC_rm24jAT5feUXYqx7J1cdA" # gif vs sound
-              , "UC-2EkisRV8h9KsHpslQ1gXA" # Tout le monde sen fou
-              , "UCWnPjmqvljcafA0z2U1fwKQ" # Conf freaks
-              , "UCs_tLP3AiwYKwdUHpltJPuA" # GOTO Conferences
-              , "UC_yP2DpIgs5Y1uWC0T03Chw" # joueurdugrenier
-              , "UCv88958LRDfndKV_Y7XmAnA" # kassos
-              , "UCBOEy0ETYHd5gWQ2DayMv_g" # languedepub2
-              , "UCC552Sd-3nyi_tk2BudLUzA" # AsapSCIENCE
-              , "UCxJka_qnTVquoIL-PQV5POg" # DanyCaligula
-              , "UC9pVaOtZ8vdLBrlHu5xaaOA" # What the fuck france
-              , "UC3LqW4ijMoENQ2Wv17ZrFJA" # pbsideachannel
-              , "UCJruTcTs7Gn2Tk7YC-ENeHQ" # GoldenMoustacheVideo
-              , "UCnrhy622SNPt04Avj5idFIg" # faireset2
-              , "UCwbV8cTR4yBgFdfa_BXV2OA" # deadwattsofficiel
-              , "UCUHW94eEFW7hkUMVaZz4eDg" # minutephysics
-              , "UCCpwMG0qZkr62FNZktfcvYg" # salutlesgeeks
-              , "UCbq4WwLfbhRxvyVYOTYU25g" # UnDropDansLaMare
-              , "UCm5wThREh298TkK8hCT9HuA" # datagueule
-              , "UCcziTK2NKeWtWQ6kB5tmQ8Q" # epenser1
-              , "UCaTznQhurW5AaiYPbhEA-KA" # handmadehero
-              , "UC5Y9H2KDRHZZTWZJtlH4VbA" # The Catsters
+             #  "UCOebzxn69hMid8LUHo1vasQ" # gif with sound
+             #, "UC_rm24jAT5feUXYqx7J1cdA" # gif vs sound
+             #, "UC-2EkisRV8h9KsHpslQ1gXA" # Tout le monde sen fou
+             #, "UCWnPjmqvljcafA0z2U1fwKQ" # Conf freaks
+             #, "UCs_tLP3AiwYKwdUHpltJPuA" # GOTO Conferences
+             #, "UC_yP2DpIgs5Y1uWC0T03Chw" # joueurdugrenier
+             #, "UCv88958LRDfndKV_Y7XmAnA" # kassos
+             #, "UCBOEy0ETYHd5gWQ2DayMv_g" # languedepub2
+             #, "UCC552Sd-3nyi_tk2BudLUzA" # AsapSCIENCE
+             #, "UCxJka_qnTVquoIL-PQV5POg" # DanyCaligula
+             #, "UC9pVaOtZ8vdLBrlHu5xaaOA" # What the fuck france
+             #, "UC3LqW4ijMoENQ2Wv17ZrFJA" # pbsideachannel
+             #, "UCJruTcTs7Gn2Tk7YC-ENeHQ" # GoldenMoustacheVideo
+             #, "UCnrhy622SNPt04Avj5idFIg" # faireset2
+             #, "UCwbV8cTR4yBgFdfa_BXV2OA" # deadwattsofficiel
+             #, "UCUHW94eEFW7hkUMVaZz4eDg" # minutephysics
+             #, "UCCpwMG0qZkr62FNZktfcvYg" # salutlesgeeks
+             #, "UCbq4WwLfbhRxvyVYOTYU25g" # UnDropDansLaMare
+             #, "UCm5wThREh298TkK8hCT9HuA" # datagueule
+             #, "UCcziTK2NKeWtWQ6kB5tmQ8Q" # epenser1
+             #, "UCaTznQhurW5AaiYPbhEA-KA" # handmadehero
+             #, "UC5Y9H2KDRHZZTWZJtlH4VbA" # The Catsters
               ]
     reddit = [ "programming"
              , "rust"
@@ -138,10 +138,5 @@ data:
              , "2249/star-trek-discovery/"
              ]
     anime = []
-    manga = [ "dungeon_ni_deai_o_motomeru_no_wa_machigatte_iru_darou_ka"
-            , "onepunch_man"
-            , "tales_of_demons_and_gods"
-            , "overlord"
-            , "darwin_s_game"
-            ]
+    manga = []
      
