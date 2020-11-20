@@ -115,7 +115,7 @@ gpg --armor --export-secret-key erebe@erebe.eu > private.asc
 ```
 
 If you haven't already done it, you can even sign your git commit in order to have the "verfied" label in github thanks to your pgp key.
-[How to to it is explained here](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/signing-commits)
+[How to to it is explained here](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/about-commit-signature-verification)
 
 # Encrypting secrets with sops <a name="sops"></a>
 
