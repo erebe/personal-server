@@ -6,8 +6,8 @@
 
 ### Updates:
  * 12 November 2020 - Add automatic deployment
- 
- 
+
+
 # Summary
 
 This document is going to describe how I manage my personal server in 2020. It will talk about
@@ -47,7 +47,7 @@ My goals for this setup are:
 11. [Nginx as Ingress controller for Kubernetes](#ingress)
 12. [CertManager with let's encrypt for issuing TLS certificates](#letsencrypt)
 
-**PART II**: Build, Deploy and Automate 
+**PART II**: Build, Deploy and Automate
 
 13. [Mail Server with Postfix + Dovecot + Fetchmail + SpamAssassin](#mail)
 14. [Automating build and push of our images with GitHub actions](#build)
@@ -100,7 +100,7 @@ So I spent a bit of time this month to create and share with you my perfect new 
 
 # Creating a GPG key <a name="gpg"></a>
 
-So let's start. The first step is to create a GPG key. This key will serve to encrypt every secret we have in order to be able to commit them inside the git repository. With secrets inside git, our repository will be able be standalone and portable across machines. We will be able to do a `git clone `and get working !
+So let's start. The first step is to create a GPG key. This key will serve to encrypt every secret we have in order to be able to commit them inside the git repository. With secrets inside git, our repository will be able be standalone and portable across machines. We will be able to do a `git clone` and get working !
 
 ```bash
 gpg --full-generate-key
@@ -178,10 +178,10 @@ Now that we are able to store secrets securely within our repository, it is time
 We are going to set a passphrase to our ssh keys and use a ssh-agent/[keychain](https://www.funtoo.org/Keychain) in order to avoid typing it every time
 
 ```bash
-# Don't forget to set a strong passphrase and change the default name for your key from id_rsa to something else, it will be usefull later on
+# Don't forget to set a strong passphrase and change the default name for your key from id_rsa to something else, it will be useful later on
 ssh-keygen
 
-# To add your ssh ke into the keyring
+# To add your ssh key into the keyring
 eval $(keychain --eval --agents ssh ~/.ssh/your_private_key)
 ```
 
@@ -225,11 +225,11 @@ Personally I use a 1st tier [dedibox](https://www.scaleway.com/fr/dedibox/tarifs
 * **Disk space**: Using containers consume a lot of disk space. So take a machine with at least 60G of space.
 * **Public bandwidth limitation**: All hosting company throttle public bandwidth to avoid issue with torrent seedbox. So the higher you get for the same price, the better it is (i.e: scaleway provide 250Mbits/s while OVH only 200Mbits)
 * **Free backup storage**: At some point we will have data to backup, so look if they provide some external storage for backups
-* **IPv6**: They should provide IPv6, not mandatory but it is 2020
+* **IPv6**: They should provide IPv6. Not mandatory, but it is 2020
 * **Domain name/Free mail account**: If you plan to use them as a registrar for your domain name, look if they can provide you email account storage in order to configure them as fallback to not lose mail
 
-Once you have your server provider, do the installation and choose Debian for the OS. At some point they will ask you for your ssh key, so provide the one you created earlier. 
-If you have the possibility to select your filesystem use XFS instead of ext4 as it provides good support for container runtime.  
+Once you have your server provider, do the installation and choose Debian for the OS. At some point they will ask you for your ssh key, so provide the one you created earlier.
+If you have the possibility to select your filesystem use XFS instead of ext4 as it provides good support for container runtime.
 
 If everything is installed correctly you should be able to do a
 
@@ -392,7 +392,7 @@ ip6tables -A USER_CUSTOM -p udp --dport 546 -j ACCEPT
 ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type router-advertisement -j ACCEPT
 ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type router-solicitation -j ACCEPT
 ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type neighbour-advertisement -j ACCEPT
-ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type neighbour-solicitation -j ACCEPT 
+ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type neighbour-solicitation -j ACCEPT
 ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type echo-request -j ACCEPT
 ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
 ```
@@ -533,13 +533,13 @@ and see your server ready !
 
 I have many small pet projects exposing an HTTP endpoint that I want to expose to the rest of the internet. As I have blocked every ingoing traffic other than for port 80 and 443, I need to multiplex every application under those two. For that I need to install a reverse proxy that will also do TLS termination.
 
-As I have disabled Traefik, the default reverse-proxy, during the k3s installation, I need to install my own. My choice went to Nginx. I know it well with HaProxy, knows it is reliable and it is the most mature between the two on Kubernetes.  
+As I have disabled Traefik, the default reverse-proxy, during the k3s installation, I need to install my own. My choice went to Nginx. I know it well with HaProxy, knows it is reliable and it is the most mature between the two on Kubernetes.
 
 
 To install it on your K3s cluster either use the Helm chart or directly with a kube apply. Refer for the installation guide for [baremetal](https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal)
 
 **WARNING**: Don't copy-paste directly from the documentation nginx-ingress annotations, the '-' is not a real '-' and your annotation will not be recognized :facepalm:
- 
+
 To avoid having to manage also helm deployment, I am going to install it directly from the YAML files available at
 ```
 https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.40.2/deploy/static/provider/baremetal/deploy.yaml
@@ -628,7 +628,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate 
+    type: Recreate
   selector:
     matchLabels:
       app: test
@@ -788,7 +788,7 @@ After applying the new version of the ingress, the cert manager should detect th
 ```
 $ kubectl get secrets test-tls
 ```
- 
+
 If everything is ok, simply use your browser and visit `https://domain.name` to see our simple python backend being deployed with a valid TLS certificate !!!
 
 
@@ -810,7 +810,7 @@ For more information you can refer to my repository to look into the detail. The
 * Emails are stored in the `maildir` format
 * Dovecot and postfix communicate by sharing this single maildir by mounting the same hostPath volume in both container
 * I don't tag my custom container images, GitHub action is configured on every push to rebuild the image of {postfix, dovecot} and to publish them under `latest`
-* I use trunk deployment for my images. I simply delete the current pod and let it recreate itself with the use of`imagePullPolicy: Always` to get the latest version
+* I use trunk deployment for my images. I simply delete the current pod and let it recreate itself with the use of `imagePullPolicy: Always` to get the latest version
 
 
 So let's start, first update your MX DNS record to point to your server
@@ -1102,8 +1102,8 @@ For that, I am going to put in place a webhook [thanks to this great project](ht
 
 **Warning**: If your kube-apiserver is reachable from internet and that you want to also automate the deployment of your infra, please use Skaffold. The tool have been made for that and allow streamlining things easily.
 
-As I don't tag my personal images, I always use latest (an equivalent for prod if you want) my deployments are pretty simple. 
-1. Delete the current pod 
+As I don't tag my personal images, I always use latest (an equivalent for prod if you want) my deployments are pretty simple.
+1. Delete the current pod
 2. Kubernetes will start a new one and pull the new image
 3. Wait for the new pod to be running
 
@@ -1114,11 +1114,11 @@ As I don't tag my personal images, I always use latest (an equivalent for prod i
     kubectl delete pod -n default -l app=${app_name}
     kubectl wait --for=condition=Ready --timeout=-1s -n default -l app=${app_name} pod
  ```
- 
- So the only thing our deployer need is kubectl and a access to the kube-api.
- 
- Let's start by building the deployer image. As mentionned I am going to
-  
+
+ So the only thing our deployer need is kubectl and access to the kube-api.
+
+ Let's start by building the deployer image. As mentioned I am going to
+
   * Use [webhook](https://github.com/adnanh/webhook)
   * Add the kubectl image (sadly we can't pin the kubectl version with alpine due to the package being present only in testing))
   * Create a new user and use it to avoid my image/process running as root
@@ -1196,7 +1196,7 @@ metadata:
   name: deployer
 rules:
 - apiGroups: [""] # "" indicates the core API group
-  resources: ["pods"] # Ressources that we are allowed to acess
+  resources: ["pods"] # Resources that we are allowed to access
   verbs: ["get", "watch", "list", "delete"] # Actions we allow on those objects
 ---
 
@@ -1211,7 +1211,7 @@ subjects:
   name: deployer
   namespace: default
 roleRef:
-  kind: Role 
+  kind: Role
   name: deployer
   apiGroup: rbac.authorization.k8s.io
 ---
@@ -1228,7 +1228,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate 
+    type: Recreate
   selector:
     matchLabels:
       app: webhook
@@ -1268,11 +1268,11 @@ Final version of the deployment is [here](https://github.com/erebe/personal-serv
 # Hosting your own cloud with Nextcloud <a name="cloud"></a>
 
 [Nextcloud](https://nextcloud.com/) allows you to get a dropbox/google drive at home and many more feature if you want to (caldav, todos, ...). The Web UI is working well and they provide also great mobile application for IOs/Android.
-With an extra module we can mount external storage (sftp, ftp, s3, ...) which allows to have nextcloud as a central point for managing our data. 
+With an extra module we can mount external storage (sftp, ftp, s3, ...) which allows to have nextcloud as a central point for managing our data.
 
-**Warning** If you only care about storaging your data, buying a NAS or paying for DropBox/OneDrive/GoogleDrive plan will be much worth of your bucks/time.
+**Warning** If you only care about storing your data, buying a NAS or paying for DropBox/OneDrive/GoogleDrive plan will be much worth of your bucks/time.
 
-To deploy nothing fancy, it is a standard deployment with its ingress. The only specifities are:
+To deploy nothing fancy, it is a standard deployment with its ingress. The only specificities are:
 
   * We add nginx annotation to increase body max payload `nginx.ingress.kubernetes.io/proxy-body-size: "10G"`
   * We override the default configuration of the nginx bundled inside the image with a ConfigMap in order to make it behave well with our ingress
@@ -1389,7 +1389,7 @@ spec:
 
 # Backups <a name="backup"></a>
 
-My backups are simplistic, as I store all the data under `/opt` of the host machine and that I am not running any dedicated database.
+My backups are simplistic, as I store all the data under `/opt` on the host machine and that I am not running any dedicated database.
 The Backup of the data consist of:
 1. Running a cron-job every night inside Kubernetes that is spawning a container
 2. Mounting the whole `/opt` folder inside the container as a volume
@@ -1494,7 +1494,7 @@ Address = 10.200.200.2/32
 [Peer]
 # Server
 PublicKey = xxxx
-## Allow all the traffic to flow throught the VPN
+## Allow all the traffic to flow through the VPN
 AllowedIPs = 0.0.0.0/0
 ```
 
@@ -1509,7 +1509,7 @@ wireguard:
 
 # Bypass firewalls with WsTunnel <a name="wstunnel"></a>
 
-Sometimes is it not possible to connect to my VPN due to some firewalls, because Wireguard uses UDP traffic and it is not allowed, or the port 995 (POP3s) I bind it on is forbiden.
+Sometimes is it not possible to connect to my VPN due to some firewalls, because Wireguard uses UDP traffic and it is not allowed, or the port 995 (POP3s) I bind it on is forbidden.
 
 To bypass those firewalls and allow me to reach my private network I use [WsTunnel](https://github.com/erebe/wstunnel), a websocket tunneling utility that I wrote. Basically, wstunnel leverage Websocket protocol that is using HTTP in order to tunnel TCP/UDP traffic through it.
 With that, 99.9% of the time I can connect to my VPN network, at the cost of 3 layer of encapsulation (data -> WebSocket -> Wireguard -> Ip) :x
@@ -1521,7 +1521,7 @@ Check the [readme](https://github.com/erebe/wstunnel/blob/master/README.md) for 
 wstunnel -u --udpTimeout=-1 -L 1995:127.0.0.1:995 -v ws://ws.erebe.eu
 # in your wg0.conf point the peer address to 127.0.0.1:995 instead of domain.name
 ```
-On the server, the only specifity are on the ingress. 
+On the server, the only specificity are on the ingress.
 
 ```yaml
 apiVersion: apps/v1
@@ -1533,7 +1533,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate 
+    type: Recreate
   selector:
     matchLabels:
       app: wstunnel
@@ -1552,7 +1552,7 @@ spec:
         - "--server"
         - "ws://0.0.0.0:8084"
         - "-r"
-        - "127.0.0.1:995"  
+        - "127.0.0.1:995"
         ports:
         - containerPort: 8084
 ---
@@ -1671,7 +1671,7 @@ This is a standard deployment, with only 3 specificity:
         effect: "NoSchedule"
 ```
 
-* We had a other toleration for the state `unreachable` to let the container live on the raspberry even if we lose connectivity with the cluster.
+* We had another toleration for the state `unreachable` to let the container live on the raspberry even if we lose connectivity with the cluster.
   The pihole container will be deployed and will stay there until manually deleted
 ```yaml
       tolerations:
@@ -1773,7 +1773,7 @@ spec:
 
 # Conclusion <a name="conclusion"></a>
 
-* Everything is automated and idempotent 
+* Everything is automated and idempotent
    * Installation of the machine
    * DNS
    * Reverse proxy
@@ -1788,7 +1788,7 @@ spec:
    * Container allow each component to be isolated
    * Kubernetes allow to manage multiple servers and provide a clean interface
    * [k9s](https://k9scli.io/) to get a simple/intuitive command center
-   * [skaffold](https://skaffold.dev/) for when I am developping
+   * [skaffold](https://skaffold.dev/) for when I am developing
 
 
 
@@ -1799,4 +1799,4 @@ spec:
 * Host Gitlab to avoid relying on Github for git
     * Can be used to mirror your github repository
     * Can be used to have your own git actions
-    * Can be used to have your own Docker repositry
+    * Can be used to have your own Docker repository
