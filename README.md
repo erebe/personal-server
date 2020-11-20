@@ -5,6 +5,7 @@
 </p>
 
 ### Updates:
+ * 20 November 2020 - Mention of gpg key to sign git commits
  * 12 November 2020 - Add automatic deployment
 
 
@@ -112,6 +113,9 @@ This GPG key will be the guardian of your infrastructure, if it leaks, anybody w
 gpg --armor --export erebe@erebe.eu > pub.asc
 gpg --armor --export-secret-key erebe@erebe.eu > private.asc
 ```
+
+If you haven't already done it, you can even sign your git commit in order to have the "verfied" label in github thanks to your pgp key.
+[How to to it is explained here](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/signing-commits)
 
 # Encrypting secrets with sops <a name="sops"></a>
 
