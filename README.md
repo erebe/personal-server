@@ -1399,6 +1399,7 @@ The Backup of the data consist of:
 2. Mounting the whole `/opt` folder inside the container as a volume
 3. Creating a tar of `/opt`
 4. Pushing the tarball to the ftp server that my hosting company provide me
+5. Pinging [https://healthchecks.io](https://healthchecks.io/) in order to message me on whatsapp if a I miss backups
 
 ```yaml
 apiVersion: batch/v1beta1
@@ -1422,8 +1423,8 @@ spec:
             args:
             - /bin/sh
             - -c
-            - apk add --no-cache lftp; tar -cvf backup.tar /data; lftp -u ${USER},${PASSWORD} dedibackup-dc3.online.net
-              -e 'put backup.tar -o /backups/backup_neo.tar; mv backups/backup_neo.tar backups/backup.tar; bye'
+            - apk add --no-cache lftp curl; tar -cvf backup.tar /data; lftp -u ${USER},${PASSWORD} dedibackup-dc3.online.net
+              -e 'put backup.tar -o /backups/backup_neo.tar; mv backups/backup_neo.tar backups/backup.tar; bye' && curl https://hc-ping.com/xxxxx
             env:
             - name: USER
               valueFrom:
