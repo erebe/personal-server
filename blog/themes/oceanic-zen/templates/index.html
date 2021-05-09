@@ -30,7 +30,7 @@
                         {% for s in index.subsections %}
                             {% set subsection = get_section(path=s) %}
                             <li class="nav">
-                                <a itemprop="url" href="{{ subsection.permalink | safe}}">
+                                <a itemprop="url" href="{{ subsection.permalink | safe}}index.html">
                                     <span itemprop="name">{{ subsection.title }}</span>
                                 </a>
                             </li>
@@ -63,7 +63,7 @@
                 {% for s in index.subsections %}
                     {% set subsection = get_section(path=s) %}
                     <li>
-                    <a href="{{ subsection.permalink | safe}}">
+                    <a href="{{ subsection.permalink | safe}}index.html">
                         {{ subsection.title }}
                     </a>
                     </li>
@@ -71,7 +71,7 @@
                     <ul>
                         {% for page in subsection.pages %}
                         <li>
-                        <a href="{{ page.permalink | safe}}">
+                        <a href="{{ page.permalink | safe}}index.html">
                             {{ page.title }}
                         </a>
                         </li>
