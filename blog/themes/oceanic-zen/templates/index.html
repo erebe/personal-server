@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        {% block head %}
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        {% if config.description -%}
+        <meta name="description" content="{{ config.description }}">
+        {% endif %}
+
+        <title>{% block title %}{{ config.title }}{% endblock title %}</title>
+
+        {% block css %}
+            <link rel="stylesheet" href="{{ get_url(path="theme.css", trailing_slash=false) | safe }}">
+        {% endblock css %}
+        {% endblock head %}
+    </head>
+    <body>
+        <div class="content">
+        {% block body%}
+        {% block header %}
+            <header>
+                <div class="header-left">
+                    <a href="{{ config.base_url }}" class="logo">{{ config.title }}</a>
+                </div>
+                <div class="header-right">
+                    <nav itemscope itemtype="http://schema.org/SiteNavigationElement">
+                        {% set index = get_section(path="_index.md") %}
+                        {% for s in index.subsections %}
+                            {% set subsection = get_section(path=s) %}
+                            <li class="nav">
+                                <a itemprop="url" href="{{ subsection.permalink | safe}}">
+                                    <span itemprop="name">{{ subsection.title }}</span>
+                                </a>
+                            </li>
+                        {% endfor %}
+                        {% if config.extra.github %}
+                        <li class="nav">
+                            <a itemprop="url" href="https://github.com/{{ config.extra.github }}">
+                                <img class="icon" src="{{ config.base_url }}/icons/github.svg" alt="Github">
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if config.extra.twitter %}
+                        <li class="nav">
+                            <a itemprop="url" href="https://twitter.com/{{ config.extra.twitter }}">
+                                <img class="icon" src="{{ config.base_url }}/icons/twitter.svg" alt="Github">
+                            </a>
+                        </li>
+                        {% endif %}
+                    </nav>
+                </div>
+            </header>
+        {% endblock header %}
+        {% block content %}
+        <main>
+            {% block main %}
+            <h1>Index</h1>
+            <div class="border"></div>
+                <ul>
+                {% set index = get_section(path="_index.md") %}
+                {% for s in index.subsections %}
+                    {% set subsection = get_section(path=s) %}
+                    <li>
+                    <a href="{{ subsection.permalink | safe}}">
+                        {{ subsection.title }}
+                    </a>
+                    </li>
+                    {% if subsection.pages %}
+                    <ul>
+                        {% for page in subsection.pages %}
+                        <li>
+                        <a href="{{ page.permalink | safe}}">
+                            {{ page.title }}
+                        </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                {% endfor %}
+                </ul>
+            {% endblock main %}
+        </main>
+        {% endblock content %}
+        <footer>
+            {% block footer %}
+            <div class="border"></div>
+            <div class="footer">
+                <small class="footer-left">
+                    Copyright &copy; {{ config.extra.author }}
+                </small>
+                <small class="footer-right">
+                    Powered by <a href="https://www.getzola.org">Zola</a> | Theme <a href="https://github.com/barlog-m/oceanic-zen">Oceanic Zen</a>
+                </small>
+            </div>
+        {% endblock footer %}
+        </footer>
+    {% endblock body%}
+        </div>
+    </body>
+</html>

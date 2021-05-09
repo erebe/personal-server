@@ -1,0 +1,180 @@
+@import "colors";
+
+@font-face {
+    font-family: 'Iosevka';
+    src: url("/fonts/iosevka-regular.woff2"),
+        url("/fonts/iosevka-italic.woff2"),
+        url("/fonts/iosevka-bold.woff2"),
+        url("/fonts/iosevka-bolditalic.woff2");
+}
+
+$font: "Iosevka", sans-serif;
+$font-mono:  "Iosevka", monospace;
+$padding: 8px;
+
+body {
+    font: 100% $font;
+    background: $black;
+    color: $white;
+}
+
+body {
+    display: grid;
+    grid-template-columns: auto;
+    grid-template-areas:
+        "header"
+        "main"
+        "footer";
+}
+
+header {
+    padding: $padding $padding 0 $padding;
+
+    grid-area: header;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+main {
+    padding: $padding;
+    grid-area: main;
+}
+
+p {
+    text-align: justify;
+}
+
+footer {
+    color: $gray_light;
+    padding: 0 $padding $padding $padding;
+
+    grid-area: footer;
+}
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+nav {
+    list-style-type: none;
+}
+
+.nav {
+    display: inline;
+}
+
+ul {
+    list-style: none inside none;
+    list-style-type: "·";
+    padding: 0;
+}
+
+li::marker {
+    color: $green;
+}
+
+ul ul {
+    padding-left: 1em;
+}
+
+a {
+    font-size: none;
+    color: $blue;
+    text-decoration: none;
+}
+
+h1 {
+    font-size: 24px;
+    margin: 5px 0;
+    font-weight: bold;
+}
+
+h2 {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+h3 {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+h4 {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+h5 {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+h6 {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+pre {
+    padding: 1em;
+    margin: 1em;
+    overflow-x: auto;
+}
+
+code {
+    font: 16px $font-mono;
+}
+
+p > code {
+    font-weight: bold;
+    color: $gray;
+}
+
+.logo {
+    font-size: 26px;
+    font-weight: bold;
+}
+
+.date {
+    color: $gray_light;
+    font-size: 14px;
+}
+
+.border {
+    color: $gray_dark;
+    margin: 8px 0 8px 0;
+    border-top: 2px dashed;
+}
+
+.notfound {
+    text-align: center;
+}
+
+.icon {
+    display: inline-block;
+    vertical-align: middle;
+    width: 16px;
+    height: 16px;
+}
+
+.content {
+    margin: 0 auto;
+    width: 860px;
+}
+
+@media (max-width: 1200px) {
+    .content {
+        margin-left: 1em;
+        margin-right: 1em;
+        width: auto;
+        max-width: 1200px;
+        min-width: 200px;
+    }
+}
+
+img {
+    max-width: 100%;
+}
