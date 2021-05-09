@@ -1,9 +1,9 @@
 HOST='root@erebe.eu'
 RASPBERRY='pi@10.200.200.2'
 
-.PHONY: install deploy release dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app wireguard pihole webhook
+.PHONY: install deploy release dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app wireguard pihole webhook blog
 
-deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud webhook backup wireguard
+deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud webhook backup wireguard blog
 
 release:
 ifdef ARGS
@@ -94,6 +94,9 @@ app:
 	kubectl apply -f app/couber.yml
 	kubectl apply -f app/crawler.yml
 	kubectl apply -f app/wstunnel.yml
+
+blog:
+	kubectl apply -f blog/blog.yml
 
 wireguard:
 	sops exec-env secrets/wireguard.yml 'cp wireguard/wg0.conf secrets_decrypted/; for i in $$(env | grep _KEY | cut -d = -f1); do sed -i "s#__$${i}__#$${!i}#g" secrets_decrypted/wg0.conf ; done'
