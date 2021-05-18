@@ -374,7 +374,7 @@ sh-5.1# pidof backend
 # Now we retrieve PID of our application but viewed from within the namespace
 sh-5.1# nsenter -t 22780 -p -r pidof backend
 6 # ha like before :wink
-nsenter -t 22780 -p -n -i -r -- lldb -p 6
+nsenter -t 22780 -p -n -i -u -C -- lldb -p 6
 (lldb) # Hourra
 ```
 
