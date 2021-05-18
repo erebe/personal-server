@@ -164,7 +164,7 @@ backend`std::sys_common::backtrace::__rust_begin_short_backtrace::h2cd3adeae9e01
     0x55555568e24e <+30>: jne    0x55555568e25a            ; <+42>
 ```
 
-erf, gibrish again. Dude that you have done wrong in your life :x
+erf, gibrish again. Dude what have you done wrong in your life :x
 
 <br/>
 
