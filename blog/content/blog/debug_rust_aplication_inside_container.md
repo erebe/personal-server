@@ -43,7 +43,7 @@ Your application is running on a remote server far from your local machine, it i
 # <ins>The hammer</ins>
 
 After some search on duckle-duckle-go, you found out that you can use some arcane debugger, used in the old times, the ones previous to the JavaScript eara.
-The tools is murmured to be GDB or LLDB, in this tale only the exploit of LLDB are going to be brought narrated.
+The tools is murmured to be GDB or LLDB, in this tale only the exploit of LLDB are going to be narrated.
 
 So you start, you try to execute inside your container :
 ```bash
