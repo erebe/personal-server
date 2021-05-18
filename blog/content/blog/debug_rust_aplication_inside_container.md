@@ -301,9 +301,9 @@ failed: Operation not permitted
 ```
 
 Well :x How do I attach to my application if I don't have a debugger ?
-Let's me the sudo of the container world. The yaml file below is going to
+Let's me present you the sudo of the container world. The yaml file below is going to
 spawn a container on each node of your kubernetes cluster with all security disabled and mounting the / of the node inside the container.
-Basically those containers will be running as kind of the hill
+Basically those containers will be running as king of the hill
 
 ```yaml
 apiVersion: apps/v1
@@ -377,6 +377,8 @@ sh-5.1# nsenter -t 22780 -p -r pidof backend
 nsenter -t 22780 -p -n -i -u -C -- lldb -p 6
 (lldb) # Hourra
 ```
+<ins>Note</ins>: GDB is less picky than lldb here. You can attach to your process if you are running from a different namespace. Only at a cost of a warning 
+`warning: Target and debugger are in different PID namespaces; thread lists and other data are likely unreliable.  Connect to gdbserver inside the container.`
 
 <br/>
 
