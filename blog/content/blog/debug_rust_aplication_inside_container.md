@@ -1,6 +1,6 @@
 +++
 title = "Debugging rust application inside linux container"
-date = 2021-05-18
+date = 2021-05-19
 [extra]
 header = '''<iframe src="https://open.spotify.com/embed/track/3td69vL9Py7Ai9wfXYnvji" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>'''
 +++
