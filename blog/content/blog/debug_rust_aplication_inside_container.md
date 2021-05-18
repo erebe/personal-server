@@ -637,7 +637,7 @@ And now you wait...
 - Hi John, looking why my app does not seem to handle any traffic
 - Nobody told you ?
 - What ?
-- Load balancers are down for a few hours in order to clean their pipes
+- Load balancers are down for a few hours in order to clean their NICs
 - *sight*
 
 <br/>
