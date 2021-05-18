@@ -15,7 +15,12 @@ We are far from what you can find in a JVM or JS ecosystem, but still if you are
 GDB (GNU Project Debugger) seems to be favored in some posts, while others are telling you to use lldb ¯\\\_(ツ)_/¯ .
 For my part, I am using lldb as I am telling myself that if LLVM is the compilation backend for Rust, well, its debugger must be the most advanced one.
 
-As I don't have any certainty on this topic of debugging with rust, this post aims to trigger discussion around this subject in order to let me grasp the full view, what my knowledge is missing. Of course, If I am going to learn new stuff, I am going to update the post. So please let me know :)
+I still have questions regarding debugging with rust, this post aims to trigger discussion around this subject in order to let me grasp the full view, what my knowledge is missing. Of course, I am going to update the post. So please let me know :)
+
+
+<ins>Pending questions</ins>:
+  - How to cast raw pointer/address into rust type. Often got undeclared symbols or parsing errors ?
+
 
 <br/>
 
@@ -633,3 +638,12 @@ And now you wait...
 - What ?
 - Load balancers are down for a few hours in order to clean their pipes
 - *sight*
+
+<br/>
+
+# Summary  
+  - You need to have debug symbol in your release build (it will increase disk size of binary)
+  - A good cheatsheet of lldb commands can be found [here](https://lldb.llvm.org/use/map.html)
+  - You have a tiny ui inside lldb by typing `gui` inside the shell (warning: you shell will be broken after)
+  - To debugger a container you need to spawn another container with security disabled and use `nsenter` to break linux namespaces 
+
