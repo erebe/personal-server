@@ -222,6 +222,7 @@ By playing with `nm` you clearly see that your debug build have way more symbols
 ```
 
 How to get them for your release application 🤞?
+
 Cargo allows you to embed debug symbols even in release builds by using profile.
 
 In your `Cargo.toml` simply add a section
