@@ -9,6 +9,28 @@
             {{ page.date | date(format="%d %b %Y") }}
         </time>
     </div>
+    {% if page.extra['header'] %}
+    {{ page.extra['header'] | safe }}
+    {% endif %}
+
+    {% if page.toc %}
+    <ul>
+      {% for h1 in page.toc %}
+      <li>
+        <a href="{{h1.permalink | safe}}">{{ h1.title }}</a>
+        {% if h1.children %}
+        <ul>
+          {% for h2 in h1.children %}
+          <li>
+            <a href="{{h2.permalink | safe}}">{{ h2.title }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
     <div itemprop="articleBody">
         {{ page.content | safe }}
     </div>
