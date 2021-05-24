@@ -653,6 +653,10 @@ And now you wait...
   - To debugger a container you need to spawn another container with security disabled and use `nsenter` to break linux namespaces 
 
 
+<br/>
+<br/>
+<br/>
+
 # Bonus Point: GDB Remote Server
 
 The statement of the beginning was a bit of a lie, you can debug a remote process within your confy IDE (I.e: clion/vscode).
