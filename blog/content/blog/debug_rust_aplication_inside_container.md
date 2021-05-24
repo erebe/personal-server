@@ -21,6 +21,7 @@ I still have questions regarding debugging with rust, this post aims to trigger 
 <ins>Pending questions</ins>:
   - How to cast raw pointer/address into rust type. Often got undeclared symbols or parsing errors ?
 
+[Reddit discussion](https://www.reddit.com/r/rust/comments/nfkunr/debugging_rust_application_inside_linux_container/)
 
 <br/>
 
@@ -651,6 +652,9 @@ And now you wait...
   - A good cheatsheet of lldb commands can be found [here](https://lldb.llvm.org/use/map.html)
   - You have a tiny ui inside lldb by typing `gui` inside the shell (warning: you shell will be broken after)
   - To debugger a container you need to spawn another container with security disabled and use `nsenter` to break linux namespaces 
+
+[Reddit discussion](https://www.reddit.com/r/rust/comments/nfkunr/debugging_rust_application_inside_linux_container/)
+
 
 
 <br/>
