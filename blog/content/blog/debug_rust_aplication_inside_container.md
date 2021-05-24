@@ -367,6 +367,8 @@ Even with our sudo container you can't attach to the process !
 Due to how [namespaces](https://en.wikipedia.org/wiki/Linux_namespaces) isolation works in Linux, you first need to enter/inject yourself inside the namespaces of your container.
 For that you can use the [nsenter](https://www.redhat.com/sysadmin/container-namespaces-nsenter) tool (for namespace enter)
 
+P.S: GDB is less picky here, it will let you attach to the process and debugg it with only a warning telling you pid/thread id will be wrong
+
 ```bash
 # First we retrieve the PID of of our application from the root namespace perspective
 sh-5.1# pidof backend
