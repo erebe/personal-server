@@ -650,3 +650,16 @@ And now you wait...
   - You have a tiny ui inside lldb by typing `gui` inside the shell (warning: you shell will be broken after)
   - To debugger a container you need to spawn another container with security disabled and use `nsenter` to break linux namespaces 
 
+
+# Bonus Point: GDB Remote Server
+
+The statement of the beginning was a bit of a lie, you can debug a remote process within your confy IDE (I.e: clion/vscode).
+For that you only need to start a gdbserver on your remote machine with
+```bash
+$ gdbserver 0.0.0.0:1234 pid_program 
+```
+
+Be sure that the port/remote machine is accessible from your local machine.
+If you are inside a kubernetes you can do a port-forward `kubectl port-forward` to reach your gdb server.
+
+After that open your project in CLIO, go to configure -> Add new configuration -> GDB remote Debug, and enter the ip:port of your server
