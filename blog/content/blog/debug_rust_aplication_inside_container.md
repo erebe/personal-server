@@ -380,7 +380,10 @@ sh-5.1# nsenter -t 22780 -p -r pidof backend
 nsenter -t 22780 -p -n -i -u -C -- lldb -p 6
 (lldb) # Hourra
 ```
-<ins>Note</ins>: GDB is less picky than lldb here. You can attach to your process if you are running from a different namespace. Only at a cost of a warning 
+
+<ins>Note</ins>: Installing lldb within the container may be advisable. It would simplify the nsenter command `nsenter -t 22780 -a -- lldb -p 6` and allow to troubleshoot more easily at first
+
+<ins>Note2</ins>: GDB is less picky than lldb here. You can attach to your process if you are running from a different namespace. Only at a cost of a warning 
 `warning: Target and debugger are in different PID namespaces; thread lists and other data are likely unreliable.  Connect to gdbserver inside the container.`
 
 <br/>
