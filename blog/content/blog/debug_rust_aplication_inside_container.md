@@ -27,8 +27,8 @@ I still have questions regarding debugging with rust, this post aims to trigger 
 
 # <ins>Let's start</ins>
 
-So at some point in your life, `println()` or `error!()` will not be enough to save you. From some hazard in life, you accepted this job offering with some rust opportunities in it.
-The rust part of the offering was not a lie, and you developed some applications that are running now in production.
+So at some point in your life, `println()` or `error!()` will not be enough to save you. From some hazard in life, you accepted this job offer with some rust opportunities in it.
+The rust part of the offer was not a lie, and you developed some applications that are running now in production.
 
 The cake is good until your program hang :x
 
