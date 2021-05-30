@@ -1,21 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        
         {% block head %}
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-        {% if page.description -%}
-        <meta name="description" content="{{ page.description }}">
-        {% else -%}
-        <meta name="description" content="{{ config.description }}">
-        {% endif %}
+        {% set title = page.title | default(value=config.title) %}
+        {% set description = page.description | default(value=config.description) %}
 
-        {% if page.title -%}
-        <title>{% block title %}{{ page.title }}{% endblock title %}</title>
-        {% else -%}
-        <title>{% block title %}{{ config.title }}{% endblock title %}</title>
-        {% endif %}
+        <title>{% block title %}{{ title }}{% endblock title %}</title>
+        <meta name="description" content="{{ description }}">
+
+        <meta name="twitter:title" content="{{ title }}">
+        <meta name="twitter:description" content="{{ description }}">
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:image" content="{{ config.extra.avatar }}">
+        <meta name="twitter:site" content="@erebe">
+
+        <meta property="og:type" content="article">
+        <meta property="og:title" content="{{ title }}">
+        <meta property="og:image" content="{{ config.extra.avatar }}">
+        <meta property="og:description" content="{{ description }}">
+        <meta property="article:author" content="{{ config.extra.author }}">
+        <meta property="article:published_time" content="{{ page.date | default(value="2021-05-19T12:12:12.12Z") | date(format="%Y-%m-%d") }}">
+        <meta property="article:tag" content="{{ page.extra.tags | default(value=[]) | join(sep=' ') }}">
 
         {% block css %}
             <link rel="stylesheet" href="{{ get_url(path="theme.css", trailing_slash=false) | safe }}">
@@ -36,7 +45,7 @@
                         {% for s in index.subsections %}
                             {% set subsection = get_section(path=s) %}
                             <li class="nav">
-                                <a itemprop="url" href="{{ subsection.permalink | safe}}index.html">
+                                <a itemprop="url" href="{{ subsection.permalink | safe}}">
                                     <span itemprop="name">{{ subsection.title }}</span>
                                 </a>
                             </li>
@@ -71,7 +80,7 @@
                 {% for s in index.subsections %}
                     {% set subsection = get_section(path=s) %}
                     <li>
-                    <a href="{{ subsection.permalink | safe}}index.html">
+                    <a href="{{ subsection.permalink | safe}}">
                         {{ subsection.title }}
                     </a>
                     </li>
@@ -79,7 +88,7 @@
                     <ul>
                         {% for page in subsection.pages %}
                         <li>
-                        <a href="{{ page.permalink | safe}}index.html">
+                        <a href="{{ page.permalink | safe}}">
                             {{ page.title }}
                         </a>
                         </li>

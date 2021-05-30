@@ -22,7 +22,7 @@ spec:
       - name: blog
         image: ghcr.io/erebe/blog:latest
         imagePullPolicy: Always
-        args: ["public", "8087"]
+        args: ["httpd", "-f", "-h", "public", "-p", "8087"]
         ports:
         - containerPort: 8087
 

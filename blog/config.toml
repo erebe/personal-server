@@ -1,12 +1,13 @@
 # The URL the site will be built for
 base_url = "https://blog.erebe.dev"
+title = "Erèbe blog"
+description = "Erèbe blog around computer science & programming"
 
 # Whether to automatically compile all Sass files in the sass directory
 compile_sass = true
 
 # Whether to build a search index to be used later on by a JavaScript library
 build_search_index = true
-
 theme = "oceanic-zen"
 
 [markdown]
@@ -18,3 +19,4 @@ highlight_code = true
 [extra]
 author = "Erèbe - Romain Gérard"
 github = "erebe"
+avatar = "https://avatars.githubusercontent.com/u/854278?v=4"
