@@ -1,5 +1,5 @@
 +++
-title = "Debugging Rust application inside linux container | Erèbe"
+title = "Debugging Rust application inside linux container"
 description = "Learn how to debug backend Rust application within a container thanks to LLDB"
 date = 2021-05-19
 [extra]
