@@ -3,7 +3,7 @@ title = "Debugging Rust application inside linux container"
 description = "Learn how to debug backend Rust application within a container thanks to LLDB"
 date = 2021-05-19
 [extra]
-header = '''<iframe src="https://open.spotify.com/embed/track/3td69vL9Py7Ai9wfXYnvji" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>'''
+header = '''<iframe class="hcenter" src="https://open.spotify.com/embed/track/3td69vL9Py7Ai9wfXYnvji" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>'''
 tags = ["rust", "lldb", "debugger", "container", "kubernetes", "memory"]
 +++
 

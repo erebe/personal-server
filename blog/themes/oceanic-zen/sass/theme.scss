@@ -18,6 +18,12 @@ body {
     color: $white;
 }
 
+.hcenter {
+  display: block;
+  margin: 0 auto;
+
+}
+
 body {
     display: grid;
     grid-template-columns: auto;
