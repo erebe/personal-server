@@ -5,11 +5,17 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-        {% if config.description -%}
+        {% if page.description -%}
+        <meta name="description" content="{{ page.description }}">
+        {% else -%}
         <meta name="description" content="{{ config.description }}">
         {% endif %}
 
+        {% if page.title -%}
+        <title>{% block title %}{{ page.title }}{% endblock title %}</title>
+        {% else -%}
         <title>{% block title %}{{ config.title }}{% endblock title %}</title>
+        {% endif %}
 
         {% block css %}
             <link rel="stylesheet" href="{{ get_url(path="theme.css", trailing_slash=false) | safe }}">

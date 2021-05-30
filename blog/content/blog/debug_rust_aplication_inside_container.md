@@ -1,5 +1,6 @@
 +++
-title = "Debugging rust application inside linux container"
+title = "Debugging Rust application inside linux container | Erèbe"
+description = "Learn how to debug backend Rust application within a container thanks to LLDB"
 date = 2021-05-19
 [extra]
 header = '''<iframe src="https://open.spotify.com/embed/track/3td69vL9Py7Ai9wfXYnvji" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>'''
@@ -302,9 +303,9 @@ failed: Operation not permitted
 ```
 
 Well :x How do I attach to my application if I don't have a debugger ?
-Let's me present you the sudo of the container world. The yaml file below is going to
+Let's me the sudo of the container world. The yaml file below is going to
 spawn a container on each node of your kubernetes cluster with all security disabled and mounting the / of the node inside the container.
-Basically those containers will be running as king of the hill
+Basically those containers will be running as kind of the hill
 
 ```yaml
 apiVersion: apps/v1
