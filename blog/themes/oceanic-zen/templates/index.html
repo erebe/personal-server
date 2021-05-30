@@ -20,6 +20,7 @@
 
         <meta property="og:type" content="article">
         <meta property="og:title" content="{{ title }}">
+        <meta property="og:url" content="{{ current_url | default(value=config.base_url) }}">
         <meta property="og:image" content="{{ config.extra.avatar }}">
         <meta property="og:description" content="{{ description }}">
         <meta property="article:author" content="{{ config.extra.author }}">
