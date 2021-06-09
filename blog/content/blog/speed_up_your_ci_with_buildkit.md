@@ -235,7 +235,7 @@ FROM debian:stable-slim
 
 The thing to notice here, is that now the base image from our builder is now controlled by the `ARG BUILDER_IMAGE`
 <br/>
-If we don't specify any argument during our `docker build` the image is going to build by executing the stage `builder_cache`and work as expected.
+If we don't specify any argument during our `docker build` the image is going to build by executing the stage `builder_cache` and work as expected.
 
 But now, if we specify a build `--build-arg` and a `--target` it is possible to skip this stage if we don't want/need it.
 <br>
@@ -259,7 +259,8 @@ DOCKER_BUILDKIT=1 docker build -t myapp:$COMMIT_SHA1 .
 
 With the help of Buildkit, in a single Dockerfile we have now a build recipe that is useful locally, but also in any CI as there is a way to build, push and retrieve a cache for this job.
 
-As the saying goes, There are two hard things in computer science: cache invalidation, naming things, and off-by-one errors
+As the saying goes, There are two hard things in computer science: cache invalidation, naming things, and off-by-one errors.
+<br/>
 Our cache is going to become stale/invalid over time as the code and its dependencies go out of sync.
 
 But, we just need to create a job to rebuild our cache and re-push it. Which boil down to re-doing  the previous command
