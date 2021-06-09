@@ -264,7 +264,7 @@ As the saying goes, There are two hard things in computer science: cache invalid
 Our cache is going to become stale/invalid over time as the code and its dependencies go out of sync.
 
 But, we just need to create a job to rebuild our cache and re-push it. Which boil down to re-doing  the previous command
-```
+```bash
 # Build and push our cache
 DOCKER_BUILDKIT=1 docker build -t myapp:cache --target=builder_cache .
 docker push myapp:cache
