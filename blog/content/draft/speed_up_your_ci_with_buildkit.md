@@ -1,6 +1,6 @@
 +++
-title = "Buildkit: Speed up your (Rust) CI build by using image cache"
-description = ""
+title = "Buildkit: Speed up your (Rust) CI build by using image cache stage"
+description = "Learn how to write a versatile Dockerfile useful in CI and local machine by using Buildkit and image cache stage"
 date = 2021-06-09
 [extra]
 header = '''<iframe class="hcenter" src="https://open.spotify.com/embed/track/5Twubz3SaJmTykgAn8t7IS" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>'''
