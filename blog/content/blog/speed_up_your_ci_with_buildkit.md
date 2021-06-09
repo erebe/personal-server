@@ -175,11 +175,13 @@ FROM builder_cache AS builder
 
 
 [Buildkit](https://docs.docker.com/develop/develop-images/build_enhancements/) is the new docker engine for building images, which aims
-to be `concurrent, cache-efficient, and Dockerfile-agnostic builder toolkit`
+to be `concurrent, cache-efficient, and Dockerfile-agnostic builder toolkit.
+<br/>
 See their [GitHub repository](https://github.com/moby/buildkit) for more information.
 
 <br/>
-By default, when you are using `docker build` it is not activated. To enable it you need to set an env variable
+By default, when you are using docker build it is not activated. To enable it you need to set an env variable
+
 ```bash
 export  DOCKER_BUILDKIT=1
 # or, when you run docker
