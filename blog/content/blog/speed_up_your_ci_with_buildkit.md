@@ -15,6 +15,9 @@ tl;dr:
   - Create a caching stage, use `--target` to create cache image and use buildkit `--build-arg` to dynamically update your image source 
 </p>
 
+
+[Reddit discussion](https://www.reddit.com/r/rust/comments/nvpkx4/buildkit_speed_up_your_rust_ci_build_by_using/)
+
 --- 
 <br/>
 
