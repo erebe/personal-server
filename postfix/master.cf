@@ -9,10 +9,10 @@
 #               (yes)   (yes)   (yes)   (never) (100)
 # ==========================================================================
 smtp      inet  n       -       -       -       -       smtpd
+   -o content_filter=spamassassin
 postlog   unix-dgram n  -       n       -       1       postlogd
-#   -o content_filter=spamassassin
-# spamassassin unix -     n       n       -       -       pipe
-#   user=debian-spamd argv=/usr/bin/spamc -f -e /usr/sbin/sendmail -oi -f ${sender} ${recipient}
+spamassassin unix -     n       n       -       -       pipe
+   user=erebe argv=/usr/bin/spamc -f -e /usr/sbin/sendmail -oi -f ${sender} ${recipient}
 #smtp      inet  n       -       -       -       1       postscreen
 #smtpd     pass  -       -       -       -       -       smtpd
 #dnsblog   unix  -       -       -       -       0       dnsblog

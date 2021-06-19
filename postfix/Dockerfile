@@ -4,7 +4,7 @@ FROM alpine:3.11
 LABEL org.opencontainers.image.source https://github.com/erebe/server
 
 RUN apk update && \
-    apk add ca-certificates postfix procmail spamassassin spamassassin-client curl fetchmail && \
+    apk add ca-certificates postfix procmail spamassassin spamassassin-client curl fetchmail dumb-init && \
     rm -rf /var/cache/apk/* && \
     adduser -D erebe && \
     mkdir /etc/fetchmail && \
@@ -26,5 +26,6 @@ VOLUME /data
 EXPOSE 25
 EXPOSE 465
 
+ENTRYPOINT [ "/usr/bin/dumb-init", "--" ]
 CMD ["/usr/bin/docker-entrypoint.sh"]
 
