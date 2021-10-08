@@ -38,7 +38,7 @@ iptables -A USER_CUSTOM -p icmp -j ACCEPT
 iptables -A USER_CUSTOM -p tcp --dport 22 -j ACCEPT
 
 # Allow http/https
-#iptables -A USER_CUSTOM -p tcp --dport 80 -j ACCEPT
+iptables -A USER_CUSTOM -p tcp --dport 80 -j ACCEPT
 iptables -A USER_CUSTOM -p tcp --dport 443 -j ACCEPT
 
 # Allow SMTP and IMAP
@@ -101,7 +101,7 @@ ip6tables -A USER_CUSTOM -p icmpv6 --icmpv6-type echo-reply -j ACCEPT
 ip6tables -A USER_CUSTOM -p tcp --dport 22 -j ACCEPT
 
 # Allow http/https
-#ip6tables -A USER_CUSTOM -p tcp --dport 80 -j ACCEPT
+ip6tables -A USER_CUSTOM -p tcp --dport 80 -j ACCEPT
 ip6tables -A USER_CUSTOM -p tcp --dport 443 -j ACCEPT
 
 # Allow SMTP and IMAP
