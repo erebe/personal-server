@@ -60,8 +60,8 @@ kubernetes_install:
 k8s:
 	#helm3 repo add stable https://kubernetes-charts.storage.googleapis.com/
 	#helm3 repo update
-	kubectl apply -f k8s/ingress-nginx-v0.40.2.yml
-	kubectl apply --validate=false -f k8s/cert-manager-v1.0.3.yml
+	kubectl apply -f k8s/ingress-nginx-v1.1.0.yml
+	kubectl apply --validate=false -f k8s/cert-manager-v1.6.1.yml
 	kubectl apply -f k8s/lets-encrypt-issuer.yml
 
 dovecot:
