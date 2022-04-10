@@ -21,11 +21,6 @@ spec:
         app: minio
     spec:
       hostNetwork: true
-      dnsPolicy: "None"
-      dnsConfig:
-        nameservers:
-        - 127.0.0.1
-        - 1.1.1.1
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
