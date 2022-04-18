@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: backup
 spec:
-  schedule: "0 4 * * *" 
+  schedule: "0 2 * * *" 
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 2

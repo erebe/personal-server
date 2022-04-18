@@ -82,9 +82,10 @@ nextcloud_resync_file:
 	kubectl exec -t $(shell kubectl get pods -n default -l app=nextcloud -o json | jq .items[].metadata.name) -- sudo -u abc /config/www/nextcloud/occ files:scan --all
 
 backup:
-	sops -d --output secrets_decrypted/backup_ftp_credentials.yml secrets/backup_ftp_credentials.yml
-	kubectl apply -f secrets_decrypted/backup_ftp_credentials.yml
+	sops -d --output secrets_decrypted/backup_credentials.yml secrets/backup_credentials.yml
+	kubectl apply -f secrets_decrypted/backup_credentials.yml
 	kubectl apply -f backup/backup-cron.yml
+	kubectl apply -f backup/backup-minio.yml
 
 webhook:
 	sops exec-env secrets/webhook.yml 'cp webhook/webhook.yml secrets_decrypted/; for i in $$(env | grep _SECRET | cut -d = -f1); do sed -i "s#__$${i}__#$${!i}#g" secrets_decrypted/webhook.yml ; done'
