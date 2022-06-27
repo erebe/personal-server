@@ -27,7 +27,7 @@ spec:
             args:
             - /bin/sh
             - -c
-            - apk add --no-cache rclone; 
+            - apk add --no-cache rclone; cd /tmp_dir;
              rclone config create dedibox-backup ftp host=dedibackup-dc3.online.net user=${FTP_USER} pass=$(rclone obscure ${FTP_PASSWORD}) ;
              rclone config create minio s3 provider=Minio env_auth=false access_key_id=${S3_USER} endpoint=http://localhost:9000  secret_access_key=${S3_PASSWORD} ;
              rclone copy --progress dedibox-backup:/backups/backup.tar minio://backup/
@@ -52,7 +52,13 @@ spec:
                 secretKeyRef:
                   name: s3-credentials
                   key: password
+            volumeMounts:
+            - name: tmp-dir
+              mountPath: /tmp_dir
           restartPolicy: OnFailure
+          volumes:
+          - name: tmp-dir
+            emptyDir: {}
           tolerations:
           - key: "kubernetes.io/hostname"
             operator: "Equal"
