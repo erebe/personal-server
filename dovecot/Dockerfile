@@ -3,7 +3,7 @@ FROM alpine:3.12
 LABEL org.opencontainers.image.source https://github.com/erebe/server
 
 RUN apk update && \
-    apk add ca-certificates dovecot su-exec && \
+    apk add ca-certificates dovecot su-exec dumb-init && \
     rm -rf /var/cache/apk/* && \
 
     # Create user and mailbox data dir
@@ -34,11 +34,11 @@ RUN apk update && \
         /etc/dovecot/conf.d/10-logging.conf 
 
 COPY dovecot_reload /etc/periodic/weekly/reload_dovecot
+COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 VOLUME /data
 VOLUME /etc/dovecot/users
 EXPOSE 993
 
-CMD chown -R erebe:erebe /data && \
-  crond -l 8 -d 8 && \
-	dovecot -F
+ENTRYPOINT [ "/usr/bin/dumb-init", "--" ]
+CMD ["/docker-entrypoint.sh"]
