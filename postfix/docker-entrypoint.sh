@@ -56,10 +56,9 @@ while kill -0 "`cat /var/spool/postfix/pid/master.pid | sed 's/ //g'`"; do
   # Update spamassassin filter every 12hours
   if [ $(( $counter % 1440 )) -eq 0 ]
   then
-    sa-update
+    sa-update -v
     counter=0
   fi 
 
   sleep 30
 done
-
