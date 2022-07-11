@@ -33,9 +33,12 @@ RUN apk update && \
            -e 's,#debug_log_path =,debug_log_path = /dev/stdout,' \
         /etc/dovecot/conf.d/10-logging.conf 
 
+COPY dovecot_reload /etc/periodic/weekly/reload_dovecot
+
 VOLUME /data
 VOLUME /etc/dovecot/users
 EXPOSE 993
 
 CMD chown -R erebe:erebe /data && \
+  crond -l 8 -d 8 && \
 	dovecot -F
