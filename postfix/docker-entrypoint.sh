@@ -34,6 +34,7 @@ cp /etc/fetchmail/fetchmailrc /home/erebe/
 chmod 600 /home/erebe/fetchmailrc 
 
 # Start spamassassin
+sa-update -v
 spamd -d -s stderr 2>/dev/null
 
 # start postfix
