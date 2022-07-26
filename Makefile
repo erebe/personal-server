@@ -93,7 +93,6 @@ webhook:
 
 app:
 	kubectl apply -f app/couber.yml
-	kubectl apply -f app/crawler.yml
 	kubectl apply -f app/wstunnel.yml
 
 blog:
