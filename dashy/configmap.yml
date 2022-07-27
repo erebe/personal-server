@@ -1,0 +1,248 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashy-config
+data:
+  conf.yml: |-
+    pageInfo:
+      title: Σrèbe
+      description: ''
+      navLinks: []
+      logo: https://avatars.githubusercontent.com/u/854278?v=4
+    appConfig:
+      theme: one-dark
+      layout: horizontal
+      iconSize: medium
+      language: en
+      startingView: default
+      defaultOpeningMethod: newtab
+      statusCheck: false
+      statusCheckInterval: 0
+      faviconApi: allesedv
+      routingMode: history
+      enableMultiTasking: false
+      widgetsAlwaysUseProxy: false
+      webSearch:
+        disableWebSearch: false
+        searchEngine: duckduckgo
+        openingMethod: newtab
+        searchBangs: {}
+      enableFontAwesome: true
+      enableMaterialDesignIcons: false
+      hideComponents:
+        hideHeading: false
+        hideNav: true
+        hideSearch: true
+        hideSettings: true
+        hideFooter: true
+      auth:
+        enableGuestAccess: true
+        users: []
+        enableKeycloak: false
+      showSplashScreen: false
+      preventWriteToDisk: false
+      preventLocalSave: false
+      disableConfiguration: false
+      allowConfigEdit: true
+      enableServiceWorker: false
+      disableContextMenu: false
+      disableUpdateChecks: false
+      disableSmartSort: false
+      enableErrorReporting: false
+      workspaceLandingUrl: https://todoist.com/app/project/2295534492
+    sections:
+      - name: HomeLab
+        displayData:
+          sortBy: default
+          rows: 1
+          cols: 1
+          collapsed: false
+          hideForGuests: false
+        items:
+          - title: PiHole
+            icon: http://dns.lan/admin/img/logo.svg
+            url: http://dns.lan/admin/
+            target: newtab
+            id: 0_664_pihole
+          - title: Router
+            icon: >-
+              https://dwglogo.com/wp-content/uploads/2017/12/Ubiquiti_Networks_logo_01.png
+            url: https://router.lan
+            target: newtab
+            id: 1_664_router
+          - title: Proxmox
+            icon: >-
+              https://camo.githubusercontent.com/2df2ac41e1b8a1484be236c75e395981b31bfd670eff46b5c182ea0be9475310/68747470733a2f2f7777772e70726f786d6f782e636f6d2f696d616765732f70726f786d6f782f50726f786d6f785f73796d626f6c5f7374616e646172645f6865782e706e67
+            url: https://proxmox.lan:8006
+            target: newtab
+            id: 2_664_proxmox
+          - title: Minio
+            icon: https://min.io/resources/img/logo/MINIO_Bird.png
+            url: http://s3.lan
+            target: newtab
+            id: 3_664_minio
+          - title: NextCloud
+            description: ''
+            icon: https://digitiz.fr/wp-content/uploads/2021/07/Nextcloud-Logo.png
+            url: https://cloud.erebe.eu
+            target: newtab
+            id: 4_664_nextcloud
+          - title: Tp Link
+            icon: >-
+              https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVSKp9dbRRuIfzk4IcIfXIUJwD82Hee9PaW1h0yluxG1bQBIsF93zZalkyaPfPFGQZqeE&usqp=CAU
+            url: http://192.168.0.159/
+            target: newtab
+            id: 5_664_tplink
+        icon: 🖥️
+      - name: Work
+        displayData:
+          sortBy: default
+          rows: 1
+          cols: 1
+          collapsed: false
+          hideForGuests: false
+        items:
+          - title: Gmail
+            icon: https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico
+            url: https://mail.google.com/mail/u/1/#inbox
+            target: newtab
+            id: 0_419_gmail
+          - title: Standup
+            icon: >-
+              https://ssl.gstatic.com/calendar/images/conferenceproviders/logo_meet_2020q4_192px.svg
+            url: >-
+              https://meet.google.com/beu-bewz-pvo
+            target: newtab
+            id: 1_419_standup
+          - title: Gmail
+            icon: https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico
+            url: https://mail.google.com/mail/u/1/#inbox
+            target: newtab
+            id: 2_419_gmail
+          - title: Gitlab
+            icon: >-
+              https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlLx7YQsTtkOVpABnTs1vmi5mGjxUZ_1c2awP0AlzkUNpyc_66Rh7eRoZ8zOmAmqZUkvc&usqp=CAU
+            url: https://gitlab.com/qovery/backend/q-core
+            target: newtab
+            id: 3_419_gitlab
+          - title: Qortal
+            icon: >-
+              https://github.com/Qovery/public-resources/raw/master/qovery_square_new_logo.svg
+            url: https://qortal.qovery.com/
+            target: newtab
+            id: 4_419_qortal
+          - title: Grafana
+            icon: https://grafana.com/favicon.ico
+            url: https://qortal.qovery.com/grafana/?orgId=1
+            target: newtab
+            id: 5_419_grafana
+          - title: Standup
+            icon: >-
+              https://ssl.gstatic.com/calendar/images/conferenceproviders/logo_meet_2020q4_192px.svg
+            url: >-
+              https://meet.google.com/beu-bewz-pvo
+            target: newtab
+            id: 6_419_standup
+          - title: Notion
+            icon: >-
+              https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png
+            url: https://www.notion.so/qovery/
+            target: newtab
+            id: 7_419_notion
+          - title: Gmail
+            icon: https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico
+            url: https://mail.google.com/mail/u/1/#inbox
+            target: newtab
+            id: 8_419_gmail
+        icon: >-
+          https://github.com/Qovery/public-resources/raw/master/qovery_square_new_logo.svg
+      - name: News
+        icon: 📝
+        displayData:
+          sortBy: default
+          rows: 1
+          cols: 1
+          collapsed: false
+          hideForGuests: false
+        items:
+          - title: Hackernews
+            icon: https://hckrnews.com/favicon.ico
+            url: https://hckrnews.com/
+            target: newtab
+            id: 0_413_hackernews
+          - title: /r/programming
+            icon: >-
+              https://styles.redditmedia.com/t5_2fwo/styles/communityIcon_1bqa1ibfp8q11.png?width=256&s=45361614cdf4a306d5510b414d18c02603c7dd3c
+            url: https://www.reddit.com/r/programming/
+            target: newtab
+            id: 1_413_rprogramming
+          - title: /r/rust
+            icon: >-
+              https://styles.redditmedia.com/t5_2s7lj/styles/communityIcon_pjg3ktzyju771.png?width=256&s=5e99f497418f31f47439c0e8de10553ea9150a00
+            url: https://www.reddit.com/r/rust/
+            target: newtab
+            id: 2_413_rrust
+          - title: /r/haskell
+            icon: >-
+              https://styles.redditmedia.com/t5_2qh36/styles/communityIcon_b3usb2hbvbe11.png?width=256&s=eb39d145e1d2ed489492566ec63938e245e881ed
+            url: https://www.reddit.com/r/haskell/top/?t=month
+            target: newtab
+            id: 3_413_rhaskell
+          - title: /r/java
+            icon: >-
+              https://styles.redditmedia.com/t5_2qhd7/styles/communityIcon_tzuj58g8ax451.png?width=256&s=84724eb7266fa9876bcaa7a42bf09aa49030b38d
+            url: https://www.reddit.com/r/java/top/?t=month
+            target: newtab
+            id: 4_413_rjava
+          - title: /r/kotlin
+            icon: >-
+              https://styles.redditmedia.com/t5_2so2r/styles/communityIcon_p0gr6t26jae41.png?width=256&s=80a5344680fe13c91ab921d34cd1e991dcffb7e1
+            url: https://www.reddit.com/r/Kotlin/top/?t=month
+            target: newtab
+            id: 5_413_rkotlin
+          - title: Feedly
+            icon: https://feedly.com/favicon.ico
+            url: https://feedly.com/
+            target: newtab
+            id: 6_413_feedly
+          - title: NextInpact
+            icon: https://www.nextinpact.com/favicon.ico
+            url: https://www.nextinpact.com/
+            target: newtab
+            id: 7_413_nextinpact
+      - name: Various
+        icon: 🪴
+        displayData:
+          sortBy: default
+          rows: 1
+          cols: 1
+          collapsed: false
+          hideForGuests: false
+        items:
+          - title: Github
+            icon: >-
+              https://hackingvision.com/wp-content/uploads/2022/04/github-gc8ed0adb3_1280.png
+            url: https://github.com/
+            target: newtab
+            id: 0_745_github
+          - title: Coub
+            icon: https://coub.erebe.eu/favicon.ico
+            url: https://coub.erebe.eu
+            target: newtab
+            id: 1_745_coub
+          - title: Coub
+            icon: https://coub.com/favicon.ico
+            url: https://coub.com/
+            target: newtab
+            id: 2_745_coub
+          - title: Gmail
+            icon: https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico
+            url: https://mail.google.com/mail/u/0/#inbox
+            target: newtab
+            id: 3_745_gmail
+          - title: Todo
+            icon: https://todoist.com/favicon.ico
+            url: https://todoist.com/app/project/2295534492
+            target: workspace
+            id: 4_745_todo
+

@@ -2,9 +2,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: minio
+  name: dashy
   labels:
-    app: minio
+    app: dashy
 spec:
   replicas: 1
   strategy:
@@ -14,11 +14,11 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      app: minio
+      app: dashy
   template:
     metadata:
       labels:
-        app: minio
+        app: dashy
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -32,27 +32,26 @@ spec:
                 values:
                 - minio-48e6a175
       containers:
-      - name: minio
-        image: docker.io/minio/minio:latest
+      - name: dashy
+        image: docker.io/lissy93/dashy:2.1.1
         imagePullPolicy: IfNotPresent
-        args: ["server", "/mnt/data", "--console-address", ":80"]
         env:
-        - name: MINIO_ROOT_USER
-          value: "admin"
-        - name: MINIO_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: minio
-              key: ADMIN_PASSWORD
+        - name: PORT
+          value: "8080"
         ports:
-          - containerPort: 80
+          - containerPort: 8080
             name: http
             protocol: TCP
         securityContext:
           privileged: true
         volumeMounts:
-        - name: data
-          mountPath: "/mnt/data"
+        - name: dashy-config
+          mountPath: /app/public/conf.yml
+          subPath: conf.yml
+      volumes:
+        - name: dashy-config
+          configMap:
+            name: dashy-config
       tolerations:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
@@ -61,8 +60,37 @@ spec:
       - key: "node.kubernetes.io/unreachable"
         operator: "Exists"
         effect: "NoExecute"
-      volumes:
-      - name: data
-        hostPath:
-          path: /mnt/data
-          type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashy
+spec:
+  selector:
+    app: dashy
+  ports:
+    - protocol: TCP
+      port: 8080
+  clusterIP: None
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: dashy-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - board.erebe.eu
+    secretName: dashy-tls
+  rules:
+  - host: board.erebe.eu
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: dashy
+          servicePort: 8080
