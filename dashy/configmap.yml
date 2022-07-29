@@ -11,7 +11,7 @@ data:
       logo: https://avatars.githubusercontent.com/u/854278?v=4
     appConfig:
       theme: one-dark
-      layout: horizontal
+      layout: auto
       iconSize: medium
       language: en
       startingView: default
@@ -93,6 +93,12 @@ data:
             url: http://192.168.0.159/
             target: newtab
             id: 5_664_tplink
+          - title: CyerChef
+            icon: >-
+              https://gchq.github.io/CyberChef/assets/aecc661b69309290f600.ico
+            url: https://gchq.github.io/CyberChef/
+            target: newtab
+            id: 6_664_cyerchef
         icon: 🖥️
       - name: Work
         displayData:
@@ -114,46 +120,29 @@ data:
               https://meet.google.com/beu-bewz-pvo
             target: newtab
             id: 1_419_standup
-          - title: Gmail
-            icon: https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico
-            url: https://mail.google.com/mail/u/1/#inbox
-            target: newtab
-            id: 2_419_gmail
           - title: Gitlab
             icon: >-
               https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlLx7YQsTtkOVpABnTs1vmi5mGjxUZ_1c2awP0AlzkUNpyc_66Rh7eRoZ8zOmAmqZUkvc&usqp=CAU
             url: https://gitlab.com/qovery/backend/q-core
             target: newtab
-            id: 3_419_gitlab
+            id: 2_419_gitlab
           - title: Qortal
             icon: >-
               https://github.com/Qovery/public-resources/raw/master/qovery_square_new_logo.svg
             url: https://qortal.qovery.com/
             target: newtab
-            id: 4_419_qortal
+            id: 3_419_qortal
           - title: Grafana
             icon: https://grafana.com/favicon.ico
             url: https://qortal.qovery.com/grafana/?orgId=1
             target: newtab
-            id: 5_419_grafana
-          - title: Standup
-            icon: >-
-              https://ssl.gstatic.com/calendar/images/conferenceproviders/logo_meet_2020q4_192px.svg
-            url: >-
-              https://meet.google.com/beu-bewz-pvo
-            target: newtab
-            id: 6_419_standup
+            id: 4_419_grafana
           - title: Notion
             icon: >-
               https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png
             url: https://www.notion.so/qovery/
             target: newtab
-            id: 7_419_notion
-          - title: Gmail
-            icon: https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico
-            url: https://mail.google.com/mail/u/1/#inbox
-            target: newtab
-            id: 8_419_gmail
+            id: 5_419_notion
         icon: >-
           https://github.com/Qovery/public-resources/raw/master/qovery_square_new_logo.svg
       - name: News
