@@ -120,29 +120,35 @@ data:
               https://meet.google.com/beu-bewz-pvo
             target: newtab
             id: 1_419_standup
+          - title: AWS
+            icon: >-
+              https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Amazon_Web_Services_Logo.svg/1280px-Amazon_Web_Services_Logo.svg.png
+            url: https://accounts.google.com/o/saml2/initsso?idpid=C00xxgtqv&spid=95999977614&forceauthn=false
+            target: newtab
+            id: 2_419_aws
           - title: Gitlab
             icon: >-
               https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlLx7YQsTtkOVpABnTs1vmi5mGjxUZ_1c2awP0AlzkUNpyc_66Rh7eRoZ8zOmAmqZUkvc&usqp=CAU
             url: https://gitlab.com/qovery/backend/q-core
             target: newtab
-            id: 2_419_gitlab
+            id: 3_419_gitlab
           - title: Qortal
             icon: >-
               https://github.com/Qovery/public-resources/raw/master/qovery_square_new_logo.svg
             url: https://qortal.qovery.com/
             target: newtab
-            id: 3_419_qortal
+            id: 4_419_qortal
           - title: Grafana
             icon: https://grafana.com/favicon.ico
             url: https://qortal.qovery.com/grafana/?orgId=1
             target: newtab
-            id: 4_419_grafana
+            id: 5_419_grafana
           - title: Notion
             icon: >-
               https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png
             url: https://www.notion.so/qovery/
             target: newtab
-            id: 5_419_notion
+            id: 6_419_notion
         icon: >-
           https://github.com/Qovery/public-resources/raw/master/qovery_square_new_logo.svg
       - name: News
