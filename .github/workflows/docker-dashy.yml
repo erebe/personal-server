@@ -1,0 +1,16 @@
+name: Publish Blog Image
+on:
+  push:
+    paths:
+    - 'dashy/**'
+   
+jobs:
+  buildAndPush:
+    name: Build And Push docker images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deployer
+        run: |
+          payload='{ "application_name": "dashy", "image_digest": "${{ steps.docker_build.outputs.digest }}", "image_tag": "latest" }'
+          token='X-Webhook-Token: ${{ secrets.WEBHOOK_SECRET }}'
+          curl -X POST -H 'Content-Type: application/json' -H "${token}"  -d "${payload}" https://hooks.erebe.eu/hooks/deploy
