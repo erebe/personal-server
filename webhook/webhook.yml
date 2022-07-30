@@ -142,5 +142,10 @@ data:
     [[ -z "$1" ]] && exit 1
 
     app_name="$1"
+    if [ "$app_name" = "dashy" ]
+    then
+       kubectl apply -n default -f https://raw.githubusercontent.com/erebe/personal-server/master/dashy/configmap.yml
+    fi
+    
     kubectl delete pod -n default -l app=${app_name}
     kubectl wait --for=condition=Ready --timeout=-1s -n default -l app=${app_name} pod
