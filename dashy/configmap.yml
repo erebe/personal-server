@@ -77,7 +77,7 @@ data:
             target: newtab
             id: 2_664_proxmox
           - title: Minio
-            icon: https://min.io/resources/img/logo/MINIO_Bird.png
+            icon: https://media.trustradius.com/vendor-logos/Mo/K1/MUSXMMWE0L5C-180x180.PNG
             url: http://s3.lan
             target: newtab
             id: 3_664_minio
