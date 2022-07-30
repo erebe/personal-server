@@ -40,7 +40,7 @@ data:
         users: []
         enableKeycloak: false
       showSplashScreen: false
-      preventWriteToDisk: false
+      preventWriteToDisk: true
       preventLocalSave: false
       disableConfiguration: false
       allowConfigEdit: true
@@ -72,7 +72,7 @@ data:
             id: 1_664_router
           - title: Proxmox
             icon: >-
-              https://camo.githubusercontent.com/2df2ac41e1b8a1484be236c75e395981b31bfd670eff46b5c182ea0be9475310/68747470733a2f2f7777772e70726f786d6f782e636f6d2f696d616765732f70726f786d6f782f50726f786d6f785f73796d626f6c5f7374616e646172645f6865782e706e67
+              https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRw4PulZnLbmAdSRCLLvt1qcBb1bz8a_6s_WPqkO0LdOEJqGeoE_rpaeOQDWMMn48fidZI&usqp=CAU
             url: https://proxmox.lan:8006
             target: newtab
             id: 2_664_proxmox
