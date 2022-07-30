@@ -60,7 +60,7 @@ data:
           hideForGuests: false
         items:
           - title: PiHole
-            icon: http://dns.lan/admin/img/logo.svg
+            icon: https://pi-hole.net/wp-content/uploads/2016/12/cropped-Vortex-R-1-32x32.png
             url: http://dns.lan/admin/
             target: newtab
             id: 0_664_pihole
