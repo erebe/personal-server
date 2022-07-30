@@ -84,7 +84,8 @@ data:
             id: 3_664_minio
           - title: NextCloud
             description: ''
-            icon: https://digitiz.fr/wp-content/uploads/2021/07/Nextcloud-Logo.png
+            icon: >-
+              https://digitiz.fr/wp-content/uploads/2021/07/Nextcloud-Logo.png
             url: https://cloud.erebe.eu
             target: newtab
             id: 4_664_nextcloud
