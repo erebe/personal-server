@@ -15,7 +15,7 @@ data:
       iconSize: medium
       language: en
       startingView: default
-      defaultOpeningMethod: current
+      defaultOpeningMethod: sametab
       statusCheck: false
       statusCheckInterval: 0
       faviconApi: allesedv
@@ -25,7 +25,7 @@ data:
       webSearch:
         disableWebSearch: false
         searchEngine: duckduckgo
-        openingMethod: current
+        openingMethod: sametab
         searchBangs: {}
       enableFontAwesome: true
       enableMaterialDesignIcons: false
@@ -62,44 +62,44 @@ data:
           - title: PiHole
             icon: https://pi-hole.net/wp-content/uploads/2016/12/cropped-Vortex-R-1-32x32.png
             url: http://dns.lan/admin/
-            target: current
+            target: sametab
             id: 0_664_pihole
           - title: Router
             icon: >-
               https://i.pinimg.com/736x/b3/19/ab/b319ab520c5ad2324a8674b6b29bd385.jpg
             url: https://router.lan
-            target: current
+            target: sametab
             id: 1_664_router
           - title: Proxmox
             icon: >-
               https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRw4PulZnLbmAdSRCLLvt1qcBb1bz8a_6s_WPqkO0LdOEJqGeoE_rpaeOQDWMMn48fidZI&usqp=CAU
             url: https://proxmox.lan:8006
-            target: current
+            target: sametab
             id: 2_664_proxmox
           - title: Minio
             icon: >-
               https://media.trustradius.com/vendor-logos/Mo/K1/MUSXMMWE0L5C-180x180.PNG
             url: http://s3.lan
-            target: current
+            target: sametab
             id: 3_664_minio
           - title: NextCloud
             description: ''
             icon: >-
               https://digitiz.fr/wp-content/uploads/2021/07/Nextcloud-Logo.png
             url: https://cloud.erebe.eu
-            target: current
+            target: sametab
             id: 4_664_nextcloud
           - title: Tp Link
             icon: >-
               https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVSKp9dbRRuIfzk4IcIfXIUJwD82Hee9PaW1h0yluxG1bQBIsF93zZalkyaPfPFGQZqeE&usqp=CAU
             url: http://192.168.0.159/
-            target: current
+            target: sametab
             id: 5_664_tplink
           - title: CyerChef
             icon: >-
               https://gchq.github.io/CyberChef/assets/aecc661b69309290f600.ico
             url: https://gchq.github.io/CyberChef/
-            target: current
+            target: sametab
             id: 6_664_cyerchef
         icon: 🖥️
       - name: Work
@@ -113,49 +113,54 @@ data:
           - title: Gmail
             icon: https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico
             url: https://mail.google.com/mail/u/1/#inbox
-            target: current
+            target: sametab
             id: 0_419_gmail
           - title: Standup
             icon: >-
               https://ssl.gstatic.com/calendar/images/conferenceproviders/logo_meet_2020q4_192px.svg
             url: >-
               https://meet.google.com/beu-bewz-pvo
-            target: current
+            target: sametab
             id: 1_419_standup
           - title: AWS
             icon: >-
               https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Amazon_Web_Services_Logo.svg/1280px-Amazon_Web_Services_Logo.svg.png
             url: https://accounts.google.com/o/saml2/initsso?idpid=C00xxgtqv&spid=95999977614&forceauthn=false
-            target: current
+            target: sametab
             id: 2_419_aws
           - title: Gitlab
             icon: >-
               https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlLx7YQsTtkOVpABnTs1vmi5mGjxUZ_1c2awP0AlzkUNpyc_66Rh7eRoZ8zOmAmqZUkvc&usqp=CAU
             url: https://gitlab.com/qovery/backend/q-core
-            target: current
+            target: sametab
             id: 3_419_gitlab
           - title: Qortal
             icon: >-
               https://github.com/Qovery/public-resources/raw/master/qovery_square_new_logo.svg
             url: https://qortal.qovery.com/
-            target: current
+            target: sametab
             id: 4_419_qortal
           - title: Grafana Business
             icon: https://grafana.com/favicon.ico
             url: https://qortal.qovery.com/grafana/d/lu1G2nn7z/business-v2?orgId=1
-            target: current
+            target: sametab
             id: 5_419_grafana
           - title: Grafana Tech
             icon: https://grafana.com/favicon.ico
             url: https://qortal.qovery.com/grafana/dashboards/f/BQmc_dKnz/erebe
-            target: current
+            target: sametab
             id: 6_419_grafana
+          - title: Console
+            icon: https://github.com/Qovery/public-resources/raw/master/qovery_square_new_logo.svg 
+            url: https://console.qovery.com/platform/organization/460616f0-94da-4d35-b631-6fa4ed08eb9a/projects/b14d2c29-2fbe-42df-9a05-48fa3a66ea88/environments
+            target: sametab
+            id: 7_419_console
           - title: Notion
             icon: >-
               https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png
             url: https://www.notion.so/qovery/
-            target: current
-            id: 7_419_notion
+            target: sametab
+            id: 8_419_notion
         icon: >-
           https://github.com/Qovery/public-resources/raw/master/qovery_square_new_logo.svg
       - name: News
@@ -170,47 +175,47 @@ data:
           - title: Hackernews
             icon: https://hckrnews.com/favicon.ico
             url: https://hckrnews.com/
-            target: current
+            target: sametab
             id: 0_413_hackernews
           - title: /r/programming
             icon: >-
               https://styles.redditmedia.com/t5_2fwo/styles/communityIcon_1bqa1ibfp8q11.png?width=256&s=45361614cdf4a306d5510b414d18c02603c7dd3c
             url: https://www.reddit.com/r/programming/
-            target: current
+            target: sametab
             id: 1_413_rprogramming
           - title: /r/rust
             icon: >-
               https://styles.redditmedia.com/t5_2s7lj/styles/communityIcon_pjg3ktzyju771.png?width=256&s=5e99f497418f31f47439c0e8de10553ea9150a00
             url: https://www.reddit.com/r/rust/
-            target: current
+            target: sametab
             id: 2_413_rrust
           - title: /r/haskell
             icon: >-
               https://styles.redditmedia.com/t5_2qh36/styles/communityIcon_b3usb2hbvbe11.png?width=256&s=eb39d145e1d2ed489492566ec63938e245e881ed
             url: https://www.reddit.com/r/haskell/top/?t=month
-            target: current
+            target: sametab
             id: 3_413_rhaskell
           - title: /r/java
             icon: >-
               https://styles.redditmedia.com/t5_2qhd7/styles/communityIcon_tzuj58g8ax451.png?width=256&s=84724eb7266fa9876bcaa7a42bf09aa49030b38d
             url: https://www.reddit.com/r/java/top/?t=month
-            target: current
+            target: sametab
             id: 4_413_rjava
           - title: /r/kotlin
             icon: >-
               https://styles.redditmedia.com/t5_2so2r/styles/communityIcon_p0gr6t26jae41.png?width=256&s=80a5344680fe13c91ab921d34cd1e991dcffb7e1
             url: https://www.reddit.com/r/Kotlin/top/?t=month
-            target: current
+            target: sametab
             id: 5_413_rkotlin
           - title: Feedly
             icon: https://feedly.com/favicon.ico
             url: https://feedly.com/
-            target: current
+            target: sametab
             id: 6_413_feedly
           - title: NextInpact
             icon: https://www.nextinpact.com/favicon.ico
             url: https://www.nextinpact.com/
-            target: current
+            target: sametab
             id: 7_413_nextinpact
       - name: Various
         icon: 🪴
@@ -225,27 +230,27 @@ data:
             icon: >-
               https://hackingvision.com/wp-content/uploads/2022/04/github-gc8ed0adb3_1280.png
             url: https://github.com/
-            target: current
+            target: sametab
             id: 0_745_github
           - title: Coub
             icon: https://coub.erebe.eu/favicon.ico
             url: https://coub.erebe.eu
-            target: current
+            target: sametab
             id: 1_745_coub
           - title: Coub
             icon: https://coub.com/favicon.ico
             url: https://coub.com/
-            target: current
+            target: sametab
             id: 2_745_coub
           - title: Gmail
             icon: https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico
             url: https://mail.google.com/mail/u/0/#inbox
-            target: current
+            target: sametab
             id: 3_745_gmail
           - title: Nyaa
             icon: https://nyaa.si/static/favicon.png
             url: https://nyaa.si/?s=seeders&o=desc
-            target: current
+            target: sametab
             id: 4_745_nyaa
           - title: Todo
             icon: https://todoist.com/favicon.ico
