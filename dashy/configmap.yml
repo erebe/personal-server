@@ -131,7 +131,7 @@ data:
           - title: Gitlab
             icon: >-
               https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlLx7YQsTtkOVpABnTs1vmi5mGjxUZ_1c2awP0AlzkUNpyc_66Rh7eRoZ8zOmAmqZUkvc&usqp=CAU
-            url: https://gitlab.com/qovery/backend/q-core
+            url: https://gitlab.com/qovery/backend
             target: sametab
             id: 3_419_gitlab
           - title: Qortal
