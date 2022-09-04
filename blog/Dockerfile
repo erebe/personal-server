@@ -1,4 +1,4 @@
-FROM balthek/zola:0.13.0
+FROM ghcr.io/getzola/zola:v0.16.0
 
 COPY . .
 RUN ["zola", "build"]
