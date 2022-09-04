@@ -57,6 +57,8 @@ tl;dr:
 
 
 ```rust
+
+// Agents are permanently connected to this server
 pub struct AgentServer {
     // DashMap is a concurrent hashmap
     connected_agents: Arc<DashMap<AgentId, AgentSubscriberContext>>,
@@ -101,7 +103,12 @@ async fn agent_request_subscribe(&self, request: Request<SubscriberInfo>,) -> Re
     Ok(Response::new(Box::pin(stream)))
 }
 
-
+// This endpoint is called by clients that need to send request to some specific agent.
+// the request contains the information regarding which agent to contact.
+// 1. We retrieve the context of the subscribed the agent (if any) from the global state and forward it (with a channel) the request.
+// 2. We register the context of our request, within an global state for the agent response to be able to foarward us back via a channel the response stream
+// 3. We wait some time for the agent to respond us or we timeout the client request
+// 4. We return the agent response stream to our client response stream
 #[instrument(level="info", skip_all, fields(request_id = %request.get_ref().id, call = field::Empty))]
 async fn agent_request_publish(&self, request: Request<AgentRequest>,) -> Result<Response<Self::AgentRequestPublishStream>, Status> {
 
@@ -145,7 +152,10 @@ async fn agent_request_publish(&self, request: Request<AgentRequest>,) -> Result
     Ok(Response::new(Box::pin(response_stream)))
 }
 
-
+// This endpoint is used by the agent after receiving (from agent_request_subscribe) a request for returning the response of this request.
+// After handling the request the agent call this endpoint with request-id in the headers and the response stream is the body.
+// 1. The endpoint retrieve the context of the request (with the id) 
+// 2. Forward the response stream to the client requesting it via the context channel
 #[instrument(level = "info", skip_all, fields(request_id = field::Empty))]
 async fn agent_response_publish(
     &self,
@@ -178,4 +188,25 @@ async fn agent_response_publish(
         }
     }
 }
+```
+
+*Look nice, he use instrument in order to get proper logging, every hashmap are cleaned from their data so no mem leak anything in a global state, he even use a weak reference of his Arc to do it, he put some thought in it*
+
+<ins>**Charles**</ins>: Xavier, I approved your PR. Nice job 👍, ship it !
+
+How many issues can you spot in this code ?
+If you would test it locally or under low load, most likely it will work, well most of the time !
+
+## Issue #1: Order between futures are not guaranteed
+
+Soon after releasing the agent server in preprod and testing it, Xavier found out that some agent stop responding after a while for unknown reason.
+Not all agent stop responding just some and never the same after restarting the server. Doing some request on them works but after a while they just stop.
+Xavier decides to send a request every minute to each agent, and soon after find one that stop responding.
+Looking at the log for this agent, Xavier got.
+
+```
+...
+agent_request_subscribe{agent_id=42} agent connected
+agent_request_subscribe{agent_id=42} agent disconnected
+agent_request_publish{request_id=66672} No agent subscribed for this id
 ```
