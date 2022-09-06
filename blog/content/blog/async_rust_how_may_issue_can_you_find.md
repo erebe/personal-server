@@ -210,3 +210,44 @@ agent_request_subscribe{agent_id=42} agent connected
 agent_request_subscribe{agent_id=42} agent disconnected
 agent_request_publish{request_id=66672} No agent subscribed for this id
 ```
+
+Hum so the agent disconnected ? Stange ... Looking at the log of the agent shows nothing beside that it disconnected indeed, but reconnected just after the connection disruption. The agent seems alive and still connected to the gateway 🤔 What is happening ?
+
+Xavier takes a look at the machine running the gateway and by running `ss -ntp` to show alive connections can clearly see the agent is still connected to the gtw.
+```
+State             Recv-Q             Send-Q                                  Local Address:Port                                   Peer Address:Port              Process
+ESTAB             0                  0                                [::ffff:10.0.67.213]:8081                           [::ffff:ip.my.alive.agent]:55346              users:(("gateway",pid=8,fd=174))
+```
+
+So the only possible issue for the gateway to return `No agent subscribed for this id` while the agent is connected, is that there is an issue in the code and that the agent is not correctly registred 🤔
+
+```
+async fn agent_request_subscribe(&self, request: Request<SubscriberInfo>,) -> Result<Response<Self::AgentRequestSubscribeStream>, Status> {
+
+    info!("agent connected");
+    let (subscriber_ctx, agent_request_rx) = AgentSubscriberContext::new(request.into_inner())?;
+    let agent_id = subscriber_ctx.id;
+
+    let on_disconnected = {
+        let connected_agents_weak_ref = Arc::downgrade(&self.connected_agents);
+        // WARNING: ATM, the latest connected agent will receive events. Only 1 agent is supported so far
+        self.connected_agents.insert(agent_id.clone(), subscriber_ctx);
+        let span = Span::current();
+
+        move || {
+            let span = span.enter();
+            debug!("agent disconnected");
+            if let Some(agent_peer_map) = connected_agents_weak_ref.upgrade() {
+                agent_peer_map.remove(&agent_id)
+            }
+        }
+    };
+
+    // Adapter to convert our channel that receive agent request from clients into a stream
+    // when dropped, the on_disconnected() function is executed
+    let stream = ChannelReceiverStream::new(agent_request_rx, on_disconnected)
+                  .instrument(Span::current());
+
+    Ok(Response::new(Box::pin(stream)))
+}
+```
