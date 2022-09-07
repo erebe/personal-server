@@ -213,7 +213,7 @@ agent_request_publish{request_id=66672} No agent subscribed for this id
 
 Hum so the agent disconnected ? Stange ... Looking at the log of the agent shows nothing beside that it disconnected indeed, but reconnected just after the connection disruption. The agent seems alive and still connected to the gateway 🤔 What is happening ?
 
-Xavier takes a look at the machine running the gateway and by running `ss -ntp` to show alive connections can clearly see the agent is still connected to the gtw.
+Xavier takes a look at the machine running the gateway and by running `ss -ntp` to show live connections, can clearly see the agent is still connected to the gtw.
 ```
 State             Recv-Q             Send-Q                                  Local Address:Port                                   Peer Address:Port              Process
 ESTAB             0                  0                                [::ffff:10.0.67.213]:8081                           [::ffff:ip.my.alive.agent]:55346              users:(("gateway",pid=8,fd=174))
@@ -221,7 +221,7 @@ ESTAB             0                  0                                [::ffff:10
 
 So the only possible issue for the gateway to return `No agent subscribed for this id` while the agent is connected, is that there is an issue in the code and that the agent is not correctly registred 🤔
 
-```
+```rust
 async fn agent_request_subscribe(&self, request: Request<SubscriberInfo>,) -> Result<Response<Self::AgentRequestSubscribeStream>, Status> {
 
     info!("agent connected");
@@ -237,8 +237,8 @@ async fn agent_request_subscribe(&self, request: Request<SubscriberInfo>,) -> Re
         move || {
             let span = span.enter();
             debug!("agent disconnected");
-            if let Some(agent_peer_map) = connected_agents_weak_ref.upgrade() {
-                agent_peer_map.remove(&agent_id)
+            if let Some(agents_peer_map) = connected_agents_weak_ref.upgrade() {
+                agents_peer_map.remove(&agent_id)
             }
         }
     };
@@ -251,3 +251,15 @@ async fn agent_request_subscribe(&self, request: Request<SubscriberInfo>,) -> Re
     Ok(Response::new(Box::pin(stream)))
 }
 ```
+
+From the logs everything happens in the `agent_request_subscribe` function so let's take a closer look at it.
+What does this code do ? 
+
+When an agent connect, it calls this functions in order to subscribe to a stream of events for him.
+The only thing that this function is doing is
+1. Creating a context of the agent containing a channel to forward the request
+2. Insert/Replace the agent's context into the global map of connected agents
+3. Put in place a hook/drop in order to remove the context agent from the global map
+
+When we read this code, it seems very linear in what it does but in fact it is not.
+The proximity in the lines makes thing easy to miss that some line may execute in not the same order that we read it and 
