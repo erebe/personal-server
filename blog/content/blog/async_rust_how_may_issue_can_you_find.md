@@ -238,7 +238,7 @@ async fn agent_request_subscribe(&self, request: Request<SubscriberInfo>,) -> Re
             let span = span.enter();
             debug!("agent disconnected");
             if let Some(agents_peer_map) = connected_agents_weak_ref.upgrade() {
-                agents_peer_map.remove(&agent_id)
+                agents_peer_map.remove(&agent_id);
             }
         }
     };
@@ -262,4 +262,52 @@ The only thing that this function is doing is
 3. Put in place a hook/drop in order to remove the context agent from the global map
 
 When we read this code, it seems very linear in what it does but in fact it is not.
-The proximity in the lines makes thing easy to miss that some line may execute in not the same order that we read it and 
+The proximity in the lines makes thing easy to miss that some lines may not execute in the same order that we read it.
+
+In our case, it is the on_disconnected function that is called in the Drop implementation.
+```rust
+        move || {
+            let span = span.enter();
+            debug!("agent disconnected");
+            if let Some(agents_peer_map) = connected_agents_weak_ref.upgrade() {
+                agents_peer_map.remove(&agent_id);
+            }
+        }
+```
+
+When a client re-connect, in a new context/task/future nothing guarantee that Drop of the previous context/task/future has been called.
+Each task are independent and unless something synchronize them we can't rely for things to happen in some specific order.
+
+Here what is happening, is:
+1. the agent get disconnect for some reason, and reconnect itself to the gateway
+2. By reconnecting the agent insert his context into the global map
+3. The server got notified that the previous connection of the agent is broken, and thus drop the previous stream
+4. Our on_disconnected got called when the previous stream is dropped, and remove the context of the agent from the global map
+5. Sadly, the code remove the context of the newly connected agent
+6. The agent is now unreachable from client point of view as we can't retrieve the agent's context anymore 💣
+
+What is the fix ? 
+Introduce a way to recognize if the context we remove was our own from our task.
+
+```rust
+    // subscriber_ctx.connect_at = Instant::now();
+
+    let on_disconnected = {
+        let connected_agents_weak_ref = Arc::downgrade(&self.connected_agents);
+        let connected_at = subscriber_ctx.connected_at;
+        // WARNING: ATM, the latest connected agent will receive events. Only 1 agent is supported so far
+        self.connected_agents.insert(agent_id.clone(), subscriber_ctx);
+        let span = Span::current();
+
+        move || {
+            let span = span.enter();
+            debug!("agent disconnected");
+            if let Some(agents_peer_map) = connected_agents_weak_ref.upgrade() {
+                agents_peer_map.remove_if(&agent_id, |_, ctx| ctx.connected_at == connected_at);
+            }
+        }
+    };
+```
+
+Xavier found a fix, he adds the point in time were our context was created and check before removing the context from the map if the connected time match.
+After releasing the fix, the problem with agents unreachable disappared.
