@@ -140,6 +140,12 @@ data:
             url: https://qortal.qovery.com/
             target: sametab
             id: 4_419_qortal
+          - title: Jira
+            icon: >-
+              https://jirasoft.tdf.fr/images/atlassian-jira-logo-large.png
+            url: https://qovery.atlassian.net/jira/software/c/projects/COR/boards/34
+            target: sametab
+            id: 4_49_Jira
           - title: Grafana Business
             icon: https://grafana.com/favicon.ico
             url: https://qortal.qovery.com/grafana/d/lu1G2nn7z/business-v2?orgId=1
