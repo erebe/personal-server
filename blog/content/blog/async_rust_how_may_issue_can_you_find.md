@@ -311,3 +311,13 @@ Introduce a way to recognize if the context we remove was our own from our task.
 
 Xavier found a fix, he adds the point in time were our context was created and check before removing the context from the map if the connected time match.
 After releasing the fix, the problem with agents unreachable disappared.
+
+
+## Issue #2: 
+Do not keep mutex across await points
+
+## Issue #3: 
+Await point are suspension, nothing guarantee your future will be resumed/cross an await point
+
+## Issue #4: 
+no guarantee of time across await
