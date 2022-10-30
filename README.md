@@ -1,4 +1,4 @@
-# Managing my personal server in 2020
+# Managing my personal server in ~~2020~~ 2023
 
 <p align="center">
   <img src="https://github.com/erebe/personal-server/raw/master/logo.jpeg" alt="logo"/>
