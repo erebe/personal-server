@@ -5,6 +5,7 @@
 </p>
 
 ### Updates:
+ * 1 november 2022 - 2 years old feedback
  * 9 september 2021 - Added dns over https for pihole
  * 22 December 2020 - Added [https://healthchecks.io](https://healthchecks.io) for backups to ping me on whatsapp
  * 20 November 2020 - Mention of gpg key to sign git commits
@@ -73,6 +74,9 @@ My goals for this setup are:
 
 23. [Conclusion](#conclusion)
 24. [If you want more freedom](#freedom)
+
+** EPILOGUE**: [2023 Update](#2023)
+
 
 # The road so far <a name="background"></a>
 
@@ -1810,7 +1814,7 @@ spec:
     
     
     
-# Epilogue: 2023 update
+# Epilogue: 2023 update <a name="2023"></a>
 
 It has been 2 years now that I wrote this guide, so I thought it was time for an update and give back some feedbacks now that I earned the benefit of hinsights.
 
