@@ -5,7 +5,7 @@
 </p>
 
 ### Updates:
- * 1 november 2022 - 2 years old feedback
+ * 31 october 2022 - 2 years old feedback
  * 9 september 2021 - Added dns over https for pihole
  * 22 December 2020 - Added [https://healthchecks.io](https://healthchecks.io) for backups to ping me on whatsapp
  * 20 November 2020 - Mention of gpg key to sign git commits
