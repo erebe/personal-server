@@ -81,7 +81,7 @@ My goals for this setup are:
 26. [Maintainability](#2023_maintainability)
 27. [Extensibility](#2023_extensibility)
 28. [Observability](#2023_observability)
-
+28. [2023 Conclusion](#2023_conclusion)
 
 # The road so far <a name="background"></a>
 
@@ -1895,7 +1895,7 @@ On the mini-pc I run [Proxmox](https://www.proxmox.com/en/) that in turn run ZFS
 All this complexity, the fact that the machines run on a different network, by different operating systems, are in the end abstracted away thanks to wireguard to flatten the network, and kubernetes to centralize the compute.
 I really enjoyed that this setup let me started easily with a single machine, and allowed me to grow without pain and changing anything in the way how I manage the whole.
 
-### What I would like to improve in term of maintainability ? 
+### What I would like to improve in term of extensibility ? 
 
 For now nothing, I quite happy with what I have. I never felt the need to have an extensible data layer, maybe it will come one day, but as I don’t have many photos/videos/movies, my data need is quite low at the moment.
 
@@ -1904,7 +1904,14 @@ For now nothing, I quite happy with what I have. I never felt the need to have a
 
 I still don't monitor my machines, beside the helthchecks.io alerts configured to page me on whatsapp for my backups and ping of external services.
 At first I thought about setting up netdata/or a grafana + prometheus, but so far, I never felt the need to investigate what was going on.
-Using k9s to monitor/have a glance of my machines status, provided to be enough.
+Using k9s + ssh to monitor/have a glance of my machines status, provided to be enough.
 Maybe one day I will feel the need, but with my low usage, hardware is robust enough for me to trust the system.
 
-#
+# 2023 Conclusion <a name="2023_conclusion"></a>
+
+After 2 years, I am pretty happy with this setup. I picture it as secure, simple to use, robust, maintenable and extensible.
+But it is not all white, and for the years to come, I would like to improve the few things below
+1. Force me to revoke one of my 2FA device in order to measure/learn the pain to do it and avoid fearing such event to occur.
+2. Improving maintenability by automating upgrade/re-build of everything. So far I only update when I decide too, but would like to ease this process and centralize version of everything
+3. Reduce my reliance on a 3rd party CI (github), everything can work without it, but it is too convenient, so I would like to internalize it (GitlabCI ? Drone ? Will see)
+
