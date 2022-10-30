@@ -75,7 +75,7 @@ My goals for this setup are:
 23. [Conclusion](#conclusion)
 24. [If you want more freedom](#freedom)
 
-** EPILOGUE**: [2023 Update](#2023)
+**EPILOGUE**: [2023/2 years feedbacks](#2023)
 
 
 # The road so far <a name="background"></a>
