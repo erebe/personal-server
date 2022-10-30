@@ -1837,7 +1837,7 @@ There is still, to my knowledge, no protocol/central place to say, please this d
 
 I don’t consider myself a security expert, not even a security lover, for me it is just a necessary pain so I want it to be simple to use daily and be fool proof. To avoid being locked-out of my accounts in case I lose access to my Yubikey, I bought an account to [Bitwarden](https://bitwarden.com/) for 10$ a year and always use TOTP for 2FA in addition of my Yubikey.
 
-So to sum-up my today security is GPG with a Yubikey coupled with TOTP (bitwarden) as a fallback in case I lose access to one of my device. With this setup I never felt limited in any way, nor felt it was too cumbersome to use daily and is low maintenance so far. 
+So to sum-up my today security is still, GPG with a Yubikey coupled with TOTP (bitwarden) as a fallback in case I lose access to one of my devices. With this setup I never felt limited in any way, nor felt it was too cumbersome to use daily and is low maintenance so far. 
 But hey, the real challenge will arise when I am going to lose one of my authentication factor ¯\_(ツ)_/¯
 
 ## Maintainability
