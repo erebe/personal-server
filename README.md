@@ -5,7 +5,7 @@
 </p>
 
 ### Updates:
- * 31 october 2022 - 2 years old feedback
+ * 31 october 2022 - feedback from 2 years old insights [2023 update](#2023_update)
  * 9 september 2021 - Added dns over https for pihole
  * 22 December 2020 - Added [https://healthchecks.io](https://healthchecks.io) for backups to ping me on whatsapp
  * 20 November 2020 - Mention of gpg key to sign git commits
@@ -75,7 +75,7 @@ My goals for this setup are:
 23. [Conclusion](#conclusion)
 24. [If you want more freedom](#freedom)
 
-**EPILOGUE**: [2023/2 years feedbacks](#2023)
+**EPILOGUE**: [2023 - feedbacks from 2 years insights](#2023)
 
 25. [Security](#2023_security)
 26. [Maintainability](#2023_maintainability)
@@ -1914,4 +1914,5 @@ But it is not all white, and for the years to come, I would like to improve the 
 1. Force me to revoke one of my 2FA device in order to measure/learn the pain to do it and avoid fearing such event to occur.
 2. Improving maintenability by automating upgrade/re-build of everything. So far I only update when I decide too, but would like to ease this process and centralize version of everything
 3. Reduce my reliance on a 3rd party CI (github), everything can work without it, but it is too convenient, so I would like to internalize it (GitlabCI ? Drone ? Will see)
+4. Ease integration ? I can't use on the shelf tool and need to re-integrate every myself, which is sometime a pain, as it is not as easy as start this container in portainer. But hey, it is the purpose of this project to do it myself to learn ¯\_(ツ)_/¯
 
