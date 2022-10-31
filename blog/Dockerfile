@@ -1,4 +1,4 @@
-FROM ghcr.io/getzola/zola:v0.16.0
+FROM ghcr.io/getzola/zola:v0.16.1
 
 COPY . .
 RUN ["zola", "build"]
