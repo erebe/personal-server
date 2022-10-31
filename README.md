@@ -1865,7 +1865,7 @@ I went from machines were everything were setup by hand and after a few months/y
     * It means no terraform and deciding to setup some easy/long lived stuff by hand/ui instead of relying on a more complex tool that need to be updated/attenteded
     * It means no config management, and instead relying of Make, even if today I would use [just](https://github.com/casey/just) ) while keeping the key idea of idempotency 
     * It means no helm and relying only on kubectl for my own installation, as I don’t need all the feature of it
-Usally devops tools evolve quickly and from my experience require daily practice for them to stay alive. They don’t usually like to be used once in a while, something just need to break in the middle after few months without usage
+    * Usally devops tools evolve quickly and from my experience require daily practice for them to stay alive. They don’t usually like to be used once in a while, something just need to break in the middle after few months without usage
 
 
 * Having a CI to automate everything
