@@ -17081,7 +17081,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: cert-manager
-          image: "quay.io/jetstack/cert-manager-cainjector:v1.6.1"
+          image: "quay.io/jetstack/cert-manager-cainjector:v1.10.0"
           imagePullPolicy: IfNotPresent
           args:
           - --v=2
