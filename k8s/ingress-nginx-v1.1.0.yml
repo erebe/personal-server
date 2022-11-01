@@ -325,7 +325,7 @@ spec:
       hostNetwork: true
       containers:
         - name: controller
-          image: k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:f766669fdcf3dc26347ed273a55e754b427eb4411ee075a53f30718b4499076a
+          image: k8s.gcr.io/ingress-nginx/controller:v1.4.0@sha256:34ee929b111ffc7aa426ffd409af44da48e5a0eea1eb2207994d9e0c0882d143
           imagePullPolicy: IfNotPresent
           lifecycle:
             preStop:
