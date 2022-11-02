@@ -20,7 +20,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: nextcloud
-        image: linuxserver/nextcloud:amd64-version-23.0.0
+        image: linuxserver/nextcloud:amd64-25.0.0-php8
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8083
