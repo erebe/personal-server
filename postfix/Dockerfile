@@ -1,4 +1,4 @@
-FROM alpine:3.11 
+FROM alpine:3.17 
 #newer version does not have procmail binary (due to being unmaintened and CVEs)
 
 LABEL org.opencontainers.image.source https://github.com/erebe/server
