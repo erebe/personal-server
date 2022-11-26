@@ -504,7 +504,7 @@ The main benefit of having Kubernetes installed on my server, is that it allow m
 Let's start, to install K3s nothing more complicated than
 ```bash
 kubernetes_install:
-        ssh ${HOST} 'export INSTALL_K3S_EXEC=" --no-deploy servicelb --no-deploy traefik --no-deploy local-storage"; \
+        ssh ${HOST} 'export INSTALL_K3S_EXEC=" --disable servicelb --disable traefik --disable local-storage"; \
                 curl -sfL https://get.k3s.io | sh -'
 ```
 
