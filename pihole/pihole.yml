@@ -37,7 +37,7 @@ spec:
                 - raspberrypi
       containers:
       - name: pihole
-        image: pihole/pihole:2022.10
+        image: pihole/pihole:2022.12
         imagePullPolicy: IfNotPresent
         env:
         - name: TZ
