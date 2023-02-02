@@ -55,7 +55,7 @@ kubernetes_install:
 	ssh ${HOST} 'export INSTALL_K3S_EXEC=" --disable servicelb --disable traefik --disable local-storage --disable-cloud-controller --disable-network-policy --advertise-address 10.200.200.1 "; \
 		curl -sfL https://get.k3s.io | sh -'
 	#ssh ${HOST} "cat /etc/systemd/system/k3s.service" | diff  - k8s/k3s.serivce \
-		|| (scp k8s/k3s.service ${HOST}:/etc/systemd/system/k3s.serviceg && ssh ${HOST} 'systemctl daemon-reload && systemctl restart k3s.service')
+		|| (scp k8s/k3s.service ${HOST}:/etc/systemd/system/k3s.service && ssh ${HOST} 'systemctl daemon-reload && systemctl restart k3s.service')
 
 k8s:
 	#helm3 repo add stable https://kubernetes-charts.storage.googleapis.com/
