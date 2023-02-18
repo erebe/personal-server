@@ -19,7 +19,7 @@ fn on_config(config) {
   };
 
   config.server.tls = #{
-    preempt_cipherlist: false,
+    preempt_cipherlist: true,
     handshake_timeout: "1000ms",
     protocol_version: ["TLSv1.2", "TLSv1.3"],
   };
