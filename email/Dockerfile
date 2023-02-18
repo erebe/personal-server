@@ -28,6 +28,9 @@ RUN sed -i 's/#port = 143/port = 0/' /etc/dovecot/conf.d/10-master.conf && \
     sed -i 's#/etc/dovecot/users#/etc/dovecot/users/users#' /etc/dovecot/conf.d/auth-passwdfile.conf.ext && \
     rm -f /etc/dovecot/users && \
 
+    # Enable passwd db
+    sed -i 's#\#!include auth-passwdfile.conf.ext#!include auth-passwdfile.conf.ext#' /etc/dovecot/conf.d/10-auth.conf && \
+
     # Set logging to STDOUT/STDERR
     sed -i -e 's,#log_path = syslog,log_path = /dev/stderr,' \
            -e 's,#info_log_path =,info_log_path = /dev/stdout,' \
