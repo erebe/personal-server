@@ -39,6 +39,7 @@
         // Before delivering, the entire mail
         action "write mail to disk" || {
                 fs::write("/data/mail-tmp");
+                state::accept()
         }
     ],
 
