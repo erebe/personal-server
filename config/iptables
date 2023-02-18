@@ -43,6 +43,7 @@ iptables -A USER_CUSTOM -p tcp --dport 443 -j ACCEPT
 
 # Allow SMTP and IMAP
 iptables -A USER_CUSTOM -p tcp --dport 25 -j ACCEPT
+iptables -A USER_CUSTOM -p tcp --dport 465 -j ACCEPT
 iptables -A USER_CUSTOM -p tcp --dport 993 -j ACCEPT
 
 # Allow wireguard
@@ -106,6 +107,7 @@ ip6tables -A USER_CUSTOM -p tcp --dport 443 -j ACCEPT
 
 # Allow SMTP and IMAP
 ip6tables -A USER_CUSTOM -p tcp --dport 25 -j ACCEPT
+ip6tables -A USER_CUSTOM -p tcp --dport 465 -j ACCEPT
 ip6tables -A USER_CUSTOM -p tcp --dport 993 -j ACCEPT
 
 # Allow wireguard
