@@ -1,0 +1,37 @@
+name: Publish Dovecot Image
+on:
+  push:
+    paths:
+    - 'email/**'
+   
+jobs:
+  buildAndPush:
+    name: Build And Push docker images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v2 
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+      - name: Email
+        id: docker_build
+        uses: docker/build-push-action@v3
+        with:
+          context: email
+          file: email/Dockerfile
+          push: true
+          tags: ghcr.io/erebe/email:latest
+      - name: Email Image digest
+        run: echo Email ${{ steps.docker_build.outputs.digest }}
+      - name: Trigger deployer
+        run: |
+          payload='{ "application_name": "email", "image_digest": "${{ steps.docker_build.outputs.digest }}", "image_tag": "latest" }'
+          token='X-Webhook-Token: ${{ secrets.WEBHOOK_SECRET }}'
+          curl -X POST -H 'Content-Type: application/json' -H "${token}"  -d "${payload}" https://hooks.erebe.eu/hooks/deploy
+

@@ -1,0 +1,45 @@
+FROM debian:bullseye-slim
+
+
+LABEL org.opencontainers.image.source https://github.com/erebe/server
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates cron dumb-init wget dovecot-core dovecot-imapd procps curl rspamd && \
+    wget https://github.com/viridIT/vSMTP/releases/download/v2.1.1/vsmtp_v2.1.1_amd64.deb && \
+    dpkg -i vsmtp*.deb && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists *.deb && \
+    useradd -ms /bin/bash erebe
+
+
+# Dovcecot configuration
+# Disable imap port, only allow IMAPs
+RUN sed -i 's/#port = 143/port = 0/' /etc/dovecot/conf.d/10-master.conf && \
+
+    # The only one user will have its mailbox at /data
+    sed -iE 's#mail_location =.*#mail_location = maildir:/data#' /etc/dovecot/conf.d/10-mail.conf && \
+
+    # User passwd db file, need to be mounted as a secret
+    sed -i 's#/etc/dovecot/users#/etc/dovecot/users/users#' /etc/dovecot/conf.d/auth-passwdfile.conf.ext && \
+    rm -f /etc/dovecot/users && \
+
+    # Set logging to STDOUT/STDERR
+    sed -i -e 's,#log_path = syslog,log_path = /dev/stderr,' \
+           -e 's,#info_log_path =,info_log_path = /dev/stdout,' \
+           -e 's,#debug_log_path =,debug_log_path = /dev/stdout,' \
+        /etc/dovecot/conf.d/10-logging.conf 
+
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY dovecot_reload /etc/cron.weekly/reload_dovecot
+COPY vsmtp/config.vsl /etc/vsmtp/conf.d/config.vsl
+COPY vsmtp/filter.vsl /etc/vsmtp/filter.vsl
+
+VOLUME /data
+VOLUME /etc/dovecot/users
+EXPOSE 25
+EXPOSE 993
+
+#USER app
+
+ENTRYPOINT [ "/usr/bin/dumb-init", "--" ]
+CMD ["/docker-entrypoint.sh"]

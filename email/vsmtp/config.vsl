@@ -1,0 +1,26 @@
+//! This is the entrypoint for vSMTP's configuration.
+//!
+//! To make the configuration easier to maintain, we recommend that you split
+//! it into a set of feature-specific files stored in this directory that you
+//! can import via the Rhai import statement.
+//!
+//! See https://vsmtp.rs/ref/config/config.html
+
+fn on_config(config) {
+
+  // Change the name of the server.
+  config.server.name = "erebe.eu";
+
+  // Specify addresses that the server will listen to.
+  config.server.interfaces = #{
+    addr: ["[::]:25"],
+    addr_submission: ["[::]:587"],
+    addr_submissions: ["[::]:465"],
+  };
+
+  // Change filter rules locations.
+  config.app.vsl.filter_path = "/etc/vsmtp/filter.vsl";
+  config.app.vsl.domain_dir = "/etc/vsmtp/domain-enabled";
+
+  return config;
+}

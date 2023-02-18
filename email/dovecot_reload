@@ -1,0 +1,5 @@
+#!/bin/sh
+
+echo "Reloading dovecot configuration" | tee /proc/1/fd/1
+dovecot reload
+

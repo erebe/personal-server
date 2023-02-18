@@ -1,0 +1,8 @@
+From: "User Name" <username@gmail.com>
+To: "Erebe Dellu" <tutu@erebe.eu>
+Subject: This is a test
+
+Hi John,
+I’m sending this mail with curl thru my gmail account.
+Bye!
+
