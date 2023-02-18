@@ -28,9 +28,20 @@ fn on_config(config) {
       "level": [ "trace" ],
   };
 
+  config.server.virtual = #{
+    "erebe.eu": #{
+      "is_default": true,
+      "tls": #{
+          protocol_version: ["TLSv1.2", "TLSv1.3"],
+          certificate: "/etc/dovecot/private/tls.crt",
+          private_key: "/etc/dovecot/private/tls.key",
+      }
+    }
+  };
+
   // Change filter rules locations.
   config.app.vsl.filter_path = "/etc/vsmtp/filter.vsl";
-  config.app.vsl.domain_dir = "/etc/vsmtp/domain-enabled";
+  //config.app.vsl.domain_dir = "/etc/vsmtp/domain-enabled";
 
   return config;
 }
