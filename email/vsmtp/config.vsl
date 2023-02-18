@@ -19,9 +19,9 @@ fn on_config(config) {
   };
 
   config.server.tls = #{
-    preempt_cipherlist: true,
+    preempt_cipherlist: false,
     handshake_timeout: "1000ms",
-    protocol_version: ["TLSv1.2", "TLSv1.3"],
+    protocol_version: ["TLSv1.1", "TLSv1.2", "TLSv1.3"],
   };
 
   // Change filter rules locations.
