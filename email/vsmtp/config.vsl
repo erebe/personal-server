@@ -29,7 +29,7 @@ fn on_config(config) {
   };
 
   config.server.virtual = #{
-    "erebe.eu": #{
+    "mail.erebe.eu": #{
       "is_default": true,
       "tls": #{
           protocol_version: ["TLSv1.2", "TLSv1.3"],
