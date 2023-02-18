@@ -22,6 +22,8 @@ fn on_config(config) {
     preempt_cipherlist: false,
     handshake_timeout: "1000ms",
     protocol_version: ["TLSv1.2", "TLSv1.3"],
+    certificate: "/etc/dovecot/private/tls.crt",
+    private_key: "/etc/dovecot/private/tls.key",
   };
 
   // Change filter rules locations.
