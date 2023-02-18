@@ -26,7 +26,7 @@ spec:
         - containerPort: 25
         - containerPort: 993
         volumeMounts:
-        - name: dovecot-tls
+        - name: email-tls
           mountPath: /etc/dovecot/private/
           readOnly: true
         - name: dovecot-users-password
@@ -35,9 +35,9 @@ spec:
         - name: mail-data
           mountPath: /data
       volumes:
-      - name: dovecot-tls
+      - name: email-tls
         secret:
-          secretName: dovecot-tls
+          secretName: email-tls
       - name: dovecot-users-password
         secret:
           secretName: dovecot-users-password
@@ -50,10 +50,10 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: dovecot-tls
+  name: email-tls
 spec:
   # Secret names are always required.
-  secretName: dovecot-tls
+  secretName: email-tls
   duration: 2160h # 90d
   renewBefore: 720h # 30d
   subject:
