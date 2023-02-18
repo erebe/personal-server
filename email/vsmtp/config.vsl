@@ -36,6 +36,13 @@ fn on_config(config) {
           certificate: "/etc/dovecot/private/tls.crt",
           private_key: "/etc/dovecot/private/tls.key",
       }
+    },
+    "erebe.eu": #{
+      "tls": #{
+          protocol_version: ["TLSv1.2", "TLSv1.3"],
+          certificate: "/etc/dovecot/private/tls.crt",
+          private_key: "/etc/dovecot/private/tls.key",
+      }
     }
   };
 

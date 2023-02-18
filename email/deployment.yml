@@ -27,7 +27,7 @@ spec:
         - containerPort: 993
         volumeMounts:
         - name: dovecot-tls
-          mountPath: /etc/ssl/dovecot/
+          mountPath: /etc/dovecot/private/
           readOnly: true
         - name: dovecot-users-password
           mountPath: /etc/dovecot/users/
@@ -72,6 +72,7 @@ spec:
   # At least one of a DNS Name, URI, or IP address is required.
   dnsNames:
   - mail.erebe.eu
+  - erebe.eu
   # Issuer references are always required.
   issuerRef:
     name: letsencrypt-prod
