@@ -1,4 +1,4 @@
-name: Publish Dovecot Image
+name: Publish Email Image
 on:
   push:
     paths:

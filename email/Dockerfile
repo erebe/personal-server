@@ -19,6 +19,11 @@ RUN sed -i 's/#port = 143/port = 0/' /etc/dovecot/conf.d/10-master.conf && \
     # The only one user will have its mailbox at /data
     sed -iE 's#mail_location =.*#mail_location = maildir:/data#' /etc/dovecot/conf.d/10-mail.conf && \
 
+    # Rename TLS location to match kube cert-manager naming
+    sed -i -e 's#/etc/dovecot/private/dovecot.pem#/etc/dovecot/private/tls.crt#' \
+           -e 's#/etc/dovecot/private/dovecot.key#/etc/dovecot/private/tls.key#' \
+        /etc/dovecot/conf.d/10-ssl.conf && \
+
     # User passwd db file, need to be mounted as a secret
     sed -i 's#/etc/dovecot/users#/etc/dovecot/users/users#' /etc/dovecot/conf.d/auth-passwdfile.conf.ext && \
     rm -f /etc/dovecot/users && \
