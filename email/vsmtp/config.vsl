@@ -9,7 +9,7 @@
 fn on_config(config) {
 
   // Change the name of the server.
-  config.server.name = "erebe.eu";
+  config.server.name = "mail.erebe.eu";
 
   // Specify addresses that the server will listen to.
   config.server.interfaces = #{
@@ -21,7 +21,7 @@ fn on_config(config) {
   config.server.tls = #{
     preempt_cipherlist: false,
     handshake_timeout: "1000ms",
-    protocol_version: ["TLSv1.0", "TLSv1.2", "TLSv1.3"],
+    protocol_version: ["TLSv1.2", "TLSv1.3"],
   };
 
   // Change filter rules locations.
