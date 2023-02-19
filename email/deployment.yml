@@ -35,7 +35,7 @@ spec:
         - name: mail-data
           mountPath: /data
         - name: fetchmail
-          mountPath: /etc/fetchmailrc
+          mountPath: /etc/fetchmail
       volumes:
       - name: email-tls
         secret:

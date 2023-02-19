@@ -43,9 +43,7 @@ COPY dovecot_reload /etc/cron.weekly/reload_dovecot
 COPY fetchmail_remote /etc/cron.daily/fetchmail_remote
 COPY vsmtp/config.vsl /etc/vsmtp/conf.d/config.vsl
 COPY vsmtp/filter.vsl /etc/vsmtp/filter.vsl
-COPY fetchmailrc /etc/fetchmailrc
-
-RUN chmod 600 /etc/fetchmailrc
+#COPY fetchmailrc /etc/fetchmailrc
 
 VOLUME /data
 VOLUME /etc/dovecot/users
