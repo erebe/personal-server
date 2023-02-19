@@ -55,8 +55,8 @@ fn on_config(config) {
           "delivery": 1,
           "processing": 1,
           "receiver": 1,
-      },
-    },
+      }
+  };
 
   return config;
 }
