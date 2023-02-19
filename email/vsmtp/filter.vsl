@@ -14,7 +14,8 @@
     mail: [
         // After MAIL FROM command
       rule "deny unencrypted" || {
-        if ctx::is_secured() {
+        log("warn", `Email from ${ctx::client_ip()}`);
+        if ctx::is_secured() || ctx::client_ip() == "::1" || ctx::client_ip() == "127.0.0.1" {
           state::next()
         } else {
           state::deny(code(451, "5.7.3", "Must issue a STARTTLS command first\r\n"))
