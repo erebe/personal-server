@@ -1,6 +1,9 @@
 #!/bin/bash 
 
-chmod 600 /etc/fetchmailrc
+# move it to be able to chmod it. k8s secret is read only fs
+cp /etc/fetchmail/fetchmailrc /home/erebe/
+chmod 600 /home/erebe/fetchmailrc
+
 chown -R erebe:erebe /data
 mkdir /data/mail-tmp
 
