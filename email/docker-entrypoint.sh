@@ -18,6 +18,7 @@ do
     echo "Moving email $email"
     folder=$(cat $email | ./hmailclassifier | sed -E 's#^\.([^/]+)/$#\1#')
     doveadm mailbox create -u erebe $folder 2> /dev/null
+    cat $email | /usr/lib/dovecot/dovecot-lda -d erebe -m INBOX
     cat $email | /usr/lib/dovecot/dovecot-lda -d erebe -m "$folder"
 
     rm $email
