@@ -1,0 +1,6 @@
+#!/bin/sh
+
+echo "Purging INBOX" | tee /proc/1/fd/1
+doveadm expunge -u erebe mailbox INBOX SENTBEFORE 3d
+doveadm expunge -u erebe mailbox Trash SENTBEFORE 1d
+doveadm expunge -u erebe mailbox Spam SENTBEFORE 4w
