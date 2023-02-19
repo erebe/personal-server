@@ -38,6 +38,7 @@ RUN sed -i 's/#port = 143/port = 0/' /etc/dovecot/conf.d/10-master.conf && \
         /etc/dovecot/conf.d/10-logging.conf 
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY dovecot_purge /etc/cron.daily/dovecot_purge
 COPY dovecot_reload /etc/cron.weekly/reload_dovecot
 COPY vsmtp/config.vsl /etc/vsmtp/conf.d/config.vsl
 COPY vsmtp/filter.vsl /etc/vsmtp/filter.vsl
