@@ -1,5 +1,6 @@
 #!/bin/bash 
 
+chmod 600 /etc/fetchmailrc
 chown -R erebe:erebe /data
 mkdir /data/mail-tmp
 
