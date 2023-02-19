@@ -1,9 +1,9 @@
 HOST='root@erebe.eu'
 RASPBERRY='pi@10.200.200.2'
 
-.PHONY: install deploy release dns sudo ssh package iptables kubernetes_install k8s dovecot postfix nextcloud nextcloud_resync_file backup app wireguard pihole webhook blog minio dashy
+.PHONY: install deploy release dns sudo ssh package iptables kubernetes_install k8s email nextcloud nextcloud_resync_file backup app wireguard pihole webhook blog minio dashy
 
-deploy: dns sudo ssh package iptables k8s dovecot postfix nextcloud webhook backup wireguard blog dashy
+deploy: dns sudo ssh package iptables k8s email nextcloud webhook backup wireguard blog dashy
 
 release:
 ifdef ARGS
@@ -64,15 +64,12 @@ k8s:
 	kubectl apply --validate=false -f k8s/cert-manager-v1.10.0.yml
 	kubectl apply -f k8s/lets-encrypt-issuer.yml
 
-dovecot:
+email:
 	sops -d --output secrets_decrypted/dovecot.yml secrets/dovecot.yml
-	kubectl apply -f secrets_decrypted/dovecot.yml
-	kubectl apply -f dovecot/dovecot.yml
-
-postfix:
 	sops -d --output secrets_decrypted/fetchmail.yml secrets/fetchmail.yml
+	kubectl apply -f secrets_decrypted/dovecot.yml
 	kubectl apply -f secrets_decrypted/fetchmail.yml
-	kubectl apply -f postfix/postfix.yml
+	kubectl apply -f email/deployment.yml
 
 nextcloud:
 	kubectl apply -f nextcloud/config.nginx.site-confs.default.yml
