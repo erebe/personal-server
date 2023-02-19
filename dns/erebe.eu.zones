@@ -6,6 +6,7 @@
 @ 10800 IN MX 1 mail.erebe.eu.
 @ 10800 IN MX 10 spool.mail.gandi.net.
 @ 10800 IN MX 50 fb.mail.gandi.net.
+@ 10800 IN TXT "v=spf1 include:_mailcust.gandi.net mx:erebe.eu -all"
 api 10800 IN A 195.154.119.61
 api 10800 IN AAAA 2001:bc8:6005:136:208:a2ff:fe0c:634e
 board 10800 IN A 195.154.119.61
