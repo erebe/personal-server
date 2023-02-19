@@ -7,6 +7,9 @@
 @ 10800 IN MX 10 spool.mail.gandi.net.
 @ 10800 IN MX 50 fb.mail.gandi.net.
 @ 10800 IN TXT "v=spf1 include:_mailcust.gandi.net mx:erebe.eu -all"
+gm1._domainkey 10800 IN CNAME   gm1.gandimail.net.
+gm2._domainkey 10800 IN CNAME   gm2.gandimail.net.
+gm3._domainkey 10800 IN CNAME   gm3.gandimail.net.
 api 10800 IN A 195.154.119.61
 api 10800 IN AAAA 2001:bc8:6005:136:208:a2ff:fe0c:634e
 board 10800 IN A 195.154.119.61
