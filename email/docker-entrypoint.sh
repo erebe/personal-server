@@ -11,6 +11,7 @@ mail_filter_url=$(curl -s https://api.github.com/repos/erebe/hmailfilter/release
 curl -L -o hmailclassifier $mail_filter_url
 chmod +x hmailclassifier
 
+cron -f &
 /usr/bin/rspamd -c /etc/rspamd/rspamd.conf -f -i &
 dovecot -F &
 vsmtp -c /etc/vsmtp/vsmtp.vsl --no-daemon --stdout &
