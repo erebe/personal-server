@@ -40,15 +40,19 @@ RUN sed -i 's/#port = 143/port = 0/' /etc/dovecot/conf.d/10-master.conf && \
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 COPY dovecot_purge /etc/cron.daily/dovecot_purge
 COPY dovecot_reload /etc/cron.weekly/reload_dovecot
+COPY fetchmail_remote /etc/cron.daily/fetchmail_remote
 COPY vsmtp/config.vsl /etc/vsmtp/conf.d/config.vsl
 COPY vsmtp/filter.vsl /etc/vsmtp/filter.vsl
+COPY fetchmailrc /etc/fetchmailrc
+
+RUN chmod 600 /etc/fetchmailrc
 
 VOLUME /data
 VOLUME /etc/dovecot/users
 EXPOSE 25
 EXPOSE 993
 
-#USER app
+#USER erebe
 
 ENTRYPOINT [ "/usr/bin/dumb-init", "--" ]
 CMD ["/docker-entrypoint.sh"]
