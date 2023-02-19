@@ -7,6 +7,7 @@
 @ 10800 IN MX 10 spool.mail.gandi.net.
 @ 10800 IN MX 50 fb.mail.gandi.net.
 @ 10800 IN TXT "v=spf1 include:_mailcust.gandi.net mx:erebe.eu -all"
+_dmarc 10800 IN TXT "v=DMARC1; p=none; rua=mailto:erebe@erebe.eu; ruf=mailto:erebe@erebe.eu; pct=100"
 gm1._domainkey 10800 IN CNAME   gm1.gandimail.net.
 gm2._domainkey 10800 IN CNAME   gm2.gandimail.net.
 gm3._domainkey 10800 IN CNAME   gm3.gandimail.net.
