@@ -1,4 +1,4 @@
 #!/bin/sh
 
 echo "Fetching remote email" | tee /proc/1/fd/1
-fetchmail --nodetach --nosyslog --ssl --service 995 -f /home/erebe/fetchmailrc
+fetchmail --nodetach --nosyslog --ssl --sslproto 'tls1.2+' -f /home/erebe/fetchmailrc
