@@ -36,7 +36,7 @@
     ],
 
     preq: [
-        rule "check spf & dkim & dmarc" || dmarc::check(),
+        rule "check spf & dkim & dmarc" || spf::check("both"),
 
         rule "write mail to disk" || {
           fs::write("/data/mail-tmp");
