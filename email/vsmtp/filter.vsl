@@ -37,6 +37,15 @@
 
     preq: [
         rule "check spf" || spf::check("both", "soft"),
+        rule "check dkim" || {
+            dkim::verify();
+
+            if !msg::get_header("Authentication-Results").contains("dkim=fail") {
+              return state::deny();
+            }
+
+            state::accept()
+        },
 
         rule "write mail to disk" || {
           fs::write("/data/mail-tmp");
