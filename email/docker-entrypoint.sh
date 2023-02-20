@@ -23,11 +23,11 @@ do
     echo "Moving email ${email_pre_spam}"
     email="${email_pre_spam}.spam"
 
-    cat ${email_pre_spam} | rspamc --mime > ${email}
-    folder=$(cat ${email} | ./hmailclassifier | sed -E 's#^\.([^/]+)/$#\1#')
+    rspamc --mime < ${email_pre_spam} > ${email} 
+    folder=$(./hmailclassifier < ${email} | sed -E 's#^\.([^/]+)/$#\1#')
     doveadm mailbox create -u erebe $folder 2> /dev/null
-    cat ${email} | /usr/lib/dovecot/dovecot-lda -d erebe -m INBOX
-    cat ${email} | /usr/lib/dovecot/dovecot-lda -d erebe -m "$folder"
+    /usr/lib/dovecot/dovecot-lda -d erebe -m INBOX < ${email}
+    /usr/lib/dovecot/dovecot-lda -d erebe -m "$folder" < ${email}
 
     rm ${email_pre_spam} ${email}
 
