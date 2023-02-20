@@ -20,7 +20,7 @@
         } else {
           state::deny(code(451, "5.7.3", "Must issue a STARTTLS command first\r\n"))
         }
-      },
+      }
     ],
 
     rcpt: [
