@@ -36,7 +36,7 @@
     ],
 
     preq: [
-        rule "check spf" || spf::check("both"),
+        rule "check spf" || spf::check("both", "soft"),
 
         rule "write mail to disk" || {
           fs::write("/data/mail-tmp");
