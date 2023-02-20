@@ -26,8 +26,14 @@ do
     rspamc --mime < ${email_pre_spam} > ${email} 
     folder=$(./hmailclassifier < ${email} | sed -E 's#^\.([^/]+)/$#\1#')
     doveadm mailbox create -u erebe $folder 2> /dev/null
-    /usr/lib/dovecot/dovecot-lda -d erebe -m INBOX < ${email}
+
+    # If not spam put it also in INBOX for easy ready on mobile
+    if [ "$folder" != "Spam" ]
+    then
+      /usr/lib/dovecot/dovecot-lda -d erebe -m INBOX < ${email}
+    fi
     /usr/lib/dovecot/dovecot-lda -d erebe -m "$folder" < ${email}
+
 
     rm ${email_pre_spam} ${email}
 
