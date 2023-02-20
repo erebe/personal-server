@@ -21,6 +21,7 @@ do
   for email in $(find /data/mail-tmp -name '*.eml')
   do
     echo "Moving email $email"
+    cat $email | rspamc --mime > $email
     folder=$(cat $email | ./hmailclassifier | sed -E 's#^\.([^/]+)/$#\1#')
     doveadm mailbox create -u erebe $folder 2> /dev/null
     cat $email | /usr/lib/dovecot/dovecot-lda -d erebe -m INBOX
