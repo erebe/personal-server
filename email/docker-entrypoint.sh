@@ -18,16 +18,18 @@ vsmtp -c /etc/vsmtp/vsmtp.vsl --no-daemon --stdout &
 
 while true 
 do 
-  for email in $(find /data/mail-tmp -name '*.eml')
+  for email_pre_spam in $(find /data/mail-tmp -name '*.eml')
   do
-    echo "Moving email $email"
-    cat $email | rspamc --mime > $email
-    folder=$(cat $email | ./hmailclassifier | sed -E 's#^\.([^/]+)/$#\1#')
-    doveadm mailbox create -u erebe $folder 2> /dev/null
-    cat $email | /usr/lib/dovecot/dovecot-lda -d erebe -m INBOX
-    cat $email | /usr/lib/dovecot/dovecot-lda -d erebe -m "$folder"
+    echo "Moving email ${email_pre_spam}"
+    email="${email_pre_spam}.spam"
 
-    rm $email
+    cat ${email_pre_spam} | rspamc --mime > ${email}
+    folder=$(cat ${email} | ./hmailclassifier | sed -E 's#^\.([^/]+)/$#\1#')
+    doveadm mailbox create -u erebe $folder 2> /dev/null
+    cat ${email} | /usr/lib/dovecot/dovecot-lda -d erebe -m INBOX
+    cat ${email} | /usr/lib/dovecot/dovecot-lda -d erebe -m "$folder"
+
+    rm ${email_pre_spam} ${email}
 
 
   done
