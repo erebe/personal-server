@@ -11,6 +11,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists *.deb && \
     useradd -ms /bin/bash erebe
 
+ADD https://github.com/erebe/personal-server/releases/download/vsmtp/vsmtp /usr/sbin/vsmtp
+RUN chmod +x /usr/sbin/vsmtp
 
 # Dovcecot configuration
 # Disable imap port, only allow IMAPs
