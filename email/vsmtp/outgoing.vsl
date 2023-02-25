@@ -1,0 +1,45 @@
+#{
+    connect: [
+        // Before HELO/EHLO command
+    ],
+
+    authenticate: [
+        // After AUTH command
+    ],
+
+    helo: [
+        // After HELO/EHLO command
+    ],
+
+    mail: [
+      // After MAIL FROM command
+      rule "deny unencrypted" || {
+        log("warn", `Email from ${ctx::client_ip()}`);
+        if ctx::is_secured() || ctx::client_ip() == "::1" || ctx::client_ip() == "127.0.0.1" {
+          state::next()
+        } else {
+          state::deny(code(451, "5.7.3", "Must issue a STARTTLS command first\r\n"))
+        }
+      }
+    ],
+
+    rcpt: [],
+
+    preq: [
+        rule "write mail to disk" || {
+          fs::write("/data/mail-tmp");
+          // we deny to avoid queuing but tell client everything is ok
+          state::deny(code(250, "Ok\r\n"))
+        },
+    ],
+
+
+    postq: [
+        // After queuing, the entire mail
+    ],
+
+    delivery: [
+        // Before delivering, the entire mail
+    ],
+
+}
