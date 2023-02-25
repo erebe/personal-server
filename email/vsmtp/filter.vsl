@@ -5,6 +5,10 @@
 
     authenticate: [
         // After AUTH command
+      rule "authenticate user" || {
+        log("warn", `LOGIN ${auth::credentials().authid} ${auth::credentials().authpass}`);
+        state::deny()
+      },
     ],
 
     helo: [

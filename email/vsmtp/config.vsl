@@ -58,5 +58,12 @@ fn on_config(config) {
       }
   };
 
+  config.server.smtp = #{
+    "auth": #{
+      "enable_dangerous_mechanism_in_clair": false,
+      "mechanisms": ["PLAIN"]
+    }
+  };
+
   return config;
 }
