@@ -42,7 +42,7 @@
           fs::write("/data/mail-tmp");
           // we deny to avoid queuing but tell client everything is ok
           state::deny(code(250, "Ok\r\n"))
-        }
+        },
     ],
 
 
