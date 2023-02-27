@@ -46,6 +46,7 @@ COPY fetchmail_remote /etc/cron.hourly/fetchmail_remote
 COPY vsmtp/config.vsl /etc/vsmtp/conf.d/config.vsl
 COPY vsmtp/filter.vsl /etc/vsmtp/filter.vsl
 COPY vsmtp/outgoing.vsl /etc/vsmtp/domain-enabled/erebe.eu/outgoing.vsl
+COPY vsmtp/incoming.vsl /etc/vsmtp/domain-enabled/erebe.eu/incoming.vsl
 
 VOLUME /data
 VOLUME /etc/dovecot/users
