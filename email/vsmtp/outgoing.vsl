@@ -3,8 +3,7 @@
     authenticate: [],
     helo: [],
     mail: [],
-    rcpt: [],
-    preq: [
+    rcpt: [
         rule "forward" || {
           if auth::is_authenticated() {
             transport::forward_all(env("GANDI_RELAI_URL"));
@@ -13,9 +12,10 @@
             state::deny()
           }
         }
+
     ],
+    preq: [],
     postq: [],
-    delivery: [
-    ],
+    delivery: [],
 
 }
