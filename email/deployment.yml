@@ -25,6 +25,17 @@ spec:
         ports:
         - containerPort: 25
         - containerPort: 993
+        env:
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: dovecot-users-password
+              key: SMTP_PASSWORD
+        - name: GANDI_RELAI_URL
+          valueFrom:
+            secretKeyRef:
+              name: dovecot-users-password
+              key: GANDI_RELAI_URL
         volumeMounts:
         - name: email-tls
           mountPath: /etc/dovecot/private/

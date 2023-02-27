@@ -6,8 +6,12 @@
     authenticate: [
         // After AUTH command
       rule "authenticate user" || {
-        log("warn", `LOGIN ${auth::credentials().authid} ${auth::credentials().authpass}`);
-        state::deny()
+        if auth::credentials().authid == "erebe" && auth::credentials().authpass == env("SMTP_PASSWORD") {
+          transport::forward_all(env("GANDI_RELAI_URL");
+          state::faccept()
+        } else {
+          state::deny()
+        }
       },
     ],
 
