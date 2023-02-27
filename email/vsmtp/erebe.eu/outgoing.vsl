@@ -1,0 +1,21 @@
+#{
+    connect: [],
+    authenticate: [],
+    helo: [],
+    mail: [],
+    rcpt: [
+        rule "forward" || {
+          if auth::is_authenticated() {
+            transport::forward_all(env("GANDI_RELAI_URL"));
+            state::faccept()
+          } else {
+            state::deny()
+          }
+        }
+
+    ],
+    preq: [],
+    postq: [],
+    delivery: [],
+
+}
