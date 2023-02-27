@@ -7,8 +7,7 @@
         // After AUTH command
       rule "authenticate user" || {
         if auth::credentials().authid == "erebe" && auth::credentials().authpass == env("SMTP_PASSWORD") {
-          transport::forward_all(env("GANDI_RELAI_URL"));
-          state::faccept()
+          state::accept()
         } else {
           state::deny()
         }
