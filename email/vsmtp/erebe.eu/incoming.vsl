@@ -10,9 +10,6 @@
     ],
 
     mail: [
-        rule "test" || {
-            state::next()
-        }
     ],
 
     rcpt: [
@@ -29,6 +26,10 @@
 
     preq: [
         rule "check spf" || spf::check("both", "soft"),
+        rule "check dkim" || {
+          log("warn", `dkim status ${dkim::verify()}`);
+          state::next()
+        },
         rule "write mail to disk" || {
           fs::write("/data/mail-tmp");
           // we deny to avoid queuing but tell client everything is ok
