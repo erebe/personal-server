@@ -52,7 +52,7 @@ VOLUME /etc/dovecot/users
 EXPOSE 25
 EXPOSE 993
 
-##USER erebe
+#USER erebe
 
 ENTRYPOINT [ "/usr/bin/dumb-init", "--" ]
 CMD ["/docker-entrypoint.sh"]
