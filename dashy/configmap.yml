@@ -158,7 +158,7 @@ data:
             id: 6_419_grafana
           - title: Console
             icon: https://github.com/Qovery/public-resources/raw/master/qovery_square_new_logo.svg 
-            url: https://console.qovery.com/platform/organization/460616f0-94da-4d35-b631-6fa4ed08eb9a/projects/b14d2c29-2fbe-42df-9a05-48fa3a66ea88/environments
+            url: https://new.console.qovery.com/organization/460616f0-94da-4d35-b631-6fa4ed08eb9a/project/b14d2c29-2fbe-42df-9a05-48fa3a66ea88/environments/general
             target: sametab
             id: 7_419_console
           - title: Notion
