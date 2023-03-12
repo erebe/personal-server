@@ -1,9 +1,9 @@
 HOST='root@erebe.eu'
 RASPBERRY='pi@10.200.200.2'
 
-.PHONY: install deploy release dns sudo ssh package iptables kubernetes_install k8s email nextcloud nextcloud_resync_file backup app wireguard pihole webhook blog minio dashy
+.PHONY: install deploy release dns sudo ssh package iptables kubernetes_install k8s email nextcloud nextcloud_resync_file backup app wireguard pihole webhook blog minio dashy vaultwarden
 
-deploy: dns sudo ssh package iptables k8s email nextcloud webhook backup wireguard blog dashy
+deploy: dns sudo ssh package iptables k8s email nextcloud webhook backup wireguard blog dashy vaultwarden
 
 release:
 ifdef ARGS
@@ -117,3 +117,6 @@ minio:
 	sops -d --output secrets_decrypted/minio.yml secrets/minio.yml
 	kubectl apply -f secrets_decrypted/minio.yml
 	kubectl apply -f minio/minio.yml
+
+vaultwarden:
+	kubectl apply -f vaultwarden/vaultwarden.yml
