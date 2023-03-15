@@ -14,7 +14,7 @@ chmod +x hmailclassifier
 cron -f &
 /usr/bin/rspamd -c /etc/rspamd/rspamd.conf -f -i &
 dovecot -F &
-vsmtp -c /etc/vsmtp/vsmtp.vsl --no-daemon --stdout &
+(while true; do vsmtp -c /etc/vsmtp/vsmtp.vsl --no-daemon --stdout --timeout 6h ; done) &
 
 while true 
 do 
