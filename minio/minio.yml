@@ -33,7 +33,7 @@ spec:
                 - minio-48e6a175
       containers:
       - name: minio
-        image: docker.io/minio/minio:latest
+        image: docker.io/minio/minio:RELEASE.2022-10-24T18-35-07Z
         imagePullPolicy: IfNotPresent
         args: ["server", "/mnt/data", "--console-address", ":80"]
         env:
