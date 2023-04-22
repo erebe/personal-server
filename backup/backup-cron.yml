@@ -19,7 +19,7 @@ spec:
             args:
             - /bin/sh
             - -c
-            - apk add --no-cache lftp curl tar zstd; cd /tmp_dir; tar -c -I 'zstd -19 -T1' -vf backup.tar.zst /data; lftp -u ${USER},${PASSWORD} dedibackup-dc3.online.net 
+            - apk add --no-cache lftp curl tar zstd; cd /tmp_dir; tar -c -I 'zstd -3 -T1' -vf backup.tar.zst /data; lftp -u ${USER},${PASSWORD} dedibackup-dc3.online.net 
               -e 'put backup.tar.zst -o /backups/backup_neo.tar.zst; mv backups/backup_neo.tar.zst backups/backup.tar.zst; bye' && curl https://hc-ping.com/9e922a32-947e-4f5c-9359-25d205531347
             env:
             - name: USER
