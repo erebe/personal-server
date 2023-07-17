@@ -1,0 +1,45 @@
+#{
+    connect: [
+        // Before HELO/EHLO command
+    ],
+
+    authenticate: [],
+
+    helo: [
+        // After HELO/EHLO command
+    ],
+
+    mail: [
+    ],
+
+    rcpt: [
+        // After each RCPT TO command
+        rule "verify for host" || {
+          if "erebe.eu" in ctx::rcpt_list().domains {
+            state::next()
+          } else {
+            log("warn", `Refusing email for ${ctx::rcpt_list()}`);
+            state::deny()
+          }
+        }
+    ],
+
+    preq: [
+
+        rule "write mail to disk" || {
+          fs::write("/data/mail-tmp");
+          // we deny to avoid queuing but tell client everything is ok
+          state::deny(code(250, "Ok\r\n"))
+        },
+    ],
+
+
+    postq: [
+        // After queuing, the entire mail
+    ],
+
+    delivery: [
+        // Before delivering, the entire mail
+    ],
+
+}
