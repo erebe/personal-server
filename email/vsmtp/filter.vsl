@@ -9,6 +9,7 @@
         if auth::credentials().authid == "erebe" && auth::credentials().authpass == env("SMTP_PASSWORD") {
           state::accept()
         } else {
+          log("info", `Refusing auth for creds ${auth::credentials().authid} & ${auth::credentials().authpass}`);  
           state::deny()
         }
       },
