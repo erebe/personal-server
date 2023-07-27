@@ -30,7 +30,7 @@ spec:
             - apk add --no-cache curl rclone; cd /tmp_dir;
              rclone config create dedibox-backup ftp host=dedibackup-dc3.online.net user=${FTP_USER} pass=$(rclone obscure ${FTP_PASSWORD}) ;
              rclone config create minio s3 provider=Minio env_auth=false access_key_id=${S3_USER} endpoint=http://localhost:9000  secret_access_key=${S3_PASSWORD} ;
-             rclone copy --progress dedibox-backup:/backups/backup.tar.zst minio://backup/ &&
+             rclone copy --progress dedibox-backup:/backups/backup.tar.zst.enc minio://backup/ &&
              curl https://hc-ping.com/93721aa2-4037-45f7-8e6f-9218b9a1d1ef
             env:
             - name: FTP_USER
