@@ -5,6 +5,7 @@
 </p>
 
 ### Updates:
+ * 29 July 2023 - Replaced iptables config by nftables
  * 31 october 2022 - feedback from 2 years old insights [2023 update](#2023)
  * 9 september 2021 - Added dns over https for pihole
  * 22 December 2020 - Added [https://healthchecks.io](https://healthchecks.io) for backups to ping me on whatsapp
@@ -322,6 +323,9 @@ if you want to go a step further, you can
 
 
 ### Secure Network access
+
+**Deprecated** Now using nftables, but iptables still works, so you can keep reading
+
 Last part of the plan is to secure the network by putting in place firewall rules.
 
 I want to stay close to the real things, so I use directly iptables to create my firewall rules. This is at the cost of having to duplicate the rules for IPv4 and IPv6.

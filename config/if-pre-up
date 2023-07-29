@@ -1,0 +1,6 @@
+#!/bin/bash
+
+[ "$IFACE" != "enp1s0" ] || exit 0
+
+# In order to get an IPv6 lease from online.net
+sysctl -w net.ipv6.conf.enp1s0.accept_ra=2

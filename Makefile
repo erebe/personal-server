@@ -1,9 +1,9 @@
 HOST='root@erebe.eu'
 RASPBERRY='pi@10.200.200.2'
 
-.PHONY: install deploy release dns sudo ssh package iptables kubernetes_install k8s email nextcloud nextcloud_resync_file backup app wireguard pihole webhook blog minio dashy vaultwarden
+.PHONY: install deploy release dns sudo ssh package firewall kubernetes_install k8s email nextcloud nextcloud_resync_file backup app wireguard pihole webhook blog minio dashy vaultwarden
 
-deploy: dns sudo ssh package iptables k8s email nextcloud webhook backup wireguard blog dashy vaultwarden
+deploy: dns sudo ssh package firewall k8s email nextcloud webhook backup wireguard blog dashy vaultwarden
 
 release:
 ifdef ARGS
@@ -37,8 +37,9 @@ sudo:
 	scp config/sudoers ${HOST}:/etc/sudoers.d/erebe
 
 package:
+	sudo timedatectl set-timezone UTC
 	scp wireguard/wireguard-backport.list ${HOST}:/etc/apt/sources.list.d/
-	ssh ${HOST} 'apt-get update && apt-get install -y curl htop mtr tcpdump ncdu vim dnsutils strace linux-perf iftop wireguard'
+	ssh ${HOST} 'apt-get update && apt-get install -y curl htop mtr tcpdump ncdu vim dnsutils strace linux-perf iftop wireguard nftables'
 	# Enable automatic security Updates
 	ssh ${HOST} 'echo "unattended-upgrades unattended-upgrades/enable_auto_updates boolean true" | debconf-set-selections && apt-get install unattended-upgrades -y'
 	# IPv6
@@ -47,9 +48,12 @@ package:
 	scp config/dhclient6.service ${HOST}:/etc/systemd/system/
 	ssh ${HOST} 'systemctl daemon-reload && systemctl enable dhclient6.service && systemctl restart dhclient6.service'
 
-iptables:	
-	scp config/iptables ${HOST}:/etc/network/if-pre-up.d/iptables-restore
-	ssh ${HOST} 'chmod +x /etc/network/if-pre-up.d/iptables-restore && sh /etc/network/if-pre-up.d/iptables-restore'
+firewall:	
+	scp config/if-pre-up ${HOST}:/etc/network/if-pre-up.d/allow-router-advertise
+	ssh ${HOST} 'chmod +x /etc/network/if-pre-up.d/allow-router-advertise && sh /etc/network/if-pre-up.d/allow-router-advertise'
+	scp config/nftables.rules ${HOST}:/etc/nftables.conf
+	ssh ${HOST} 'chmod +x /etc/nftables.conf && /etc/nftables.conf'
+	ssh ${HOST} 'systemctl daemon-reload && systemctl enable nftables.service'
 	
 kubernetes_install:
 	ssh ${HOST} 'export INSTALL_K3S_EXEC=" --disable servicelb --disable traefik --disable local-storage --disable-cloud-controller --disable-network-policy --advertise-address 10.200.200.1 "; \

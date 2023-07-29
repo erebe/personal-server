@@ -1,0 +1,40 @@
+#!/sbin/nft -f
+
+flush ruleset
+
+table inet SERVER_FIREWALL {
+        chain input {
+              type filter hook input priority 0; policy drop;
+
+              ct state invalid drop comment "early drop of invalid packets"
+              ct state {established, related} accept comment "accept all connections related to connections made by us"
+
+              iif lo accept comment "accept loopback"
+              iifname wg0 accept comment "accept wireguard traffic"
+              iifname cni0 accept comment "accept kube traffic"
+              iifname flannel.1 accept comment "accept kube traffic"
+
+              meta l4proto icmp accept comment "Accept ICMP"
+              meta l4proto ipv6-icmp accept comment "accept all ICMP types"
+              udp dport 546 ip6 saddr { fc00::/7, fe80::/10, 2001:bc8:2::5:136:1 } accept comment "allow DHCPv6 client"
+
+              tcp dport 22 accept comment "accept SSH"
+
+              tcp dport { 80, 443 } accept comment "accept http"
+
+              tcp dport { 25, 465 } accept comment "accept smtp"
+              tcp dport 993 accept comment "accept imaps"
+
+              tcp dport 995 accept comment "accept wireguard"
+
+              #tcp dport 6443 accept comment "accept kubernetes"
+        }
+
+        chain forward {
+              type filter hook forward priority 0; policy accept;
+        }
+
+        chain output {
+              type filter hook output priority 0; policy accept;
+        }
+}
