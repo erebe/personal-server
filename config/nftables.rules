@@ -31,7 +31,7 @@ table inet SERVER_FIREWALL {
         }
 
         chain forward {
-              type filter hook forward priority 0; policy accept;
+              type filter hook forward priority 0; policy drop;
         }
 
         chain output {
