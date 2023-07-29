@@ -32,6 +32,15 @@ table inet SERVER_FIREWALL {
 
         chain forward {
               type filter hook forward priority 0; policy drop;
+
+              iifname wg0 accept comment "accept wireguard traffic"
+              oifname wg0 accept comment "accept wireguard traffic"
+        }
+
+        chain nat_postrouting {
+              type nat hook postrouting priority 0; policy accept;
+
+              oif enp1s0 masquerade
         }
 
         chain output {
