@@ -33,6 +33,8 @@ table inet SERVER_FIREWALL {
         chain forward {
               type filter hook forward priority 0; policy drop;
 
+              udp dport 53 accept comment "Allow forward of dns for coredns"
+              udp sport 53 accept comment "Allow forward of dns for coredns"
               iifname wg0 accept comment "accept wireguard traffic"
               oifname wg0 accept comment "accept wireguard traffic"
         }
