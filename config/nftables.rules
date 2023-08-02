@@ -33,8 +33,8 @@ table inet SERVER_FIREWALL {
         chain forward {
               type filter hook forward priority 0; policy drop;
 
-              iifname cni0 udp dport 53 accept comment "Allow outgoing forward of dns request for coredns"
-              oifname cni0 udp sport 53 accept comment "Allow incoming forward of dns response for coredns"
+              iifname cni0 accept comment "Allow outgoing forward of kube traffic"
+              oifname cni0 accept comment "Allow incoming forward of kube traffic"
 
               iifname wg0 accept comment "accept wireguard traffic"
               oifname wg0 accept comment "accept wireguard traffic"
@@ -43,7 +43,7 @@ table inet SERVER_FIREWALL {
         chain nat_postrouting {
               type nat hook postrouting priority 0; policy accept;
 
-              oif enp1s0 ip saddr 10.42.0.0/24 udp dport 53 masquerade comment "NAT dns request of coredns to avoid leaking private network"
+              iifname cni0 ip saddr 10.42.0.0/24 masquerade comment "NAT kube traffic to avoid leaking private network"
 
               oif enp1s0 ip saddr 10.200.200.0/24 masquerade comment "Allow NATing IPv4 wireguard traffic"
               oif enp1s0 ip6 saddr fc00:cafe::/80 masquerade comment "Allow NATing IPv6 wireguard traffic"
