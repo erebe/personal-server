@@ -18,7 +18,7 @@ table inet SERVER_FIREWALL {
               meta l4proto ipv6-icmp accept comment "accept all ICMP types"
               udp dport 546 ip6 saddr { fc00::/7, fe80::/10, 2001:bc8:2::5:136:1 } accept comment "allow DHCPv6 client"
 
-              tcp dport { 22, 2222 } accept comment "accept local SSH & warpgate SSH"
+              tcp dport 22 accept comment "accept local SSH"
 
               tcp dport { 80, 443 } accept comment "accept http"
 
