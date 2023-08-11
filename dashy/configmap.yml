@@ -101,6 +101,12 @@ data:
             url: https://gchq.github.io/CyberChef/
             target: sametab
             id: 6_664_cyerchef
+          - title: Warpgate
+            icon: >-
+              https://raw.githubusercontent.com/warp-tech/warpgate/main/warpgate-web/public/assets/logo.svg
+            url: https://warp.erebe.eu
+            target: sametab
+            id: 7_664_warpgate
         icon: 🖥️
       - name: Work
         displayData:
