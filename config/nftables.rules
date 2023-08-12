@@ -3,6 +3,11 @@
 flush ruleset
 
 table inet SERVER_FIREWALL {
+
+        set denylist {
+              type ipv4_addr; flags dynamic, timeout; timeout 5m;
+        }
+
         chain input {
               type filter hook input priority 0; policy drop;
 
@@ -18,6 +23,8 @@ table inet SERVER_FIREWALL {
               meta l4proto ipv6-icmp accept comment "accept all ICMP types"
               udp dport 546 ip6 saddr { fc00::/7, fe80::/10, 2001:bc8:2::5:136:1 } accept comment "allow DHCPv6 client"
 
+
+
               tcp dport 22 accept comment "accept local SSH"
 
               tcp dport { 80, 443 } accept comment "accept http"
@@ -32,6 +39,9 @@ table inet SERVER_FIREWALL {
 
         chain nat_pretrouting {
               type nat hook prerouting priority 0; policy accept;
+
+              tcp dport {22, 25, 465, 2222} ct state new, untracked limit rate over 5/minute add @denylist { ip saddr } comment "add to blacklist"
+              ip saddr @denylist drop comment "dont allow blacklisted ip"
 
               iif enp1s0 tcp dport 2222 dnat ip to 10.200.200.6:2222 comment "forward to warpgate ssh connections"
               iif enp1s0 tcp dport 2222 dnat ip6 to [fc00:cafe::6]:2222 comment "forward to warpgate ssh connections"
