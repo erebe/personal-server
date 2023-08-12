@@ -10,6 +10,11 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
-    - http01:
-        ingress:
-          class: nginx
+    - dns01:
+        webhook:
+          config:
+            apiKeySecretRef:
+              key: api-token
+              name: gandi-api-token
+          groupName: acme.bwolf.me
+          solverName: gandi

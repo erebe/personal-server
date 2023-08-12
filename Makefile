@@ -67,6 +67,14 @@ k8s:
 	kubectl apply -k k8s/nginx
 	kubectl apply --validate=false -f k8s/cert-manager-v1.10.0.yml
 	kubectl apply -f k8s/lets-encrypt-issuer.yml
+	kubectl create secret generic gandi-api-token --namespace cert-manager \
+		--from-literal=api-token="$(sops -d --extract '["apirest"]["key"]' secrets/gandi.yml)"
+	helm upgrade --install cert-manager-webhook-gandi cert-manager-webhook-gandi \
+           --repo https://bwolf.github.io/cert-manager-webhook-gandi \
+           --version v0.2.0 \
+           --namespace cert-manager \
+           --set features.apiPriorityAndFairness=true \
+           --set logLevel=2
 
 email:
 	sops -d --output secrets_decrypted/dovecot.yml secrets/dovecot.yml
