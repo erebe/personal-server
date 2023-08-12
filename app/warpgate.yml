@@ -84,10 +84,18 @@ metadata:
 spec:
   tls:
   - hosts:
-    - warp.erebe.eu
+    - "warp.erebe.eu"
+    - "*.warp.erebe.eu"
     secretName: warpgate-tls
   rules:
-  - host: warp.erebe.eu
+  - host: "warp.erebe.eu"
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: warpgate
+          servicePort: 8888
+  - host: "*.warp.erebe.eu"
     http:
       paths:
       - path: /

@@ -1,9 +1,9 @@
 HOST='root@erebe.eu'
 RASPBERRY='pi@10.200.200.2'
 
-.PHONY: install deploy release dns sudo ssh package firewall kubernetes_install k8s email nextcloud nextcloud_resync_file backup app wireguard pihole webhook blog minio dashy vaultwarden
+.PHONY: install deploy release dns sudo ssh package firewall kubernetes_install k8s email nextcloud nextcloud_resync_file backup app wireguard pihole webhook blog minio dashy vaultwarden warpgate
 
-deploy: dns sudo ssh package firewall k8s email nextcloud webhook backup wireguard blog dashy vaultwarden
+deploy: dns sudo ssh package firewall k8s email nextcloud webhook backup wireguard blog dashy vaultwarden warpgate
 
 release:
 ifdef ARGS
@@ -103,6 +103,9 @@ webhook:
 app:
 	kubectl apply -f app/couber.yml
 	kubectl apply -f app/wstunnel.yml
+
+waprgate:
+	kubectl apply -f app/warpgate.yml
 
 blog:
 	kubectl apply -f blog/blog.yml
