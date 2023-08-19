@@ -18,6 +18,10 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "server"
       containers:
       - name: nextcloud
         image: linuxserver/nextcloud:amd64-25.0.0-php8
@@ -60,7 +64,7 @@ spec:
   clusterIP: None
 
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nextcloud-ingress
@@ -70,6 +74,7 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "10G"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
+  ingressClassName: "nginx"
   tls:
   - hosts:
     - cloud.erebe.eu
@@ -79,6 +84,9 @@ spec:
     http:
       paths:
       - path: /
+        pathType: Prefix
         backend:
-          serviceName: nextcloud
-          servicePort: http
+          service:
+            name: nextcloud
+            port:
+              name: http

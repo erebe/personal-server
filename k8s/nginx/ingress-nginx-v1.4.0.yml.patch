@@ -8,4 +8,37 @@ spec:
     spec:
       dnsPolicy: ClusterFirstWithHostNet
       hostNetwork: true
-
+      tolerations:
+        - key: "kubernetes.io/hostname"
+          operator: "Equal"
+          value: "server"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingress-nginx-admission-patch
+  namespace: ingress-nginx
+spec:
+  template:
+    spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      tolerations:
+        - key: "kubernetes.io/hostname"
+          operator: "Equal"
+          value: "server"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingress-nginx-admission-create
+  namespace: ingress-nginx
+spec:
+  template:
+    spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      tolerations:
+        - key: "kubernetes.io/hostname"
+          operator: "Equal"
+          value: "server"

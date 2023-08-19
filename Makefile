@@ -1,7 +1,7 @@
 HOST='root@erebe.eu'
 RASPBERRY='pi@10.200.200.2'
 
-.PHONY: install deploy release dns sudo ssh package firewall kubernetes_install k8s email nextcloud nextcloud_resync_file backup app wireguard pihole webhook blog minio dashy vaultwarden warpgate
+.PHONY: install deploy release dns sudo ssh package firewall k8s email nextcloud nextcloud_resync_file backup app wireguard pihole webhook blog minio dashy vaultwarden warpgate
 
 deploy: dns sudo ssh package firewall k8s email nextcloud webhook backup wireguard blog dashy vaultwarden warpgate
 
@@ -55,26 +55,20 @@ firewall:
 	ssh ${HOST} 'chmod +x /etc/nftables.conf && /etc/nftables.conf'
 	ssh ${HOST} 'systemctl daemon-reload && systemctl enable nftables.service'
 	
-kubernetes_install:
-	ssh ${HOST} 'export INSTALL_K3S_EXEC=" --disable servicelb --disable traefik --disable local-storage --disable-cloud-controller --disable-network-policy --advertise-address 10.200.200.1 "; \
-		curl -sfL https://get.k3s.io | sh -'
-	#ssh ${HOST} "cat /etc/systemd/system/k3s.service" | diff  - k8s/k3s.serivce \
-		|| (scp k8s/k3s.service ${HOST}:/etc/systemd/system/k3s.service && ssh ${HOST} 'systemctl daemon-reload && systemctl restart k3s.service')
-
 k8s:
 	#helm3 repo add stable https://kubernetes-charts.storage.googleapis.com/
 	#helm3 repo update
 	kubectl apply -k k8s/nginx
-	kubectl apply --validate=false -f k8s/cert-manager-v1.10.0.yml
+	kubectl apply -k k8s/cert-manager
 	kubectl apply -f k8s/lets-encrypt-issuer.yml
-	kubectl create secret generic gandi-api-token --namespace cert-manager \
-		--from-literal=api-token="$(sops -d --extract '["apirest"]["key"]' secrets/gandi.yml)"
+	kubectl delete secret gandi-credentials --namespace cert-manager || exit 0
+	kubectl create secret generic gandi-credentials --namespace cert-manager \
+		--from-literal=api-token="$(shell sops -d --extract '["apirest"]["key"]' secrets/gandi.yml)"
 	helm upgrade --install cert-manager-webhook-gandi cert-manager-webhook-gandi \
            --repo https://bwolf.github.io/cert-manager-webhook-gandi \
            --version v0.2.0 \
            --namespace cert-manager \
-           --set features.apiPriorityAndFairness=true \
-           --set logLevel=2
+					 -f k8s/cert-manager-webhook-gandi.yaml
 
 email:
 	sops -d --output secrets_decrypted/dovecot.yml secrets/dovecot.yml
@@ -123,9 +117,6 @@ wireguard:
 
 
 pihole:
-	sops exec-env secrets/wireguard.yml 'cp pihole/wg0.conf secrets_decrypted/; for i in $$(env | grep _KEY | cut -d = -f1); do sed -i "s#__$${i}__#$${!i}#g" secrets_decrypted/wg0.conf ; done'
-	rsync --rsync-path="sudo rsync" secrets_decrypted/wg0.conf ${RASPBERRY}:/etc/wireguard/wg0.conf 
-	ssh ${RASPBERRY} 'sudo systemctl enable wg-quick@wg0; sudo systemctl restart wg-quick@wg0'
 	kubectl apply -f pihole/pihole.yml
 
 minio:

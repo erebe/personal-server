@@ -18,6 +18,10 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "server"
       containers:
       - name: couber
         image: ghcr.io/erebe/couber:latest
@@ -56,7 +60,7 @@ spec:
   clusterIP: None
   type: ClusterIP
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: couber-ingress
@@ -74,6 +78,7 @@ metadata:
       }
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
+  ingressClassName: "nginx"
   tls:
   - hosts:
     - coub.erebe.eu
@@ -83,6 +88,9 @@ spec:
     http:
       paths:
       - path: /
+        pathType: Prefix 
         backend:
-          serviceName: couber
-          servicePort: 8081
+          service:
+            name: couber
+            port:
+              number: 8081

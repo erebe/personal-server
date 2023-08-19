@@ -30,7 +30,7 @@ spec:
               - key: kubernetes.io/hostname
                 operator: In
                 values:
-                - minio-48e6a175
+                - minio
       containers:
       - name: minio
         image: docker.io/minio/minio:RELEASE.2022-10-24T18-35-07Z

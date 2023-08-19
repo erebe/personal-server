@@ -34,7 +34,7 @@ spec:
               - key: kubernetes.io/hostname
                 operator: In
                 values:
-                - raspberrypi
+                - raspberry
       containers:
       - name: pihole
         image: pihole/pihole:2023.02.2
@@ -66,11 +66,17 @@ spec:
       tolerations:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
-        value: "raspberrypi"
+        value: "raspberry"
         effect: "NoSchedule"
       - key: "node.kubernetes.io/unreachable"
         operator: "Exists"
         effect: "NoExecute"
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "node.cilium.io/agent-not-ready"
+        operator: "Exists"
+        effect: "NoSchedule"
       volumes:
       - name: pihole-etc-volume
         hostPath:
@@ -116,7 +122,7 @@ spec:
               - key: kubernetes.io/hostname
                 operator: In
                 values:
-                - raspberrypi
+                - raspberry
       containers:
       - name: cloudflared
         image: visibilityspots/cloudflared:alpine-3.13
@@ -136,8 +142,14 @@ spec:
       tolerations:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
-        value: "raspberrypi"
+        value: "raspberry"
         effect: "NoSchedule"
       - key: "node.kubernetes.io/unreachable"
         operator: "Exists"
         effect: "NoExecute"
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "node.cilium.io/agent-not-ready"
+        operator: "Exists"
+        effect: "NoSchedule"

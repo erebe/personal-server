@@ -18,6 +18,10 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "server"
       containers:
       - name: vaultwarden
         image: docker.io/vaultwarden/server:1.27.0
@@ -68,7 +72,7 @@ spec:
   clusterIP: None
   type: ClusterIP
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: vaultwarden-ingress
@@ -99,16 +103,22 @@ spec:
   - hosts:
     - bitwarden.erebe.eu
     secretName: vaultwarden-tls
+  ingressClassName: "nginx"
   rules:
   - host: bitwarden.erebe.eu
     http:
       paths:
       - path: /
+        pathType: Prefix
         backend:
-          serviceName: vaultwarden
-          servicePort: 8088
+          service:
+            name: vaultwarden
+            port:
+              number: 8088
       - path: /notifications/hub
         pathType: Exact
         backend:
-          serviceName: vaultwarden
-          servicePort: 8089
+          service:
+            name: vaultwarden
+            port:
+              number: 8089

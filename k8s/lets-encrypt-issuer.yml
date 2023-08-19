@@ -15,6 +15,6 @@ spec:
           config:
             apiKeySecretRef:
               key: api-token
-              name: gandi-api-token
+              name: gandi-credentials
           groupName: acme.bwolf.me
           solverName: gandi

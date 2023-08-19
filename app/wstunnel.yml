@@ -18,6 +18,10 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "server"
       containers:
       - name: wstunnel
         image: ghcr.io/erebe/wstunnel:latest
@@ -45,7 +49,7 @@ spec:
   clusterIP: None
   type: ClusterIP
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: wstunnel-ingress
@@ -57,6 +61,7 @@ metadata:
     nginx.ingress.kubernetes.io/connection-proxy-header: "upgrade"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
+  ingressClassName: "nginx"
   tls:
   - hosts:
     - ws.erebe.eu
@@ -66,6 +71,9 @@ spec:
     http:
       paths:
       - path: /
+        pathType: Prefix
         backend:
-          serviceName: wstunnel
-          servicePort: http
+          service:
+            name: wstunnel
+            port:
+              name: http

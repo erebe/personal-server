@@ -1,0 +1,11 @@
+node-name: "server"
+node-ip: "fd00:cafe::254,10.200.0.254"
+node-external-ip: "2001:bc8:6005:136:208:a2ff:fe0c:634e,195.154.119.61"
+
+# https://docs.k3s.io/installation/network-options#dual-stack-ipv4--ipv6-networking
+kubelet-arg: "node-ip=::"
+token: 12345
+node-label: []
+node-taint:
+  - kubernetes.io/hostname=server:NoSchedule
+

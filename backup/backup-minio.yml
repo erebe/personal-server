@@ -20,7 +20,7 @@ spec:
                   - key: kubernetes.io/hostname
                     operator: In
                     values:
-                    - minio-48e6a175
+                    - minio
           containers:
           - name: backup
             image: alpine

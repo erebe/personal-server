@@ -50,6 +50,10 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "server"
       serviceAccountName: deployer
       containers:
       - name: webhook
@@ -87,7 +91,7 @@ spec:
   clusterIP: None
   type: ClusterIP
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: webhook-ingress
@@ -97,6 +101,7 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "1800"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
+  ingressClassName: "nginx"
   tls:
   - hosts:
     - hooks.erebe.eu
@@ -106,9 +111,12 @@ spec:
     http:
       paths:
       - path: /
+        pathType: Prefix
         backend:
-          serviceName: webhook
-          servicePort: http
+          service:
+            name: webhook
+            port:
+              name: http
 ---
 apiVersion: v1
 kind: ConfigMap

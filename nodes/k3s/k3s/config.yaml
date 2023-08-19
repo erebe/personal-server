@@ -1,0 +1,24 @@
+write-kubeconfig-mode: "0644"
+node-name: "master"
+
+
+disable-network-policy: true
+disable-helm-controller: true
+
+disable:
+  - servicelb
+  - traefik
+  - local-storage
+
+node-ip: "fd00:cafe::3,10.200.0.3"
+cluster-cidr: "fd01::/48,10.42.0.0/16"
+service-cidr: "fd02::/112,10.43.0.0/16"
+# https://docs.k3s.io/installation/network-options#dual-stack-ipv4--ipv6-networking
+kubelet-arg: "node-ip=::"
+token: 12345
+flannel-backend: "none"
+node-label: []
+node-taint:
+  - node-role.kubernetes.io/master:NoSchedule
+  #  - kubernetes.io/hostname=master:NoSchedule
+

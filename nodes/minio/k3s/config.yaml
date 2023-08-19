@@ -1,0 +1,11 @@
+node-name: "minio"
+node-ip: "fd00:cafe::6,10.200.0.6"
+node-external-ip: "2001:861:3886:7e01:88ef:70ff:fe5a:1359"
+
+# https://docs.k3s.io/installation/network-options#dual-stack-ipv4--ipv6-networking
+kubelet-arg: "node-ip=::"
+token: 12345
+node-label: []
+node-taint:
+  - kubernetes.io/hostname=minio:NoSchedule
+

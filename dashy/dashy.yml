@@ -30,14 +30,18 @@ spec:
               - key: kubernetes.io/hostname
                 operator: In
                 values:
-                - minio-48e6a175
+                - minio
       containers:
       - name: dashy
         image: docker.io/lissy93/dashy:2.1.1
         imagePullPolicy: IfNotPresent
         env:
+        - name: HOST
+          value: "::"
         - name: PORT
           value: "8080"
+        - name: NODE_ENV
+          value: "PRODUCTION"
         ports:
           - containerPort: 8080
             name: http
@@ -74,7 +78,7 @@ spec:
   clusterIP: None
   type: ClusterIP
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: dashy-ingress
@@ -82,6 +86,7 @@ metadata:
     kubernetes.io/ingress.class: "nginx"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
+  ingressClassName: "nginx"
   tls:
   - hosts:
     - board.erebe.eu
@@ -91,6 +96,9 @@ spec:
     http:
       paths:
       - path: /
+        pathType: Prefix
         backend:
-          serviceName: dashy
-          servicePort: 8080
+          service:
+            name: dashy
+            port:
+              number: 8080

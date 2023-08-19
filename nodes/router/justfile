@@ -1,0 +1,15 @@
+set dotenv-load := false
+
+_default:
+    @just --list
+
+HOST := "root@192.168.1.1"
+
+wireguard:
+  sops exec-env ../../secrets/wireguard.yml 'cp wireguard/wg0.conf secrets_decrypted/; for i in $(env | grep _KEY | cut -d = -f1); do sed -i "s#__${i}__#${!i}#g" secrets_decrypted/wg0.conf ; done'
+  ssh {{HOST}} "cat /persistent/perso/wg0.conf" | diff  - secrets_decrypted/wg0.conf || exit 0
+  scp secrets_decrypted/wg0.conf {{HOST}}:/persistent/perso/wg0.conf
+  scp wireguard/wireguard.service {{HOST}}:/lib/systemd/system/wireguard.service
+  ssh {{HOST}} 'systemctl daemon-reload && systemctl restart wireguard.service && systemctl enable wireguard.service'
+  echo "Configure UDM to allow udp packet on dport 995 on internet6 In Local rules"
+

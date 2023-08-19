@@ -1,0 +1,36 @@
+ipv6:
+  enabled: true
+bpf:
+  masquerade: true
+
+k8sServiceHost: "fd00:cafe::3"
+k8sServicePort: "6443"
+
+containerRuntime:
+  integration: "containerd"
+global:
+  containerRuntime:
+    socketPath: "/var/run/k3s/containerd/containerd.sock"
+
+ipam:
+  operator:
+    clusterPoolIPv4PodCIDRList: "10.42.0.0/16"
+    clusterPoolIPv6PodCIDRList: "fd01::/104"
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: NotIn
+          values:
+          - raspberry
+operator:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: node-role.kubernetes.io/master
+            operator: Exists

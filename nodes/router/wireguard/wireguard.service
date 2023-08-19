@@ -1,0 +1,14 @@
+[Unit]
+Description=Wireguard service
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/wg-quick up /persistent/perso/wg0.conf
+ExecStop=/usr/bin/wg-quick down /persistent/perso/wg0.conf
+ExecReload=/bin/bash -c 'exec /usr/bin/wg syncconf wg0 <(exec /usr/bin/wg-quick strip wg0)'
+Environment=WG_ENDPOINT_RESOLUTION_RETRIES=infinity
+
+[Install]
+WantedBy=multi-user.target
