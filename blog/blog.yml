@@ -18,6 +18,10 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "server"
       containers:
       - name: blog
         image: ghcr.io/erebe/blog:latest
