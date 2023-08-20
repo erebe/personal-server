@@ -7,7 +7,7 @@ deploy: dns sudo ssh package firewall k8s email nextcloud webhook backup wiregua
 
 release:
 ifdef ARGS
-	$(eval SECRET := $(shell sops exec-env secrets/webhook.yml 'echo $${DEPLOYER_SECRET}'))
+	$(eval SECRET := $(shell sops exec-env services/secrets/webhook.yml 'echo $${DEPLOYER_SECRET}'))
 	curl -i -X POST  \
 		-H 'Content-Type: application/json' \
 		-H 'X-Webhook-Token: '${SECRET} \
@@ -23,38 +23,12 @@ install:
 	mkdir ~/.kube || exit 0
 	sops -d --output ~/.kube/config secrets/kubernetes-config.yml
 
-
 dns:
 	sops -d --output secrets_decrypted/gandi.yml secrets/gandi.yml
 	GANDI_CONFIG='secrets_decrypted/gandi.yml' gandi dns update erebe.eu -f dns/erebe.eu.zones
 	GANDI_CONFIG='secrets_decrypted/gandi.yml' gandi dns update erebe.dev -f dns/erebe.dev.zones
 
-ssh:
-	ssh ${HOST} "cat /etc/ssh/sshd_config" | diff  - config/sshd_config \
-		|| (scp config/sshd_config ${HOST}:/etc/ssh/sshd_config && ssh ${HOST} systemctl restart sshd)
 
-sudo:
-	scp config/sudoers ${HOST}:/etc/sudoers.d/erebe
-
-package:
-	sudo timedatectl set-timezone UTC
-	scp wireguard/wireguard-backport.list ${HOST}:/etc/apt/sources.list.d/
-	ssh ${HOST} 'apt-get update && apt-get install -y curl htop mtr tcpdump ncdu vim dnsutils strace linux-perf iftop wireguard nftables'
-	# Enable automatic security Updates
-	ssh ${HOST} 'echo "unattended-upgrades unattended-upgrades/enable_auto_updates boolean true" | debconf-set-selections && apt-get install unattended-upgrades -y'
-	# IPv6
-	sops -d --output secrets_decrypted/dhclient6.conf secrets/dhclient6.conf
-	scp secrets_decrypted/dhclient6.conf ${HOST}:/etc/dhcp/dhclient6.conf
-	scp config/dhclient6.service ${HOST}:/etc/systemd/system/
-	ssh ${HOST} 'systemctl daemon-reload && systemctl enable dhclient6.service && systemctl restart dhclient6.service'
-
-firewall:	
-	scp config/if-pre-up ${HOST}:/etc/network/if-pre-up.d/allow-router-advertise
-	ssh ${HOST} 'chmod +x /etc/network/if-pre-up.d/allow-router-advertise && sh /etc/network/if-pre-up.d/allow-router-advertise'
-	scp config/nftables.rules ${HOST}:/etc/nftables.conf
-	ssh ${HOST} 'chmod +x /etc/nftables.conf && /etc/nftables.conf'
-	ssh ${HOST} 'systemctl daemon-reload && systemctl enable nftables.service'
-	
 k8s:
 	#helm3 repo add stable https://kubernetes-charts.storage.googleapis.com/
 	#helm3 repo update
@@ -70,44 +44,7 @@ k8s:
            --namespace cert-manager \
 					 -f k8s/cert-manager-webhook-gandi.yaml
 
-email:
-	sops -d --output secrets_decrypted/dovecot.yml secrets/dovecot.yml
-	sops -d --output secrets_decrypted/fetchmail.yml secrets/fetchmail.yml
-	kubectl apply -f secrets_decrypted/dovecot.yml
-	kubectl apply -f secrets_decrypted/fetchmail.yml
-	kubectl apply -f email/deployment.yml
 
-nextcloud:
-	kubectl apply -f nextcloud/config.nginx.site-confs.default.yml
-	kubectl apply -f nextcloud/nextcloud.yml
-
-nextcloud_resync_file:
-	kubectl exec -t $(shell kubectl get pods -n default -l app=nextcloud -o json | jq .items[].metadata.name) -- /usr/bin/occ files:scan --all
-
-backup:
-	sops -d --output secrets_decrypted/backup_credentials.yml secrets/backup_credentials.yml
-	kubectl apply -f secrets_decrypted/backup_credentials.yml
-	kubectl apply -f backup/backup-cron.yml
-	kubectl apply -f backup/backup-minio.yml
-
-webhook:
-	sops exec-env secrets/webhook.yml 'cp webhook/webhook.yml secrets_decrypted/; for i in $$(env | grep _SECRET | cut -d = -f1); do sed -i "s#__$${i}__#$${!i}#g" secrets_decrypted/webhook.yml ; done'
-	kubectl apply -f secrets_decrypted/webhook.yml
-
-app:
-	kubectl apply -f app/couber.yml
-	kubectl apply -f app/wstunnel.yml
-
-waprgate:
-	kubectl apply -f app/warpgate.yml
-
-blog:
-	kubectl apply -f blog/blog.yml
-
-dashy:
-	kubectl apply -f dashy/configmap.yml
-	kubectl apply -f dashy/dashy.yml
-	kubectl delete pod -l app=dashy
 
 wireguard:
 	sops exec-env secrets/wireguard.yml 'cp wireguard/wg0.conf secrets_decrypted/; for i in $$(env | grep _KEY | cut -d = -f1); do sed -i "s#__$${i}__#$${!i}#g" secrets_decrypted/wg0.conf ; done'
@@ -116,13 +53,5 @@ wireguard:
 	ssh ${HOST} 'systemctl enable wg-quick@wg0'
 
 
-pihole:
-	kubectl apply -f pihole/pihole.yml
 
-minio:
-	sops -d --output secrets_decrypted/minio.yml secrets/minio.yml
-	kubectl apply -f secrets_decrypted/minio.yml
-	kubectl apply -f minio/minio.yml
 
-vaultwarden:
-	kubectl apply -f vaultwarden/vaultwarden.yml

@@ -4,6 +4,7 @@ _default:
     @just --list
 
 HOST := "erebe@erebe.eu"
+ROOT_HOST := "root@erebe.eu"
 
 wireguard:
   sops exec-env ../../secrets/wireguard.yml 'cp wireguard/wg0.conf secrets_decrypted/; for i in $(env | grep _KEY | cut -d = -f1); do sed -i "s#__${i}__#${!i}#g" secrets_decrypted/wg0.conf ; done'
@@ -16,3 +17,31 @@ k3s:
   ssh {{HOST}} "sudo mkdir -p /etc/rancher/k3s"
   rsync --rsync-path="sudo rsync" k3s/config.yaml {{HOST}}:/etc/rancher/k3s/config.yaml
   ssh {{HOST}} "curl -sfL https://get.k3s.io | K3S_VERSION="v1.27.4+k3s1" K3S_URL=https://[fd00:cafe::3]:6443 K3S_TOKEN=12345 sh -s -"
+
+
+firewall:	
+	rsync --rsync-path="sudo rsync" config/allow-router-advertise {{HOST}}:/etc/network/if-pre-up.d/allow-router-advertise
+	ssh {{HOST}} 'sudo chmod +x /etc/network/if-pre-up.d/allow-router-advertise && sudo sh /etc/network/if-pre-up.d/allow-router-advertise'
+	rsync --rsync-path="sudo rsync" config/nftables.rules {{HOST}}:/etc/nftables.conf
+	ssh {{HOST}} 'sudo chmod +x /etc/nftables.conf && sudo /etc/nftables.conf'
+	ssh {{HOST}} 'sudo systemctl daemon-reload && sudo systemctl enable nftables.service'
+
+
+ssh:
+  ssh {{HOST}} "sudo cat /etc/ssh/sshd_config" | diff  - config/sshd_config
+  rsync --rsync-path="sudo rsync" config/sshd_config {{HOST}}:/etc/ssh/sshd_config
+  ssh {{HOST}} "sudo systemctl restart sshd"
+
+sudo:
+	scp config/sudoers {{ROOT_HOST}}:/etc/sudoers.d/erebe
+
+package:
+	sudo timedatectl set-timezone UTC
+	ssh {{HOST}} 'sudo apt-get update && sudo apt-get install -y curl htop mtr tcpdump ncdu vim dnsutils strace linux-perf iftop wireguard nftables rsync'
+	# Enable automatic security Updates
+	ssh {{HOST}} 'echo "unattended-upgrades unattended-upgrades/enable_auto_updates boolean true" | sudo tee debconf-set-selections && sudo apt-get install unattended-upgrades -y'
+	# IPv6
+	sops -d --output secrets_decrypted/dhclient6.conf secrets/dhclient6.conf
+	rsync --rsync-path="sudo rsync" secrets_decrypted/dhclient6.conf {{HOST}}:/etc/dhcp/dhclient6.conf
+	rsync --rsync-path="sudo rsync" config/dhclient6.service {{HOST}}:/etc/systemd/system/
+	ssh {{HOST}} 'sudo systemctl daemon-reload && sudo systemctl enable dhclient6.service && sudo systemctl restart dhclient6.service'

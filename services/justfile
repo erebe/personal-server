@@ -1,0 +1,57 @@
+set dotenv-load := false
+
+_default:
+    @just --list
+
+email:
+	sops -d --output secrets_decrypted/dovecot.yml secrets/dovecot.yml
+	sops -d --output secrets_decrypted/fetchmail.yml secrets/fetchmail.yml
+	kubectl apply -f secrets_decrypted/dovecot.yml
+	kubectl apply -f secrets_decrypted/fetchmail.yml
+	kubectl apply -f email/deployment.yml
+  
+
+nextcloud:
+	kubectl apply -f nextcloud/config.nginx.site-confs.default.yml
+	kubectl apply -f nextcloud/nextcloud.yml
+
+
+nextcloud_resync_file:
+	kubectl exec -t $(shell kubectl get pods -n default -l app=nextcloud -o json | jq .items[].metadata.name) -- /usr/bin/occ files:scan --all
+
+
+backup:
+	sops -d --output secrets_decrypted/backup_credentials.yml secrets/backup_credentials.yml
+	kubectl apply -f secrets_decrypted/backup_credentials.yml
+	kubectl apply -f backup/backup-cron.yml
+	kubectl apply -f backup/backup-minio.yml
+
+webhook:
+	sops exec-env secrets/webhook.yml 'cp webhook/webhook.yml secrets_decrypted/; for i in $(env | grep _SECRET | cut -d = -f1); do sed -i "s#__${i}__#${!i}#g" secrets_decrypted/webhook.yml ; done'
+	kubectl apply -f secrets_decrypted/webhook.yml
+
+app:
+	kubectl apply -f app/couber.yml
+	kubectl apply -f app/wstunnel.yml
+
+waprgate:
+	kubectl apply -f app/warpgate.yml
+
+blog:
+	kubectl apply -f blog/blog.yml
+
+dashy:
+	kubectl apply -f dashy/configmap.yml
+	kubectl apply -f dashy/dashy.yml
+	kubectl delete pod -l app=dashy
+
+pihole:
+	kubectl apply -f pihole/pihole.yml
+
+vaultwarden:
+	kubectl apply -f vaultwarden/vaultwarden.yml
+
+minio:
+	sops -d --output secrets_decrypted/minio.yml secrets/minio.yml
+	kubectl apply -f secrets_decrypted/minio.yml
+	kubectl apply -f minio/minio.yml
