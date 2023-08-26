@@ -16,13 +16,12 @@ table inet SERVER_FIREWALL {
 
               iif lo accept comment "accept loopback"
               iifname wg0 accept comment "accept wireguard traffic"
-              iifname cni0 accept comment "accept kube traffic"
-              iifname flannel.1 accept comment "accept kube traffic"
+              iif != enp1s0 ip daddr 10.42.0.0/16  accept comment "Allow incoming kube traffic"
+              iif != enp1s0 ip6 daddr fd01::/48 accept comment "Allow incoming kube traffic"
 
               meta l4proto icmp accept comment "Accept ICMP"
               meta l4proto ipv6-icmp accept comment "accept all ICMP types"
               udp dport 546 ip6 saddr { fc00::/7, fe80::/10, 2001:bc8:2::5:136:1 } accept comment "allow DHCPv6 client"
-
 
 
               tcp dport 22 accept comment "accept local SSH"
@@ -41,6 +40,7 @@ table inet SERVER_FIREWALL {
               type nat hook prerouting priority 0; policy accept;
 
               tcp dport {22, 25, 465, 2222} ct state new, untracked limit rate over 5/minute add @denylist { ip saddr } comment "add to blacklist"
+              ip saddr 46.148.40.0/24 drop comment "dont allow iran ip"
               ip saddr @denylist drop comment "dont allow blacklisted ip"
 
               iif enp1s0 tcp dport 2222 dnat ip to 10.200.0.6:2222 comment "forward to warpgate ssh connections"
@@ -50,8 +50,10 @@ table inet SERVER_FIREWALL {
         chain forward {
               type filter hook forward priority 0; policy drop;
 
-              iifname cni0 accept comment "Allow outgoing forward of kube traffic"
-              oifname cni0 accept comment "Allow incoming forward of kube traffic"
+              ip saddr 10.42.0.0/16 accept comment "Allow forward of kube traffic"
+              ip daddr 10.42.0.0/16 accept comment "Allow forward of kube traffic"
+              ip6 saddr fd01::/48 accept comment "Allow forward of kube traffic"
+              ip6 daddr fd01::/48 accept comment "Allow forward of kube traffic"
 
               iifname wg0 accept comment "accept wireguard traffic"
               oifname wg0 accept comment "accept wireguard traffic"
@@ -63,7 +65,8 @@ table inet SERVER_FIREWALL {
               iif enp1s0 tcp dport 2222 ip daddr 10.200.0.6 masquerade comment "forward to warpgate ssh connections"
               iif enp1s0 tcp dport 2222 ip6 daddr fd00:cafe::6 masquerade comment "forward to warpgate ssh connections"
 
-              oif enp1s0 ip saddr 10.42.0.0/24 masquerade comment "NAT kube traffic to avoid leaking private network"
+              oif enp1s0 ip saddr 10.42.0.0/16 masquerade comment "NAT kube traffic to avoid leaking private network"
+              oif enp1s0 ip6 saddr fd01::/48 masquerade comment "NAT kube traffic to avoid leaking private network"
 
               oif enp1s0 ip saddr 10.200.0.0/24 masquerade comment "Allow NATing IPv4 wireguard traffic"
               oif enp1s0 ip6 saddr fd00:cafe::/32 masquerade comment "Allow NATing IPv6 wireguard traffic"
