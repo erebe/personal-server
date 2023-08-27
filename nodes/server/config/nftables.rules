@@ -27,9 +27,6 @@ table inet SERVER_FIREWALL {
 
               tcp dport { 80, 443 } accept comment "accept http"
 
-              tcp dport { 25, 465 } accept comment "accept smtp"
-              tcp dport 993 accept comment "accept imaps"
-
               udp dport 995 accept comment "accept wireguard"
 
               #tcp dport 6443 accept comment "accept kubernetes"
@@ -38,15 +35,15 @@ table inet SERVER_FIREWALL {
         chain nat_pretrouting {
               type nat hook prerouting priority 0; policy accept;
 
-              tcp dport {22, 25, 465, 2222} ct state new, untracked limit rate over 5/minute add @denylist { ip saddr } comment "add to blacklist"
               ip saddr 46.148.40.0/24 drop comment "dont allow iran ip"
+              tcp dport {22, 25, 465, 2222} ct state new, untracked limit rate over 5/minute add @denylist { ip saddr } comment "add to blacklist"
               ip saddr @denylist drop comment "dont allow blacklisted ip"
 
               iif enp1s0 tcp dport 2222 dnat ip to 10.200.0.6:2222 comment "forward to warpgate ssh connections"
               iif enp1s0 tcp dport 2222 dnat ip6 to [fd00:cafe::6]:2222 comment "forward to warpgate ssh connections"
 
-#              iif enp1s0 tcp dport {25, 465, 587, 993} dnat ip to 10.200.0.5:25 comment "forward to smtp & imaps connections"
-#              iif enp1s0 tcp dport {25, 465, 587, 993} dnat ip6 to [fd00:cafe::5]:25 comment "forward to smtp & imaps connections"
+              iif enp1s0 tcp dport {25, 465, 587, 993} dnat ip to 10.200.0.5 comment "forward to smtp & imaps connections"
+              iif enp1s0 tcp dport {25, 465, 587, 993} dnat ip6 to [fd00:cafe::5] comment "forward to smtp & imaps connections"
         }
 
         chain forward {
@@ -64,8 +61,8 @@ table inet SERVER_FIREWALL {
         chain nat_postrouting {
               type nat hook postrouting priority 0; policy accept;
 
-#              iif enp1s0 tcp dport {25, 465, 587, 993} ip daddr 10.200.0.5 masquerade comment "forward smtp & imaps ssh connections"
-#              iif enp1s0 tcp dport {25, 465, 587, 993} ip6 daddr fd00:cafe::5 masquerade comment "forward smtp & imaps ssh connections"
+              iif enp1s0 tcp dport {25, 465, 587, 993} ip daddr 10.200.0.5 masquerade comment "forward smtp & imaps connections"
+              iif enp1s0 tcp dport {25, 465, 587, 993} ip6 daddr fd00:cafe::5 masquerade comment "forward smtp & imaps connections"
 
               iif enp1s0 tcp dport 2222 ip daddr 10.200.0.6 masquerade comment "forward to warpgate ssh connections"
               iif enp1s0 tcp dport 2222 ip6 daddr fd00:cafe::6 masquerade comment "forward to warpgate ssh connections"
