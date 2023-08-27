@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 
 LABEL org.opencontainers.image.source https://github.com/erebe/server
