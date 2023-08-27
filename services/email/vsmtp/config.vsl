@@ -14,8 +14,8 @@ fn on_config(config) {
   // Specify addresses that the server will listen to.
   config.server.interfaces = #{
     addr: ["[::]:25"],
-    addr_submission: [],
-    addr_submissions: ["[::]:465", "[::]:587"],
+    addr_submission: ["[::]:587"],
+    addr_submissions: ["[::]:465"],
   };
 
   config.server.tls = #{
