@@ -2,7 +2,7 @@ name: Publish Blog Image
 on:
   push:
     paths:
-    - 'blog/**'
+    - 'services/blog/**'
    
 jobs:
   buildAndPush:

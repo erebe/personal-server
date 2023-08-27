@@ -2,7 +2,7 @@ name: Publish Webhook Image
 on:
   push:
     paths:
-    - 'webhook/Dockerfile'
+    - 'services/webhook/Dockerfile'
    
 jobs:
   buildAndPush:
