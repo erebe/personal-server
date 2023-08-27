@@ -8,7 +8,6 @@
 
 fn on_config(config) {
 
-  // Change the name of the server.
   config.server.name = "mail.erebe.eu";
 
   // Specify addresses that the server will listen to.
