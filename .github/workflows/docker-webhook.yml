@@ -23,8 +23,8 @@ jobs:
         id: docker_build_webhook
         uses: docker/build-push-action@v3
         with:
-          context: webhook
-          file: webhook/Dockerfile
+          context: services/webhook
+          file: services/webhook/Dockerfile
           push: true
           tags: ghcr.io/erebe/webhook:latest
       - name: webhook Image digest

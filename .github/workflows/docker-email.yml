@@ -23,8 +23,8 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v3
         with:
-          context: email
-          file: email/Dockerfile
+          context: services/email
+          file: services/email/Dockerfile
           push: true
           tags: ghcr.io/erebe/email:latest
       - name: Email Image digest
