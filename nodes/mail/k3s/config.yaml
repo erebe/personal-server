@@ -1,0 +1,11 @@
+node-name: "mail"
+node-ip: "fd00:cafe::5,10.200.0.5"
+node-external-ip: "2001:861:3886:7e01:d0c2:d6ff:fe6c:bfbd"
+
+# https://docs.k3s.io/installation/network-options#dual-stack-ipv4--ipv6-networking
+kubelet-arg: "node-ip=::"
+token: 12345
+node-label: []
+node-taint:
+  - kubernetes.io/hostname=mail:NoSchedule
+
