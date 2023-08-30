@@ -35,7 +35,7 @@ spec:
       - name: minio
         image: docker.io/minio/minio:RELEASE.2022-10-24T18-35-07Z
         imagePullPolicy: IfNotPresent
-        args: ["server", "/mnt/data", "--console-address", ":80"]
+        args: ["server", "/mnt/data", "--console-address", ":80", "--address", ":9001"]
         env:
         - name: MINIO_ROOT_USER
           value: "admin"

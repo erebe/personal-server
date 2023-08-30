@@ -30,7 +30,7 @@ spec:
               - key: kubernetes.io/hostname
                 operator: In
                 values:
-                - minio
+                - toybox
       containers:
       - name: dashy
         image: docker.io/lissy93/dashy:2.1.1
@@ -59,7 +59,7 @@ spec:
       tolerations:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
-        value: "minio"
+        value: "toybox"
         effect: "NoSchedule"
       - key: "node.kubernetes.io/unreachable"
         operator: "Exists"

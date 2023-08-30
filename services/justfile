@@ -34,7 +34,7 @@ app:
 	kubectl apply -f app/couber.yml
 	kubectl apply -f app/wstunnel.yml
 
-waprgate:
+warpgate:
 	kubectl apply -f app/warpgate.yml
 
 blog:

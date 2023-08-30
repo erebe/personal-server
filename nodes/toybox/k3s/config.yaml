@@ -1,0 +1,11 @@
+node-name: "toybox"
+node-ip: "fd00:cafe::4,10.200.0.4"
+node-external-ip: "2001:861:3886:7e01:108b:87ff:fe77:c88"
+
+# https://docs.k3s.io/installation/network-options#dual-stack-ipv4--ipv6-networking
+kubelet-arg: "node-ip=::"
+token: 12345
+node-label: []
+node-taint:
+  - kubernetes.io/hostname=toybox:NoSchedule
+

@@ -26,7 +26,7 @@ spec:
               - key: kubernetes.io/hostname
                 operator: In
                 values:
-                - minio
+                - toybox
       containers:
       - name: warpgate
         image: ghcr.io/warp-tech/warpgate:v0.7.4
@@ -49,7 +49,7 @@ spec:
       tolerations:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
-        value: "minio"
+        value: "toybox"
         effect: "NoSchedule"
       - key: "node.kubernetes.io/unreachable"
         operator: "Exists"

@@ -21,17 +21,21 @@ spec:
       tolerations:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
-        value: "server"
+        value: "minio"
       containers:
       - name: vaultwarden
         image: docker.io/vaultwarden/server:1.27.0
         env:
           - name: DOMAIN
             value: "https://bitwarden.erebe.eu"
+          - name: ROCKET_ADDRESS
+            value: "::"
           - name: ROCKET_PORT
             value: "8088"
           - name: WEBSOCKET_ENABLED
             value: "true"
+          - name: WEBSOCKET_ADDRESS
+            value: "::"
           - name: WEBSOCKET_PORT
             value: "8089"
           - name: SHOW_PASSWORD_HINT
@@ -98,6 +102,7 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "1800"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "1800"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   tls:
   - hosts:
