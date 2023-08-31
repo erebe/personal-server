@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+data:
+  allow-snippet-annotations: "true"
+  enable-brotli: "true"
+  brotli-level: "6"
+  brotli-types: "text/xml text/yaml image/svg+xml application/x-font-ttf image/vnd.microsoft.icon application/x-font-opentype application/json font/eot application/vnd.ms-fontobject application/javascript font/otf application/xml application/xhtml+xml text/javascript application/x-javascript text/plain application/x-font-truetype application/xml+rss image/x-icon font/opentype text/css image/x-win-bitmap"
+
