@@ -1,13 +1,13 @@
 @ 10800 IN SOA ns1.gandi.net. hostmaster.gandi.net. 1579092697 10800 3600 604800 10800
 @ IN CAA 0 issue "letsencrypt.org"
 @ IN CAA 0 issuewild "letsencrypt.org"
-@ 10800 IN A 195.154.119.61
-@ 10800 IN AAAA 2001:bc8:6005:136:208:a2ff:fe0c:634e
-blog 10800 IN A 195.154.119.61
-blog 10800 IN AAAA 2001:bc8:6005:136:208:a2ff:fe0c:634e
-dev 10800 IN A 195.154.119.61
-dev 10800 IN AAAA 2001:bc8:6005:136:208:a2ff:fe0c:634e
-keycloak 10800 IN A 195.154.119.61
-keycloak 10800 IN AAAA 2001:bc8:6005:136:208:a2ff:fe0c:634e
-runtrade 10800 IN A 195.154.119.61
-runtrade 10800 IN AAAA 2001:bc8:6005:136:208:a2ff:fe0c:634e
+@ 10800 IN A 49.13.58.9
+@ 10800 IN AAAA 2a01:4f8:c013:7b8::1
+blog 10800 IN A 49.13.58.9
+blog 10800 IN AAAA 2a01:4f8:c013:7b8::1
+dev 10800 IN A 49.13.58.9
+dev 10800 IN AAAA 2a01:4f8:c013:7b8::1
+keycloak 10800 IN A 49.13.58.9
+keycloak 10800 IN AAAA 2a01:4f8:c013:7b8::1
+runtrade 10800 IN A 49.13.58.9
+runtrade 10800 IN AAAA 2a01:4f8:c013:7b8::1

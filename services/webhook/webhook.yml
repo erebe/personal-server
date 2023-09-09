@@ -53,7 +53,7 @@ spec:
       tolerations:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
-        value: "server"
+        value: "toybox"
       serviceAccountName: deployer
       containers:
       - name: webhook

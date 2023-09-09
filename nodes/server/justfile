@@ -27,7 +27,7 @@ firewall:
 	ssh {{HOST}} 'sudo systemctl daemon-reload && sudo systemctl enable nftables.service'
 
 ssh:
-  ssh {{HOST}} "sudo cat /etc/ssh/sshd_config" | diff  - config/sshd_config
+  ssh {{HOST}} "sudo cat /etc/ssh/sshd_config" | diff  - config/sshd_config || exit 0
   rsync --rsync-path="sudo rsync" config/sshd_config {{HOST}}:/etc/ssh/sshd_config
   ssh {{HOST}} "sudo systemctl restart sshd"
 
@@ -35,12 +35,7 @@ sudo:
 	scp config/sudoers {{ROOT_HOST}}:/etc/sudoers.d/erebe
 
 package:
-	sudo timedatectl set-timezone UTC
+	ssh {{ROOT_HOST}} 'timedatectl set-timezone UTC'
 	ssh {{HOST}} 'sudo apt-get update && sudo apt-get install -y curl htop mtr tcpdump ncdu vim dnsutils strace linux-perf iftop wireguard nftables rsync'
 	# Enable automatic security Updates
 	ssh {{HOST}} 'echo "unattended-upgrades unattended-upgrades/enable_auto_updates boolean true" | sudo tee debconf-set-selections && sudo apt-get install unattended-upgrades -y'
-	# IPv6
-	sops -d --output secrets_decrypted/dhclient6.conf secrets/dhclient6.conf
-	rsync --rsync-path="sudo rsync" secrets_decrypted/dhclient6.conf {{HOST}}:/etc/dhcp/dhclient6.conf
-	rsync --rsync-path="sudo rsync" config/dhclient6.service {{HOST}}:/etc/systemd/system/
-	ssh {{HOST}} 'sudo systemctl daemon-reload && sudo systemctl enable dhclient6.service && sudo systemctl restart dhclient6.service'

@@ -16,8 +16,8 @@ table inet SERVER_FIREWALL {
 
               iif lo accept comment "accept loopback"
               iifname wg0 accept comment "accept wireguard traffic"
-              iif != enp1s0 ip daddr 10.42.0.0/16  accept comment "Allow incoming kube traffic"
-              iif != enp1s0 ip6 daddr fd01::/48 accept comment "Allow incoming kube traffic"
+              iif != eth0 ip daddr 10.42.0.0/16  accept comment "Allow incoming kube traffic"
+              iif != eth0 ip6 daddr fd01::/48 accept comment "Allow incoming kube traffic"
 
               meta l4proto icmp accept comment "Accept ICMP"
               meta l4proto ipv6-icmp accept comment "accept all ICMP types"
@@ -39,11 +39,11 @@ table inet SERVER_FIREWALL {
               tcp dport {22, 25, 465, 2222} ct state new, untracked limit rate over 5/minute add @denylist { ip saddr } comment "add to blacklist"
               ip saddr @denylist drop comment "dont allow blacklisted ip"
 
-              iif enp1s0 tcp dport 2222 dnat ip to 10.200.0.6:2222 comment "forward to warpgate ssh connections"
-              iif enp1s0 tcp dport 2222 dnat ip6 to [fd00:cafe::6]:2222 comment "forward to warpgate ssh connections"
+              iif eth0 tcp dport 2222 dnat ip to 10.200.0.6:2222 comment "forward to warpgate ssh connections"
+              iif eth0 tcp dport 2222 dnat ip6 to [fd00:cafe::6]:2222 comment "forward to warpgate ssh connections"
 
-              iif enp1s0 tcp dport {25, 465, 587, 993} dnat ip to 10.200.0.5 comment "forward to smtp & imaps connections"
-              iif enp1s0 tcp dport {25, 465, 587, 993} dnat ip6 to [fd00:cafe::5] comment "forward to smtp & imaps connections"
+              iif eth0 tcp dport {25, 465, 587, 993} dnat ip to 10.200.0.5 comment "forward to smtp & imaps connections"
+              iif eth0 tcp dport {25, 465, 587, 993} dnat ip6 to [fd00:cafe::5] comment "forward to smtp & imaps connections"
         }
 
         chain forward {
@@ -61,17 +61,17 @@ table inet SERVER_FIREWALL {
         chain nat_postrouting {
               type nat hook postrouting priority 0; policy accept;
 
-              iif enp1s0 tcp dport {25, 465, 587, 993} ip daddr 10.200.0.5 masquerade comment "forward smtp & imaps connections"
-              iif enp1s0 tcp dport {25, 465, 587, 993} ip6 daddr fd00:cafe::5 masquerade comment "forward smtp & imaps connections"
+              iif eth0 tcp dport {25, 465, 587, 993} ip daddr 10.200.0.5 masquerade comment "forward smtp & imaps connections"
+              iif eth0 tcp dport {25, 465, 587, 993} ip6 daddr fd00:cafe::5 masquerade comment "forward smtp & imaps connections"
 
-              iif enp1s0 tcp dport 2222 ip daddr 10.200.0.6 masquerade comment "forward to warpgate ssh connections"
-              iif enp1s0 tcp dport 2222 ip6 daddr fd00:cafe::6 masquerade comment "forward to warpgate ssh connections"
+              iif eth0 tcp dport 2222 ip daddr 10.200.0.6 masquerade comment "forward to warpgate ssh connections"
+              iif eth0 tcp dport 2222 ip6 daddr fd00:cafe::6 masquerade comment "forward to warpgate ssh connections"
 
-              oif enp1s0 ip saddr 10.42.0.0/16 masquerade comment "NAT kube traffic to avoid leaking private network"
-              oif enp1s0 ip6 saddr fd01::/48 masquerade comment "NAT kube traffic to avoid leaking private network"
+              oif eth0 ip saddr 10.42.0.0/16 masquerade comment "NAT kube traffic to avoid leaking private network"
+              oif eth0 ip6 saddr fd01::/48 masquerade comment "NAT kube traffic to avoid leaking private network"
 
-              oif enp1s0 ip saddr 10.200.0.0/24 masquerade comment "Allow NATing IPv4 wireguard traffic"
-              oif enp1s0 ip6 saddr fd00:cafe::/32 masquerade comment "Allow NATing IPv6 wireguard traffic"
+              oif eth0 ip saddr 10.200.0.0/24 masquerade comment "Allow NATing IPv4 wireguard traffic"
+              oif eth0 ip6 saddr fd00:cafe::/32 masquerade comment "Allow NATing IPv6 wireguard traffic"
         }
 
         chain output {
