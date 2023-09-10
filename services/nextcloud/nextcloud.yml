@@ -24,7 +24,7 @@ spec:
         value: "minio"
       containers:
       - name: nextcloud
-        image: linuxserver/nextcloud:amd64-25.0.0-php8
+        image: linuxserver/nextcloud:27.0.2
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8083
@@ -34,7 +34,7 @@ spec:
         - name: config
           mountPath: /config
         - name: nginx-siteconfig
-          mountPath: /config/nginx/site-confs
+          mountPath: /defaults/nginx/site-confs/
       volumes:
       - name: nginx-siteconfig
         configMap:
