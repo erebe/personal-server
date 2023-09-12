@@ -21,7 +21,7 @@ jobs:
           password: ${{ secrets.CR_PAT }}
       - name: Email
         id: docker_build
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: services/email
           file: services/email/Dockerfile
