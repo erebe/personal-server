@@ -15,10 +15,10 @@
     rcpt: [
         // After each RCPT TO command
         rule "verify for host" || {
-          if utils::get_root_domain(ctx::mail_from()) == "erebe.eu" {
-            log("warn", `Refusing email as sender/mailfrom is coming from our domain which is spam`);
-            state::deny()
-          }
+          //if utils::get_root_domain(ctx::mail_from()) == "erebe.eu" {
+          //  log("warn", `Refusing email as sender/mailfrom is coming from our domain which is spam`);
+          //  state::deny()
+          //}
 
           if "erebe.eu" in ctx::rcpt_list().domains {
             state::next()
