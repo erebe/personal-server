@@ -12,6 +12,12 @@ spec:
         - key: "kubernetes.io/hostname"
           operator: "Equal"
           value: "server"
+        - key: "node.kubernetes.io/unreachable"
+          operator: "Exists"
+        - key: "node.kubernetes.io/not-ready"
+          operator: "Exists"
+        - key: "node.cilium.io/agent-not-ready"
+          operator: "Exists"
 ---
 apiVersion: batch/v1
 kind: Job
