@@ -5,13 +5,13 @@ LABEL org.opencontainers.image.source https://github.com/erebe/server
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates cron dumb-init wget dovecot-core dovecot-imapd procps curl rspamd fetchmail netbase && \
-    wget https://github.com/viridIT/vSMTP/releases/download/v2.1.1/vsmtp_v2.1.1_amd64.deb && \
-    dpkg -i vsmtp*.deb && \
+    wget https://github.com/erebe/personal-server/releases/download/vsmtp/vsmtp.deb && \
+    dpkg -i vsmtp.deb && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists *.deb && \
     useradd -ms /bin/bash erebe
 
-ADD https://github.com/erebe/personal-server/releases/download/vsmtp/vsmtp /usr/sbin/vsmtp
+#ADD https://github.com/erebe/personal-server/releases/download/vsmtp/vsmtp /usr/sbin/vsmtp
 RUN chmod +x /usr/sbin/vsmtp ; mkdir /etc/vsmtp/domain-enabled/erebe.eu/
 
 # Dovcecot configuration
