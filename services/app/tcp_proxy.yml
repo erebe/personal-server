@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tcp-proxy
+  labels:
+    app: tcp-proxy
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate 
+  selector:
+    matchLabels:
+      app: tcp-proxy
+  template:
+    metadata:
+      labels:
+        app: tcp-proxy
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "server"
+      containers:
+      - name: tcp-proxy
+        image: ghcr.io/erebe/tcp_proxy:latest
+        imagePullPolicy: Always
+        args:
+        - "/home/app/tcp_proxy"
+        - "-F"
+        - "tcp://[::]:25:[fd00:cafe::5]:25?proxy_protocol&timeout=5"
+        - "-F"
+        - "tcp://[::]:465:[fd00:cafe::5]:465?proxy_protocol&timeout=5"
+        - "-F"
+        - "tcp://[::]:587:[fd00:cafe::5]:587?proxy_protocol&timeout=5"
+        - "-F"
+        - "tcp://[::]:993:[fd00:cafe::5]:993"
+        ports:
+        - containerPort: 25
+        - containerPort: 465
+        - containerPort: 587
+        - containerPort: 993
