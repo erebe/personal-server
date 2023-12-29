@@ -34,6 +34,9 @@ app:
 	kubectl apply -f app/couber.yml
 	kubectl apply -f app/wstunnel.yml
 
+tcp-proxy:
+	kubectl apply -f app/tcp_proxy.yml
+
 warpgate:
 	kubectl apply -f app/warpgate.yml
 
