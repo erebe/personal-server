@@ -31,8 +31,6 @@ spec:
         - "-F"
         - "tcp://[::]:25:[fd00:cafe::5]:25?proxy_protocol&timeout=5"
         - "-F"
-        - "tcp://[::]:465:[fd00:cafe::5]:465?proxy_protocol&timeout=5"
-        - "-F"
         - "tcp://[::]:587:[fd00:cafe::5]:587?proxy_protocol&timeout=5"
         - "-F"
         - "tcp://[::]:993:[fd00:cafe::5]:993"
