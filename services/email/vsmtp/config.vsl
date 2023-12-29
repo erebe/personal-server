@@ -14,7 +14,7 @@ fn on_config(config) {
   config.server.interfaces = #{
     addr: ["[::]:25"],
     addr_submission: ["[::]:587"],
-    addr_submissions: ["[::]:465"],
+    addr_submissions: [],
   };
 
   config.server.tls = #{
