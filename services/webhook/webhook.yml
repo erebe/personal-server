@@ -157,7 +157,7 @@ data:
     app_name="$1"
     if [ "$app_name" = "dashy" ]
     then
-       kubectl apply -n default -f https://raw.githubusercontent.com/erebe/personal-server/master/dashy/configmap.yml
+       kubectl apply -n default -f https://raw.githubusercontent.com/erebe/personal-server/master/services/dashy/configmap.yml
     fi
     
     kubectl delete pod -n default -l app=${app_name}
