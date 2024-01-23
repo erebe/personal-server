@@ -33,6 +33,14 @@
 
     rcpt: [
         // After each RCPT TO command
+        rule "verify for host" || {
+          if "erebe.eu" in ctx::rcpt_list().domains {
+            state::next()
+          } else {
+            log("warn", `Refusing email for ${ctx::rcpt_list()}`);
+            state::deny()
+          }
+        }
     ],
 
     preq: [],
