@@ -4,6 +4,7 @@ metadata:
   name: ingress-nginx-controller
   namespace: ingress-nginx
 data:
+  use-proxy-protocol: "true"
   allow-snippet-annotations: "true"
   enable-brotli: "true"
   brotli-level: "6"
