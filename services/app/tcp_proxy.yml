@@ -7,7 +7,10 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate 
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 25%
   selector:
     matchLabels:
       app: tcp-proxy
@@ -22,20 +25,114 @@ spec:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
         value: "server"
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
       containers:
       - name: tcp-proxy
         image: ghcr.io/erebe/tcp_proxy:latest
         imagePullPolicy: Always
         args:
         - "/home/app/tcp_proxy"
-        - "-F"
-        - "tcp://[::]:25:[fd00:cafe::5]:25?proxy_protocol&timeout=5"
-        - "-F"
-        - "tcp://[::]:587:[fd00:cafe::5]:587?proxy_protocol&timeout=5"
-        - "-F"
-        - "tcp://[::]:993:[fd00:cafe::5]:993"
-        ports:
-        - containerPort: 25
-        - containerPort: 465
-        - containerPort: 587
-        - containerPort: 993
+        - "-c"
+        - "config/config.yaml"
+        ports: []
+        volumeMounts:
+        - name: erebe-eu-tls
+          mountPath: /home/app/certs.d/erebe.eu/
+          readOnly: true
+        - name: lb-config
+          mountPath: /home/app/config/
+          readOnly: true
+      volumes:
+      - name: erebe-eu-tls
+        secret:
+          secretName: erebe-eu-tls
+      - name: lb-config
+        configMap:
+          name: lb-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lb-config
+data:
+  config.yaml: |-
+    rules:
+    - listen_addr: 
+        - "[::]:25"
+        - "[::]:587"
+        - "[::]:993"
+      protocol: Tcp
+      upstreams:
+        - name: smtp
+          match: !DestinationPort 25
+          backends: !Static
+            - addr: "[fd00:cafe::5]:25"
+          proxy_protocol: true
+          cnx_max_duration: 5m
+          load_balancing: !RoundRobin
+
+        - name: smtps
+          match: !DestinationPort 587
+          backends: !Static
+            - addr: "[fd00:cafe::5]:587"
+          proxy_protocol: true
+          cnx_max_duration: 5m
+          load_balancing: !RoundRobin
+
+        - name: imaps
+          match: !DestinationPort 993
+          backends: !Static
+            - addr: "[fd00:cafe::5]:993"
+          proxy_protocol: false
+          cnx_max_duration: 10m
+          load_balancing: !RoundRobin
+
+    - listen_addr: 
+        - "[::]:443"
+      protocol: Tls
+      upstreams:
+        - name: wstunnel
+          match: !Sni ws.erebe.eu
+          backends: !Static
+            - addr: "[fd00:cafe::254]:8084"
+          proxy_protocol: false
+          cnx_max_duration: 1h
+          load_balancing: !RoundRobin
+
+        - name: nginx-https
+          match: !Any
+          backends: !Static
+            - addr: "[fd00:cafe::254]:444"
+          proxy_protocol: true
+          cnx_max_duration: 10m
+          load_balancing: !RoundRobin
+
+    - listen_addr: 
+        - "[::]:80"
+      protocol: Tcp
+      upstreams:
+        - name: nginx-http
+          match: !Any
+          backends: !Static
+            - addr: "[fd00:cafe::254]:81"
+          proxy_protocol: true
+          cnx_max_duration: 10m
+          load_balancing: !RoundRobin
+
+    - listen_addr:
+      - "[::]:8089"
+      protocol: Tls
+      upstreams:
+        - name: test
+          match: !Any
+          backends: !Static
+            - addr: "[2a01:4f8:0:a232::2]:80"
+          proxy_protocol: false
+          cnx_max_duration: 10m
+          load_balancing: !RoundRobin
+          tls:
+            certificate: /home/app/certs.d/erebe.eu/tls.crt
+            private_key: /home/app/certs.d/erebe.eu/tls.key
+            alpns: ["h2"]
