@@ -21,13 +21,17 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      terminationGracePeriodSeconds: 3601
       tolerations:
-      - key: "kubernetes.io/hostname"
-        operator: "Equal"
-        value: "server"
-      - key: "node.kubernetes.io/unreachable"
-        operator: "Exists"
-        effect: "NoExecute"
+        - key: "kubernetes.io/hostname"
+          operator: "Equal"
+          value: "server"
+        - key: "node.kubernetes.io/unreachable"
+          operator: "Exists"
+        - key: "node.kubernetes.io/not-ready"
+          operator: "Exists"
+        - key: "node.cilium.io/agent-not-ready"
+          operator: "Exists"
       containers:
       - name: tcp-proxy
         image: ghcr.io/erebe/tcp_proxy:latest
