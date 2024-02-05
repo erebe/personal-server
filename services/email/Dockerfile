@@ -16,23 +16,14 @@ RUN chmod +x /usr/sbin/vsmtp ; mkdir /etc/vsmtp/domain-enabled/erebe.eu/
 
 # Dovcecot configuration
 # Disable imap port, only allow IMAPs
-RUN sed -i 's/#port = 144/port = 0/' /etc/dovecot/conf.d/10-master.conf && \
-
+RUN sed -i 's/#login_trusted_networks =/login_trusted_networks = fd00:cafe::\/32/' /etc/dovecot/dovecot.conf && \
     # The only one user will have its mailbox at /data
     sed -iE 's#mail_location =.*#mail_location = maildir:/data#' /etc/dovecot/conf.d/10-mail.conf && \
-
-    # Rename TLS location to match kube cert-manager naming
-    sed -i -e 's#/etc/dovecot/private/dovecot.pem#/etc/dovecot/private/tls.crt#' \
-           -e 's#/etc/dovecot/private/dovecot.key#/etc/dovecot/private/tls.key#' \
-        /etc/dovecot/conf.d/10-ssl.conf && \
-
     # User passwd db file, need to be mounted as a secret
     sed -i 's#/etc/dovecot/users#/etc/dovecot/users/users#' /etc/dovecot/conf.d/auth-passwdfile.conf.ext && \
     rm -f /etc/dovecot/users && \
-
     # Enable passwd db
     sed -i 's#\#!include auth-passwdfile.conf.ext#!include auth-passwdfile.conf.ext#' /etc/dovecot/conf.d/10-auth.conf && \
-
     # Set logging to STDOUT/STDERR
     sed -i -e 's,#log_path = syslog,log_path = /dev/stderr,' \
            -e 's,#info_log_path =,info_log_path = /dev/stdout,' \
