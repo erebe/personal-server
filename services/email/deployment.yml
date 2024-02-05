@@ -29,7 +29,7 @@ spec:
         ports:
         - containerPort: 25
         - containerPort: 587
-        - containerPort: 993
+        - containerPort: 143
         env:
         - name: SMTP_PASSWORD
           valueFrom:

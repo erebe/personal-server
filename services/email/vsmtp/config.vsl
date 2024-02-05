@@ -13,7 +13,7 @@ fn on_config(config) {
   // Specify addresses that the server will listen to.
   config.server.interfaces = #{
     addr: ["[::]:25"],
-    addr_submission: ["[::]:587"],
+    addr_submission: [],
     addr_submissions: [],
   };
 
@@ -30,19 +30,8 @@ fn on_config(config) {
   config.server.virtual = #{
     "mail.erebe.eu": #{
       "is_default": true,
-      "tls": #{
-          protocol_version: ["TLSv1.2", "TLSv1.3"],
-          certificate: "/etc/dovecot/private/tls.crt",
-          private_key: "/etc/dovecot/private/tls.key",
-      }
     },
-    "erebe.eu": #{
-      "tls": #{
-          protocol_version: ["TLSv1.2", "TLSv1.3"],
-          certificate: "/etc/dovecot/private/tls.crt",
-          private_key: "/etc/dovecot/private/tls.key",
-      }
-    }
+    "erebe.eu": #{ }
   };
 
   // Change filter rules locations.
