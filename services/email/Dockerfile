@@ -16,7 +16,7 @@ RUN chmod +x /usr/sbin/vsmtp ; mkdir /etc/vsmtp/domain-enabled/erebe.eu/
 
 # Dovcecot configuration
 # Disable imap port, only allow IMAPs
-RUN sed -i 's/#port = 143/port = 0/' /etc/dovecot/conf.d/10-master.conf && \
+RUN sed -i 's/#port = 144/port = 0/' /etc/dovecot/conf.d/10-master.conf && \
 
     # The only one user will have its mailbox at /data
     sed -iE 's#mail_location =.*#mail_location = maildir:/data#' /etc/dovecot/conf.d/10-mail.conf && \
