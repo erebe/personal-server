@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tcp-proxy
+  name: lb
   labels:
-    app: tcp-proxy
+    app: lb
 spec:
   replicas: 1
   strategy:
@@ -13,15 +13,15 @@ spec:
       maxUnavailable: 25%
   selector:
     matchLabels:
-      app: tcp-proxy
+      app: lb
   template:
     metadata:
       labels:
-        app: tcp-proxy
+        app: lb
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
-      terminationGracePeriodSeconds: 3601
+      terminationGracePeriodSeconds: 3600
       tolerations:
         - key: "kubernetes.io/hostname"
           operator: "Equal"
@@ -33,7 +33,7 @@ spec:
         - key: "node.cilium.io/agent-not-ready"
           operator: "Exists"
       containers:
-      - name: tcp-proxy
+      - name: lb
         image: ghcr.io/erebe/tcp_proxy:latest
         imagePullPolicy: Always
         args:
