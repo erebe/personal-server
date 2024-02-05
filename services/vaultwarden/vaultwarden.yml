@@ -104,10 +104,6 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
-  tls:
-  - hosts:
-    - bitwarden.erebe.eu
-    secretName: vaultwarden-tls
   ingressClassName: "nginx"
   rules:
   - host: bitwarden.erebe.eu

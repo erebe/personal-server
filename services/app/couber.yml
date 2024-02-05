@@ -79,10 +79,6 @@ metadata:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: "nginx"
-  tls:
-  - hosts:
-    - coub.erebe.eu
-    secretName: couber-tls
   rules:
   - host: coub.erebe.eu
     http:

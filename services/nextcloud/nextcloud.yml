@@ -75,10 +75,6 @@ metadata:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: "nginx"
-  tls:
-  - hosts:
-    - cloud.erebe.eu
-    secretName: nextcloud-tls
   rules:
   - host: cloud.erebe.eu
     http:

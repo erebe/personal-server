@@ -87,10 +87,6 @@ metadata:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: "nginx"
-  tls:
-  - hosts:
-    - board.erebe.eu
-    secretName: dashy-tls
   rules:
   - host: board.erebe.eu
     http:

@@ -35,6 +35,7 @@ k8s:
 	kubectl apply -k k8s/nginx
 	kubectl apply -k k8s/cert-manager
 	kubectl apply -f k8s/lets-encrypt-issuer.yml
+	kubectl apply -f k8s/wildward-erebe-eu.yaml
 	kubectl delete secret gandi-credentials --namespace cert-manager || exit 0
 	kubectl create secret generic gandi-credentials --namespace cert-manager \
 		--from-literal=api-token="$(shell sops -d --extract '["apirest"]["key"]' secrets/gandi.yml)"

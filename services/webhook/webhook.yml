@@ -102,10 +102,6 @@ metadata:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: "nginx"
-  tls:
-  - hosts:
-    - hooks.erebe.eu
-    secretName: webhook-tls
   rules:
   - host: hooks.erebe.eu
     http:
