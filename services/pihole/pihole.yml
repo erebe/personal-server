@@ -83,6 +83,19 @@ spec:
           path: /opt/pihole/dnsmasq
           type: Directory
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole
+spec:
+  selector:
+    app: pihole
+  ports:
+    - protocol: UDP
+      port: 53
+      targetPort: 53
+  clusterIP: None
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
