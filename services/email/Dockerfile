@@ -19,6 +19,8 @@ RUN chmod +x /usr/sbin/vsmtp ; mkdir /etc/vsmtp/domain-enabled/erebe.eu/
 RUN sed -i 's/#login_trusted_networks =/login_trusted_networks = fd00:cafe::\/32/' /etc/dovecot/dovecot.conf && \
     # The only one user will have its mailbox at /data
     sed -iE 's#mail_location =.*#mail_location = maildir:/data#' /etc/dovecot/conf.d/10-mail.conf && \
+    # Disable TLS, managed by tls proxy
+    sed -i 's#ssl = yes#ssl = no#' /etc/dovecot/conf.d/10-ssl.conf && \
     # User passwd db file, need to be mounted as a secret
     sed -i 's#/etc/dovecot/users#/etc/dovecot/users/users#' /etc/dovecot/conf.d/auth-passwdfile.conf.ext && \
     rm -f /etc/dovecot/users && \
