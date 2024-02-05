@@ -28,7 +28,6 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 25
-        - containerPort: 587
         - containerPort: 143
         env:
         - name: SMTP_PASSWORD
@@ -41,12 +40,12 @@ spec:
             secretKeyRef:
               name: dovecot-users-password
               key: GANDI_RELAI_URL
-        livenessProbe:
-          tcpSocket:
-            port: 25
-          initialDelaySeconds: 10
-          failureThreshold: 3
-          periodSeconds: 30
+#        livenessProbe:
+#          tcpSocket:
+#            port: 25
+#          initialDelaySeconds: 10
+#          failureThreshold: 3
+#          periodSeconds: 30
         volumeMounts:
         - name: email-tls
           mountPath: /etc/dovecot/private/
