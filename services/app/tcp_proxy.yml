@@ -80,18 +80,24 @@ data:
         - name: smtps
           match: !DestinationPort 587
           backends: !Static
-            - addr: "[fd00:cafe::5]:587"
+            - addr: "[fd00:cafe::5]:25"
           proxy_protocol: true
           cnx_max_duration: 5m
           load_balancing: !RoundRobin
+          tls:
+            certificate: /home/app/certs.d/erebe.eu/tls.crt
+            private_key: /home/app/certs.d/erebe.eu/tls.key
 
         - name: imaps
           match: !DestinationPort 993
           backends: !Static
-            - addr: "[fd00:cafe::5]:993"
+            - addr: "[fd00:cafe::5]:143"
           proxy_protocol: false
           cnx_max_duration: 10m
           load_balancing: !RoundRobin
+          tls:
+            certificate: /home/app/certs.d/erebe.eu/tls.crt
+            private_key: /home/app/certs.d/erebe.eu/tls.key
 
     - listen_addr: 
         - "[::]:443"
