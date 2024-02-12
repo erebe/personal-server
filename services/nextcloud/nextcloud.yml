@@ -24,7 +24,7 @@ spec:
         value: "minio"
       containers:
       - name: nextcloud
-        image: linuxserver/nextcloud:27.0.2
+        image: linuxserver/nextcloud:27.1.4
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8083
