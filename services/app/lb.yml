@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: lb
+  name: turbine-lb
   labels:
-    app: lb
+    app: turbine-lb
 spec:
   replicas: 1
   strategy:
@@ -13,12 +13,15 @@ spec:
       maxUnavailable: 25%
   selector:
     matchLabels:
-      app: lb
+      app: turbine-lb
   template:
     metadata:
       labels:
-        app: lb
+        app: turbine-lb
     spec:
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       terminationGracePeriodSeconds: 3600
@@ -33,38 +36,44 @@ spec:
         - key: "node.cilium.io/agent-not-ready"
           operator: "Exists"
       containers:
-      - name: lb
+      - name: turbine-lb
         image: ghcr.io/erebe/tcp_proxy:latest
         imagePullPolicy: Always
         args:
-        - "/home/app/tcp_proxy"
+        - "/home/app/turbine-lb"
         - "-c"
         - "config/config.yaml"
         ports: []
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+          allowPrivilegeEscalation: true
+          privileged: true
         volumeMounts:
         - name: erebe-eu-tls
           mountPath: /home/app/certs.d/erebe.eu/
           readOnly: true
-        - name: lb-config
+        - name: turbine-lb-config
           mountPath: /home/app/config/
           readOnly: true
       volumes:
       - name: erebe-eu-tls
         secret:
           secretName: erebe-eu-tls
-      - name: lb-config
+      - name: turbine-lb-config
         configMap:
-          name: lb-config
+          name: turbine-lb-config
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: lb-config
+  name: turbine-lb-config
 data:
   config.yaml: |-
     rules:
     - listen_addr: 
         - "[::]:25"
+        - "[::]:465"
         - "[::]:587"
         - "[::]:993"
       protocol: Tcp
@@ -73,6 +82,14 @@ data:
           match: !DestinationPort 25
           backends: !Static
             - addr: "[fd00:cafe::5]:25"
+          proxy_protocol: true
+          cnx_max_duration: 5m
+          load_balancing: !RoundRobin
+
+        - name: smtps
+          match: !DestinationPort 465
+          backends: !Static
+            - addr: "[fd00:cafe::5]:465"
           proxy_protocol: true
           cnx_max_duration: 5m
           load_balancing: !RoundRobin
