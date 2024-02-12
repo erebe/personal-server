@@ -27,7 +27,7 @@ table inet SERVER_FIREWALL {
 
               tcp dport { 80, 443, 8084 } accept comment "accept http"
 
-              tcp dport {25, 587, 993} accept comment "accept email"
+              tcp dport {25, 465, 587, 993} accept comment "accept email"
 
               udp dport 995 accept comment "accept wireguard"
 
