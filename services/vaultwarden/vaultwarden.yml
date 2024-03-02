@@ -24,7 +24,7 @@ spec:
         value: "minio"
       containers:
       - name: vaultwarden
-        image: docker.io/vaultwarden/server:1.27.0
+        image: docker.io/vaultwarden/server:1.30.5
         env:
           - name: DOMAIN
             value: "https://bitwarden.erebe.eu"
