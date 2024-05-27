@@ -69,7 +69,7 @@ kind: ConfigMap
 metadata:
   name: turbine-lb-config
 data:
-  config.yaml: |-
+  config.yaml: |
     rules:
     - listen_addr: 
         - "[::]:25"
@@ -148,18 +148,14 @@ data:
           cnx_max_duration: 10m
           load_balancing: !RoundRobin
 
-    - listen_addr:
-      - "[::]:8089"
-      protocol: Tls
-      upstreams:
-        - name: test
-          match: !Any
-          backends: !Static
-            - addr: "[2a01:4f8:0:a232::2]:80"
-          proxy_protocol: false
-          cnx_max_duration: 10m
-          load_balancing: !RoundRobin
-          tls:
-            certificate: /home/app/certs.d/erebe.eu/tls.crt
-            private_key: /home/app/certs.d/erebe.eu/tls.key
-            alpns: ["h2"]
+#    - listen_addr:
+#      - "[::]:8089"
+#      protocol: Tcp
+#      upstreams:
+#        - name: test
+#          match: !Any
+#          backends: !Static
+#            - addr: "[2001:bc8:3::7]:8089"
+#          proxy_protocol: false
+#          cnx_max_duration: 10m
+#          load_balancing: !RoundRobin
