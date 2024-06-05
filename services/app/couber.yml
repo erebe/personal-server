@@ -29,27 +29,16 @@ spec:
       - name: couber
         image: ghcr.io/erebe/couber:latest
         imagePullPolicy: Always
-        args: ["runuser", "-u", "app", "./couber"]
         env:
         - name: PORT
           value: "8081"
         ports:
         - containerPort: 8081
         volumeMounts:
-        - name: db
-          mountPath: /home/app/db
-        - name: videos2
-          mountPath: /home/app/videos
+        - name: videos
+          mountPath: /home/app/data
       volumes:
-      - name: db
-        hostPath:
-          path: /opt/couber/db/
-          type: Directory
       - name: videos
-        hostPath:
-          path: /opt/couber/videos/
-          type: Directory
-      - name: videos2
         persistentVolumeClaim:
           claimName: couber-pv-claim
 ---
