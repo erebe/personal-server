@@ -22,6 +22,9 @@ spec:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
         value: "minio"
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: "OnRootMismatch"
       containers:
       - name: nextcloud
         image: linuxserver/nextcloud:27.0.2
@@ -29,25 +32,39 @@ spec:
         ports:
         - containerPort: 8083
         volumeMounts:
-        - name: data
-          mountPath: /data
-        - name: config
-          mountPath: /config
         - name: nginx-siteconfig
           mountPath: /defaults/nginx/site-confs/
+        - name: data
+          subPath: config
+          mountPath: /config
+        - name: data
+          subPath: data
+          mountPath: /data
+        - name: preview
+          mountPath: /data/appdata_ocxf7jgp27m7/preview
       volumes:
       - name: nginx-siteconfig
         configMap:
           name: nextcloud-nginx-siteconfig
+      - name: preview
+        hostPath:
+          path: /opt/nextcloud/preview
+          type: Directory
       - name: data
-        hostPath:
-          path: /opt/nextcloud/data
-          type: Directory
-      - name: config
-        hostPath:
-          path: /opt/nextcloud/config
-          type: Directory
-
+        persistentVolumeClaim:
+          claimName: nextcloud-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nextcloud-pv-claim
+spec:
+  storageClassName: nfs-nvme
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
 ---
 apiVersion: v1
 kind: Service
