@@ -22,6 +22,8 @@ spec:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
         value: "mail"
+      securityContext:
+        fsGroup: 65534
       containers:
       - name: mail
         image: ghcr.io/erebe/email:latest
@@ -40,12 +42,6 @@ spec:
             secretKeyRef:
               name: dovecot-users-password
               key: GANDI_RELAI_URL
-#        livenessProbe:
-#          tcpSocket:
-#            port: 25
-#          initialDelaySeconds: 10
-#          failureThreshold: 3
-#          periodSeconds: 30
         volumeMounts:
         - name: email-tls
           mountPath: /etc/dovecot/private/
@@ -71,10 +67,20 @@ spec:
           - key: fetchmailrc
             path: fetchmailrc
       - name: mail-data
-        hostPath:
-          path: /opt/mail/data
-          type: Directory
-
+        persistentVolumeClaim:
+          claimName: mail-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mail-pv-claim
+spec:
+  storageClassName: nfs-nvme
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate

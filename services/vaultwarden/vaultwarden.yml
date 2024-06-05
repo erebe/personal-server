@@ -22,6 +22,9 @@ spec:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
         value: "minio"
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: "OnRootMismatch"
       containers:
       - name: vaultwarden
         image: docker.io/vaultwarden/server:1.27.0
@@ -54,10 +57,20 @@ spec:
           mountPath: /data
       volumes:
       - name: data
-        hostPath:
-          path: /opt/vaultwarden/
-          type: Directory
-
+        persistentVolumeClaim:
+          claimName: vaultwarden-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vaultwarden-pv-claim
+spec:
+  storageClassName: nfs-nvme
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
 ---
 apiVersion: v1
 kind: Service

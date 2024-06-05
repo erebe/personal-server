@@ -26,6 +26,9 @@ spec:
         nameservers:
         - 127.0.0.1
         - 1.1.1.1
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: "OnRootMismatch"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -59,9 +62,11 @@ spec:
         securityContext:
           privileged: true
         volumeMounts:
-        - name: pihole-etc-volume
-          mountPath: "/etc/pihole"
-        - name: pihole-dnsmasq-volume
+        - name: pihole-data
+          subPath: etc
+          mountPath: /etc/pihole
+        - name: pihole-data
+          subPath: dnsmasq
           mountPath: "/etc/dnsmasq.d"
       tolerations:
       - key: "kubernetes.io/hostname"
@@ -74,14 +79,21 @@ spec:
       - key: "node.cilium.io/agent-not-ready"
         operator: "Exists"
       volumes:
-      - name: pihole-etc-volume
-        hostPath:
-          path: /opt/pihole/etc
-          type: Directory
-      - name: pihole-dnsmasq-volume
-        hostPath:
-          path: /opt/pihole/dnsmasq
-          type: Directory
+      - name: pihole-data
+        persistentVolumeClaim:
+          claimName: pihole-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pihole-pv-claim
+spec:
+  storageClassName: nfs-nvme
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
 ---
 apiVersion: v1
 kind: Service
