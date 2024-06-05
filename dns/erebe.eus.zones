@@ -1,0 +1,17 @@
+@ 10800 IN SOA ns1.gandi.net. hostmaster.gandi.net. 1579092697 10800 3600 604800 10800
+@ IN CAA 0 issue "letsencrypt.org"
+@ IN CAA 0 issuewild "letsencrypt.org"
+router 10800 IN A 10.200.0.1
+router 10800 IN AAAA fd00:cafe::1
+pihole 10800 IN A 10.200.0.2
+pihole 10800 IN AAAA fd00:cafe::2
+k8s 10800 IN A 10.200.0.3
+k8s 10800 IN AAAA fd00:cafe::3
+toybox 10800 IN A 10.200.0.4
+toybox 10800 IN AAAA fd00:cafe::4
+mail 10800 IN A 10.200.0.5
+mail 10800 IN AAAA fd00:cafe::5
+s3 10800 IN A 10.200.0.6
+s3 10800 IN AAAA fd00:cafe::6
+proxmox 10800 IN A 10.200.0.7
+proxmox 10800 IN AAAA fd00:cafe::7

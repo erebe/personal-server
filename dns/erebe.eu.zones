@@ -54,17 +54,3 @@ warp 10800 IN AAAA 2a01:4f8:c013:7b8::1
 *.warp 10800 IN A 49.13.58.9
 *.warp 10800 IN AAAA 2a01:4f8:c013:7b8::1
 cafe 10800 IN AAAA 2a01:4f8:c013:7b8::cafe
-
-
-router.lan 10800 IN A 10.200.0.1
-router.lan 10800 IN AAAA fd00:cafe::1
-pihole.lan 10800 IN A 10.200.0.2
-pihole.lan 10800 IN AAAA fd00:cafe::2
-k8s.lan 10800 IN A 10.200.0.3
-k8s.lan 10800 IN AAAA fd00:cafe::3
-toybox.lan 10800 IN A 10.200.0.4
-toybox.lan 10800 IN AAAA fd00:cafe::4
-mail.lan 10800 IN A 10.200.0.5
-mail.lan 10800 IN AAAA fd00:cafe::5
-s3.lan 10800 IN A 10.200.0.6
-s3.lan 10800 IN AAAA fd00:cafe::6

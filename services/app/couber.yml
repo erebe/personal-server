@@ -22,10 +22,14 @@ spec:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
         value: "toybox"
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: "OnRootMismatch"
       containers:
       - name: couber
         image: ghcr.io/erebe/couber:latest
         imagePullPolicy: Always
+        args: ["runuser", "-u", "app", "./couber"]
         env:
         - name: PORT
           value: "8081"
@@ -34,7 +38,7 @@ spec:
         volumeMounts:
         - name: db
           mountPath: /home/app/db
-        - name: videos
+        - name: videos2
           mountPath: /home/app/videos
       volumes:
       - name: db
@@ -45,7 +49,21 @@ spec:
         hostPath:
           path: /opt/couber/videos/
           type: Directory
-
+      - name: videos2
+        persistentVolumeClaim:
+          claimName: couber-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: couber-pv-claim
+spec:
+  storageClassName: nfs-nvme
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
 ---
 apiVersion: v1
 kind: Service

@@ -27,6 +27,7 @@ dns:
 	sops -d --output secrets_decrypted/gandi.yml secrets/gandi.yml
 	GANDI_CONFIG='secrets_decrypted/gandi.yml' gandi dns update erebe.eu -f dns/erebe.eu.zones
 	GANDI_CONFIG='secrets_decrypted/gandi.yml' gandi dns update erebe.dev -f dns/erebe.dev.zones
+	GANDI_CONFIG='secrets_decrypted/gandi.yml' gandi dns update erebe.eus -f dns/erebe.eus.zones
 
 
 k8s:
@@ -44,6 +45,8 @@ k8s:
            --version v0.2.0 \
            --namespace cert-manager \
 					 -f k8s/cert-manager-webhook-gandi.yaml
+	helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+	helm upgrade --install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner -f k8s/nfs-subdir-values.yaml
 
 
 
