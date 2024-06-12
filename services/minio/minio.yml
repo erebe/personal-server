@@ -31,6 +31,9 @@ spec:
                 operator: In
                 values:
                 - minio
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: "OnRootMismatch"
       containers:
       - name: minio
         image: docker.io/minio/minio:RELEASE.2022-10-24T18-35-07Z
@@ -63,6 +66,17 @@ spec:
         effect: "NoExecute"
       volumes:
       - name: data
-        hostPath:
-          path: /mnt/data
-          type: Directory
+        persistentVolumeClaim:
+          claimName: minio-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pv-claim
+spec:
+  storageClassName: nfs-hdd
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Ti
