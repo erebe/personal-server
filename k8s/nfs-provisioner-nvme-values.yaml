@@ -11,6 +11,7 @@ nfs:
 storageClass:
   name: nfs-nvme
   defaultClass: true
+  provisionerName: k8s-sigs.io/nfs-nvme
 tolerations:
   - key: "node-role.kubernetes.io/master"
     operator: "Exists"

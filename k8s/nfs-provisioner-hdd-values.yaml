@@ -1,0 +1,17 @@
+nfs:
+  server: fd00:cafe::7
+  path: /backup/data
+  mountOptions: 
+   - hard
+   - rsize=65536
+   - wsize=65536
+   - retrans=2
+   - timeo=600
+   - nfsvers=4
+storageClass:
+  name: nfs-hdd
+  provisionerName: k8s-sigs.io/nfs-hdd
+tolerations:
+  - key: "node-role.kubernetes.io/master"
+    operator: "Exists"
+    effect: "NoSchedule"
