@@ -40,7 +40,7 @@ spec:
                 - raspberry
       containers:
       - name: pihole
-        image: pihole/pihole:2024.03.2
+        image: pihole/pihole:2024.07.0
         imagePullPolicy: IfNotPresent
         env:
         - name: TZ
