@@ -33,7 +33,7 @@ spec:
                 - toybox
       containers:
       - name: dashy
-        image: docker.io/lissy93/dashy:2.1.1
+        image: docker.io/lissy93/dashy:3.1.0
         imagePullPolicy: IfNotPresent
         env:
         - name: HOST
