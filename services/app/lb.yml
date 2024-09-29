@@ -128,6 +128,14 @@ data:
           cnx_max_duration: 1h
           load_balancing: !RoundRobin
 
+        - name: wstunnel-demo
+          match: !SniRegexNot \.erebe\.(dev|eu|eus)$
+          backends: !Static
+            - addr: "[fd00:cafe::254]:8084"
+          proxy_protocol: false
+          cnx_max_duration: 5m
+          load_balancing: !RoundRobin
+
         - name: nginx-https
           match: !Any
           backends: !Static

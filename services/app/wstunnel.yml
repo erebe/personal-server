@@ -31,11 +31,17 @@ spec:
         - "server"
         - "wss://[::]:8084"
         - "--dns-resolver=dns://[fd00:cafe::2]"
-        env:
-          - name: WSTUNNEL_RESTRICT_HTTP_UPGRADE_PATH_PREFIX
-            value: "mielpopstropbon"
+        - "--restrict-config=/etc/wstunnel/restrictions.yaml"
         ports:
         - containerPort: 8084
+        volumeMounts:
+          - name: wstunnel
+            mountPath: /etc/wstunnel
+            readOnly: true
+      volumes:
+      - name: wstunnel
+        secret:
+          secretName: wstunnel
 ---
 apiVersion: v1
 kind: Service
