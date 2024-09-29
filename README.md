@@ -1281,7 +1281,7 @@ Once everything is set-up, we only need to add in our github action a call to cu
           curl -X POST -H 'Content-Type: application/json' -H "${token}"  -d "${payload}" https://hooks.erebe.eu/hooks/deploy
 ```
 
-Final version of the deployment is [here](https://github.com/erebe/personal-server/blob/master/webhook/webhook.yml)
+Final version of the deployment is [here](https://github.com/erebe/personal-server/blob/master/services/webhook/webhook.yml)
 
 
 # Hosting your own cloud with Nextcloud <a name="cloud"></a>
