@@ -133,7 +133,7 @@ data:
           backends: !Static
             - addr: "[fd00:cafe::254]:8084"
           proxy_protocol: false
-          cnx_max_duration: 5m
+          cnx_max_duration: 10s
           load_balancing: !RoundRobin
 
         - name: nginx-https

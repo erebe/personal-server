@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: default-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      location / {
+        add_header Content-Type text/plain;
+        return 404 'Memento mori !';
+      }
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fake
+            port:
+              number: 8080
