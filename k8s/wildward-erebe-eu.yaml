@@ -14,9 +14,9 @@ spec:
   # discouraged from being used.
   isCA: false
   privateKey:
-    algorithm: RSA
+    algorithm: ECDSA
+    size: 256
     encoding: PKCS1
-    size: 2048
   usages:
     - server auth
     - client auth

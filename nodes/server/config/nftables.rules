@@ -25,7 +25,7 @@ table inet SERVER_FIREWALL {
 
               tcp dport 22 accept comment "accept local SSH"
 
-              tcp dport { 80, 443, 8084 } accept comment "accept http"
+              tcp dport { 80, 443, 4443, 8084 } accept comment "accept http"
 
               tcp dport {25, 465, 587, 993} accept comment "accept email"
 

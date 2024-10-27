@@ -11,10 +11,8 @@ spec:
       name: letsencrypt-prod
     solvers:
     - dns01:
-        webhook:
-          config:
-            apiKeySecretRef:
-              key: api-token
-              name: gandi-credentials
-          groupName: acme.bwolf.me
-          solverName: gandi
+        cloudflare:
+          email: cloudflare@erebe.eu
+          apiTokenSecretRef:
+            key: api-token
+            name: cloudflare-credentials

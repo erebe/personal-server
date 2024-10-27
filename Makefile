@@ -24,10 +24,27 @@ install:
 	sops -d --output ~/.kube/config secrets/kubernetes-config.yml
 
 dns:
-	sops -d --output secrets_decrypted/gandi.yml secrets/gandi.yml
-	GANDI_CONFIG='secrets_decrypted/gandi.yml' gandi dns update erebe.eu -f dns/erebe.eu.zones
-	GANDI_CONFIG='secrets_decrypted/gandi.yml' gandi dns update erebe.dev -f dns/erebe.dev.zones
-	GANDI_CONFIG='secrets_decrypted/gandi.yml' gandi dns update erebe.eus -f dns/erebe.eus.zones
+	curl -s --request POST \
+        --url https://api.cloudflare.com/client/v4/zones/8c0e6a032ba22e5ffa9906458e47b838/dns_records/import \
+        --header 'Content-Type: multipart/form-data' \
+        --header 'X-Auth-Email: cloudflare@erebe.eu' \
+        --header 'Authorization: Bearer '"$(shell sops -d --extract '["apirest"]["key"]' secrets/cloudflare.yml)" \
+        --form 'file=@dns/erebe.eus.zones' \
+        --form proxied=false | jq .success
+	curl -s --request POST \
+        --url https://api.cloudflare.com/client/v4/zones/0acc1290d9dd674f677b6d3580611e6a/dns_records/import \
+        --header 'Content-Type: multipart/form-data' \
+        --header 'X-Auth-Email: cloudflare@erebe.eu' \
+        --header 'Authorization: Bearer '"$(shell sops -d --extract '["apirest"]["key"]' secrets/cloudflare.yml)" \
+        --form 'file=@dns/erebe.eu.zones' \
+        --form proxied=false | jq .success
+	curl -s --request POST \
+        --url https://api.cloudflare.com/client/v4/zones/8b8062d04b84fe017d647cbaa46e29e7/dns_records/import \
+        --header 'Content-Type: multipart/form-data' \
+        --header 'X-Auth-Email: cloudflare@erebe.eu' \
+        --header 'Authorization: Bearer '"$(shell sops -d --extract '["apirest"]["key"]' secrets/cloudflare.yml)" \
+        --form 'file=@dns/erebe.dev.zones' \
+        --form proxied=false | jq .success
 
 
 k8s:
@@ -37,14 +54,9 @@ k8s:
 	kubectl apply -k k8s/cert-manager
 	kubectl apply -f k8s/lets-encrypt-issuer.yml
 	kubectl apply -f k8s/wildward-erebe-eu.yaml
-	kubectl delete secret gandi-credentials --namespace cert-manager || exit 0
-	kubectl create secret generic gandi-credentials --namespace cert-manager \
-		--from-literal=api-token="$(shell sops -d --extract '["apirest"]["key"]' secrets/gandi.yml)"
-	helm upgrade --install cert-manager-webhook-gandi cert-manager-webhook-gandi \
-           --repo https://bwolf.github.io/cert-manager-webhook-gandi \
-           --version v0.2.0 \
-           --namespace cert-manager \
-					 -f k8s/cert-manager-webhook-gandi.yaml
+	kubectl delete secret cloudflare-credentials --namespace cert-manager || exit 0
+	kubectl create secret generic cloudflare-credentials --namespace cert-manager \
+		--from-literal=api-token="$(shell sops -d --extract '["apirest"]["key"]' secrets/cloudflare.yml)"
 	helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
 	helm upgrade --install nfs-nvme nfs-subdir-external-provisioner/nfs-subdir-external-provisioner -f k8s/nfs-provisioner-nvme-values.yaml
 	helm upgrade --install nfs-hdd  nfs-subdir-external-provisioner/nfs-subdir-external-provisioner -f k8s/nfs-provisioner-hdd-values.yaml
