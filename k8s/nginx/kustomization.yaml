@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 bases:
-- https://raw.githubusercontent.com/kubernetes/ingress-nginx/helm-chart-4.7.1/deploy/static/provider/baremetal/deploy.yaml
+- https://raw.githubusercontent.com/kubernetes/ingress-nginx/helm-chart-4.11.3/deploy/static/provider/baremetal/deploy.yaml
 patchesStrategicMerge:
 - ingress-nginx-v1.4.0.yml.patch
 - configmap.yaml.patch
