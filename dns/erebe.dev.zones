@@ -3,11 +3,5 @@
 @ IN CAA 0 issuewild "letsencrypt.org"
 @ 10800 IN A 49.13.58.9
 @ 10800 IN AAAA 2a01:4f8:c013:7b8::1
-blog 10800 IN A 49.13.58.9
-blog 10800 IN AAAA 2a01:4f8:c013:7b8::1
-dev 10800 IN A 49.13.58.9
-dev 10800 IN AAAA 2a01:4f8:c013:7b8::1
-keycloak 10800 IN A 49.13.58.9
-keycloak 10800 IN AAAA 2a01:4f8:c013:7b8::1
-runtrade 10800 IN A 49.13.58.9
-runtrade 10800 IN AAAA 2a01:4f8:c013:7b8::1
+* 10800 IN A 49.13.58.9
+* 10800 IN AAAA 2a01:4f8:c013:7b8::1
