@@ -33,7 +33,7 @@ spec:
                 - toybox
       containers:
       - name: dashy
-        image: docker.io/lissy93/dashy:2.1.1
+        image: docker.io/lissy93/dashy:3.x
         imagePullPolicy: IfNotPresent
         env:
         - name: HOST
@@ -50,7 +50,7 @@ spec:
           privileged: true
         volumeMounts:
         - name: dashy-config
-          mountPath: /app/public/conf.yml
+          mountPath: /app/user-data/conf.yml
           subPath: conf.yml
       volumes:
         - name: dashy-config
