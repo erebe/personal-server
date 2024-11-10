@@ -40,7 +40,7 @@ spec:
                 - raspberry
       containers:
       - name: pihole
-        image: pihole/pihole:2024.03.2
+        image: pihole/pihole:2024.07.0
         imagePullPolicy: IfNotPresent
         env:
         - name: TZ
@@ -146,7 +146,7 @@ spec:
                 - raspberry
       containers:
       - name: cloudflared
-        image: visibilityspots/cloudflared:alpine-3.13
+        image: visibilityspots/cloudflared:v2024.11.0
         imagePullPolicy: IfNotPresent
         env:
         - name: METRICS
