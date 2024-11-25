@@ -29,7 +29,7 @@ spec:
                 - toybox
       containers:
       - name: warpgate
-        image: ghcr.io/warp-tech/warpgate:v0.8.1
+        image: ghcr.io/warp-tech/warpgate:v0.11.0
         args:
           - "-c"
           - "/data/warpgate.yaml"
