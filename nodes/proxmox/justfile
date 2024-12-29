@@ -3,7 +3,7 @@ set dotenv-load := false
 _default:
     @just --list
 
-HOST := "root@proxmox.lan"
+HOST := "root@192.168.1.253"
 
 wireguard:
   sops exec-env ../../secrets/wireguard.yml 'cp wireguard/wg0.conf secrets_decrypted/; for i in $(env | grep _KEY | cut -d = -f1); do sed -i "s#__${i}__#${!i}#g" secrets_decrypted/wg0.conf ; done'
