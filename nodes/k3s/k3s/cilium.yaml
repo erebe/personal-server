@@ -1,13 +1,12 @@
 ipv6:
   enabled: true
 bpf:
-  masquerade: true
+  masquerade: false
+kubeProxyReplacement: true
 
 k8sServiceHost: "fd00:cafe::3"
 k8sServicePort: "6443"
 
-containerRuntime:
-  integration: "containerd"
 global:
   containerRuntime:
     socketPath: "/var/run/k3s/containerd/containerd.sock"
@@ -26,7 +25,10 @@ affinity:
           operator: NotIn
           values:
           - raspberry
+envoy:
+  enabled: false
 operator:
+  replicas: 1
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -34,3 +36,29 @@ operator:
         - matchExpressions:
           - key: node-role.kubernetes.io/master
             operator: Exists
+
+hubble:
+  enabled: true
+  dashboards:
+    enabled: true
+  ui:
+    enabled: true
+    tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+  relay:
+    enabled: true
+    tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+  metrics:
+    enabled:
+      - dns
+      - drop
+      - tcp
+      - flow
+      - port-distribution
+      - icmp
+      - httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction

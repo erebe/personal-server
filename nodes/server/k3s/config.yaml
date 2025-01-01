@@ -1,6 +1,7 @@
 node-name: "server"
 node-ip: "fd00:cafe::254,10.200.0.254"
-node-external-ip: "2001:bc8:6005:136:208:a2ff:fe0c:634e,195.154.119.61"
+node-external-ip: "2a01:4f8:c013:7b8::1,49.13.58.9"
+node-external-dns: "erebe.eu"
 
 # https://docs.k3s.io/installation/network-options#dual-stack-ipv4--ipv6-networking
 kubelet-arg: "node-ip=::"

@@ -3,7 +3,7 @@ set dotenv-load := false
 _default:
     @just --list
 
-HOST := "erebe@mail.lan"
+HOST := "erebe@192.168.1.26"
 
 wireguard:
   sops exec-env ../../secrets/wireguard.yml 'cp wireguard/wg0.conf secrets_decrypted/; for i in $(env | grep _KEY | cut -d = -f1); do sed -i "s#__${i}__#${!i}#g" secrets_decrypted/wg0.conf ; done'
@@ -15,4 +15,4 @@ wireguard:
 k3s:
   ssh {{HOST}} "sudo mkdir -p /etc/rancher/k3s"
   rsync --rsync-path="sudo rsync" k3s/config.yaml {{HOST}}:/etc/rancher/k3s/config.yaml
-  ssh {{HOST}} "curl -sfL https://get.k3s.io | K3S_VERSION="v1.27.4+k3s1" K3S_URL=https://[fd00:cafe::3]:6443 K3S_TOKEN=12345 sh -s -"
+  ssh {{HOST}} "curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.30.8+k3s1" K3S_URL=https://[fd00:cafe::3]:6443 K3S_TOKEN=12345 sh -s -"
