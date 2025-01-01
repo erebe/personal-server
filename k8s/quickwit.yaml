@@ -1,0 +1,35 @@
+searcher:
+  replicaCount: 1
+indexer:
+  replicaCount: 1
+metastore:
+  replicaCount: 1
+janitor:
+  enabled: true
+control_plane:
+  enabled: true
+
+environment:
+  QW_LISTEN_ADDRESS: "::"
+  QW_METASTORE_URI: s3://quickwit/quickwit-indexes
+
+config:
+  listen_address: "::"
+  default_index_root_uri: s3://quickwit/quickwit-indexes
+  storage:
+    s3:
+      flavor: minio
+      endpoint: http://[fd00:cafe::6]:9001
+      region: eu-east-1
+      access_key_id: admin
+      secret_access_key: Mi5shadowsw*iO
+      #  indexer:
+      #    # By activating the OTEL service, Quickwit will be able
+      #    # to receive gRPC requests from OTEL collectors.
+      #    enable_otlp_endpoint: true
+
+tolerations:
+  - key: "kubernetes.io/hostname"
+    operator: "Equal"
+    value: "toybox"
+    effect: "NoSchedule"

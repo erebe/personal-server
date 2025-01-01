@@ -1,0 +1,663 @@
+# Default values for Vector
+# See Vector helm documentation to learn more:
+# https://vector.dev/docs/setup/installation/package-managers/helm/
+
+# nameOverride -- Override the name of resources.
+nameOverride: ""
+
+# fullnameOverride -- Override the full name of resources.
+fullnameOverride: ""
+
+# role -- [Role](https://vector.dev/docs/setup/deployment/roles/) for this Vector instance, valid options are:
+# "Agent", "Aggregator", and "Stateless-Aggregator".
+
+# Each role is created with the following workloads:
+# Agent = DaemonSet
+# Aggregator = StatefulSet
+# Stateless-Aggregator = Deployment
+role: "Aggregator"
+
+# rollWorkload -- Add a checksum of the generated ConfigMap to workload annotations.
+rollWorkload: true
+
+# commonLabels -- Add additional labels to all created resources.
+commonLabels: {}
+
+# Define the Vector image to use.
+image:
+  # image.repository -- Override default registry and name for Vector's image.
+  repository: timberio/vector
+  # image.pullPolicy -- The [pullPolicy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy) for
+  # Vector's image.
+  pullPolicy: IfNotPresent
+  # image.pullSecrets -- The [imagePullSecrets](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod)
+  # to reference for the Vector Pods.
+  pullSecrets: []
+  # image.tag -- The tag to use for Vector's image.
+  # @default -- Derived from the Chart's appVersion.
+  tag: ""
+  # image.sha -- The SHA to use for Vector's image.
+  sha: ""
+  # image.base -- The base distribution to use for vector. If set, then the base in appVersion will be replaced with this base alongside the version.
+  # For example: with a `base` of `debian` `0.38.0-distroless-libc` becomes `0.38.0-debian`
+  base: ""
+
+# replicas -- Specify the number of Pods to create. Valid for the "Aggregator" and "Stateless-Aggregator" roles.
+replicas: 1
+
+# Adding additional entries with hostAliases
+hostAliases: []
+# - ip: "127.0.0.1"
+#   hostnames:
+#   - "foo.local"
+#   - "bar.local"
+
+
+# podManagementPolicy -- Specify the [podManagementPolicy](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#pod-management-policies)
+# for the StatefulSet. Valid for the "Aggregator" role.
+podManagementPolicy: OrderedReady
+
+# Create a Secret resource for Vector to use.
+secrets:
+  # secrets.generic -- Each Key/Value will be added to the Secret's data key, each value should be raw and NOT base64
+  # encoded. Any secrets can be provided here. It's commonly used for credentials and other access related values.
+  # **NOTE: Don't commit unencrypted secrets to git!**
+  generic: {}
+    # my_variable: "my-secret-value"
+    # datadog_api_key: "api-key"
+    # awsAccessKeyId: "access-key"
+    # awsSecretAccessKey: "secret-access-key"
+
+autoscaling:
+  # autoscaling.enabled -- Create a [HorizontalPodAutoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
+  # for Vector. Valid for the "Aggregator" and "Stateless-Aggregator" roles.
+  enabled: false
+  # autoscaling.external -- Set to `true` if using an external autoscaler like [KEDA](https://keda.sh/).
+  # Valid for the "Aggregator and "Stateless-Aggregator" roles.
+  external: false
+  # autoscaling.annotations -- Annotations to add to Vector's HPA.
+  annotations: {}
+  # autoscaling.minReplicas -- Minimum replicas for Vector's HPA.
+  minReplicas: 1
+  # autoscaling.maxReplicas -- Maximum replicas for Vector's HPA.
+  maxReplicas: 10
+  # autoscaling.targetCPUUtilizationPercentage -- Target CPU utilization for Vector's HPA.
+  targetCPUUtilizationPercentage: 80
+  # autoscaling.targetMemoryUtilizationPercentage -- (int) Target memory utilization for Vector's HPA.
+  targetMemoryUtilizationPercentage:
+  # autoscaling.customMetric -- Target a custom metric for autoscaling.
+  customMetric: {}
+    #  - type: Pods
+    #    pods:
+    #      metric:
+    #        name: utilization
+    #      target:
+    #        type: AverageValue
+    #        averageValue: 95
+  # autoscaling.behavior -- Configure separate scale-up and scale-down behaviors.
+  behavior: {}
+    # scaleDown:
+    #   stabilizationWindowSeconds: 300
+
+podDisruptionBudget:
+  # podDisruptionBudget.enabled -- Enable a [PodDisruptionBudget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/)
+  # for Vector.
+  enabled: false
+  # podDisruptionBudget.minAvailable -- The number of Pods that must still be available after an eviction.
+  minAvailable: 1
+  # podDisruptionBudget.maxUnavailable -- (int) The number of Pods that can be unavailable after an eviction.
+  maxUnavailable:
+
+rbac:
+  # rbac.create -- If true, create and use RBAC resources. Only valid for the "Agent" role.
+  create: true
+
+psp:
+  # psp.create -- If true, create a [PodSecurityPolicy](https://kubernetes.io/docs/concepts/security/pod-security-policy/)
+  # resource. PodSecurityPolicy is deprecated as of Kubernetes v1.21, and will be removed in v1.25. Intended for use
+  # with the "Agent" role.
+  create: false
+
+serviceAccount:
+  # serviceAccount.create -- If true, create a ServiceAccount for Vector.
+  create: true
+  # serviceAccount.annotations -- Annotations to add to Vector's ServiceAccount.
+  annotations: {}
+  # serviceAccount.name -- The name of the ServiceAccount to use. If not set and serviceAccount.create is true, a name
+  # is generated using the fullname template.
+  name:
+  # serviceAccount.automountToken -- Automount API credentials for Vector's ServiceAccount.
+  automountToken: true
+
+# podAnnotations -- Set annotations on Vector Pods.
+podAnnotations: {}
+
+# podLabels -- Set labels on Vector Pods.
+podLabels:
+  vector.dev/exclude: "true"
+
+# podPriorityClassName -- Set the [priorityClassName](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass)
+# on Vector Pods.
+podPriorityClassName: ""
+
+# podHostNetwork -- Configure hostNetwork on Vector Pods.
+podHostNetwork: false
+
+# podSecurityContext -- Allows you to overwrite the default [PodSecurityContext](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
+# for Vector Pods.
+podSecurityContext: {}
+
+# workloadResourceAnnotations -- Set annotations on the Vector DaemonSet, Deployment or StatefulSet.
+workloadResourceAnnotations: {}
+
+# securityContext -- Specify securityContext on Vector containers.
+securityContext: {}
+
+# command -- Override Vector's default command.
+command: []
+
+# args -- Override Vector's default arguments.
+args:
+  - --config-dir
+  - "/etc/vector/"
+
+# env -- Set environment variables for Vector containers.
+env: []
+  # - name: MY_VARIABLE
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: vector
+  #       key: my_variable
+  # - name: AWS_ACCESS_KEY_ID
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: vector
+  #       key: awsAccessKeyId
+
+# envFrom -- Define environment variables from Secrets or ConfigMaps.
+envFrom: []
+  # - secretRef:
+  #     name: vector
+
+# containerPorts -- Manually define Vector's containerPorts, overriding automated generation of containerPorts.
+containerPorts: []
+
+# resources -- Set Vector resource requests and limits.
+resources: {}
+  # requests:
+  #   cpu: 200m
+  #   memory: 256Mi
+  # limits:
+  #   cpu: 200m
+  #   memory: 256Mi
+
+# lifecycle -- Set lifecycle hooks for Vector containers.
+lifecycle: {}
+  # preStop:
+  #   exec:
+  #     command:
+  #     - /bin/sleep
+  #     - "10"
+
+
+# minReadySeconds -- Specify the minimum number of seconds a newly spun up pod should wait to
+# pass healthchecks before it is considered available.
+minReadySeconds: 0
+
+# updateStrategy -- Customize the updateStrategy used to replace Vector Pods, this is also used for the
+# DeploymentStrategy for the "Stateless-Aggregators". Valid options depend on the chosen role.
+
+# Agent (DaemonSetUpdateStrategy): https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/daemon-set-v1/#DaemonSetSpec)
+# Aggregator (StatefulSetUpdateStrategy): https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/stateful-set-v1/#StatefulSetSpec
+# Stateless-Aggregator (DeploymentStrategy): https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/deployment-v1/
+updateStrategy: {}
+#   type: RollingUpdate
+#   rollingUpdate:
+#     maxUnavailable: 1
+
+# terminationGracePeriodSeconds -- Override Vector's terminationGracePeriodSeconds.
+terminationGracePeriodSeconds: 60
+
+# nodeSelector -- Configure a [nodeSelector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+# for Vector Pods.
+nodeSelector: {}
+
+# tolerations -- Configure Vector Pods to be scheduled on [tainted](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
+# nodes.
+tolerations: []
+
+# affinity -- Configure [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
+# rules for Vector Pods.
+affinity: {}
+
+# topologySpreadConstraints -- Configure [topology spread constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/)
+# for Vector Pods. Valid for the "Aggregator" and "Stateless-Aggregator" roles.
+topologySpreadConstraints: []
+
+# Configuration for Vector's Service.
+service:
+  # service.enabled -- If true, create and provide a Service resource for Vector.
+  enabled: true
+  # service.type -- Set the type for Vector's Service.
+  type: "ClusterIP"
+  # service.annotations -- Set annotations on Vector's Service.
+  annotations: {}
+  # service.topologyKeys -- Specify the [topologyKeys](https://kubernetes.io/docs/concepts/services-networking/service-topology/#using-service-topology)
+  # field on Vector's Service.
+  topologyKeys: []
+  #   - "kubernetes.io/hostname"
+  #   - "topology.kubernetes.io/zone"
+  #   - "topology.kubernetes.io/region"
+  #   - "*"
+  # service.ports -- Manually set the Service ports, overriding automated generation of Service ports.
+  ports: []
+  # service.externalTrafficPolicy -- Specify the [externalTrafficPolicy](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip).
+  externalTrafficPolicy: ""
+  # service.internalTrafficPolicy -- Specify the [internalTrafficPolicy](https://kubernetes.io/docs/concepts/services-networking/service-traffic-policy).
+  internalTrafficPolicy: ""
+  # service.loadBalancerIP -- Specify the [loadBalancerIP](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer).
+  loadBalancerIP: ""
+  # service.ipFamilyPolicy -- Configure [IPv4/IPv6 dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/).
+  ipFamilyPolicy: ""
+  # service.ipFamilies -- Configure [IPv4/IPv6 dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/).
+  ipFamilies: []
+
+# Configuration for Vector's Headless Service.
+serviceHeadless:
+  # serviceHeadless.enabled -- If true, create and provide a Headless Service resource for Vector.
+  enabled: true
+
+# Configuration for Vector's Ingress.
+ingress:
+  # ingress.enabled -- If true, create and use an Ingress resource.
+  enabled: false
+  # ingress.className -- Specify the [ingressClassName](https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress),
+  # requires Kubernetes >= 1.18
+  className: ""
+  # ingress.annotations -- Set annotations on the Ingress.
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  # ingress.hosts -- Configure the hosts and paths for the Ingress.
+  hosts: []
+  #  - host: chart-example.local
+  #    paths:
+  #      - path: /
+  #        pathType: ImplementationSpecific
+  #        # Specify the port name or number on the Service
+  #        # Using name requires Kubernetes >=1.19
+  #        port:
+  #          name: ""
+  #          number: ""
+  # ingress.tls -- Configure TLS for the Ingress.
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+# existingConfigMaps -- List of existing ConfigMaps for Vector's configuration instead of creating a new one. Requires
+# dataDir to be set. Additionally, containerPorts, service.ports, and serviceHeadless.ports should be specified based on
+# your supplied configuration. If set, this parameter takes precedence over customConfig and the chart's default configs.
+existingConfigMaps: []
+
+# dataDir -- Specify the path for Vector's data, only used when existingConfigMaps are used.
+dataDir: ""
+
+# customConfig -- Override Vector's default configs, if used **all** options need to be specified. This section supports
+# using helm templates to populate dynamic values. See Vector's [configuration documentation](https://vector.dev/docs/reference/configuration/)
+# for all options.
+customConfig: {}
+  # data_dir: /vector-data-dir
+  # api:
+  #   enabled: true
+  #   address: 127.0.0.1:8686
+  #   playground: false
+  # sources:
+  #   vector:
+  #     address: 0.0.0.0:6000
+  #     type: vector
+  #     version: "2"
+  # sinks:
+  #   stdout:
+  #     type: console
+  #     inputs: [vector]
+  #     encoding:
+  #       codec: json
+
+# defaultVolumes -- Default volumes that are mounted into pods. In most cases, these should not be changed.
+# Use `extraVolumes`/`extraVolumeMounts` for additional custom volumes.
+# @default -- See `values.yaml`
+defaultVolumes:
+  - name: var-log
+    hostPath:
+      path: "/var/log/"
+  - name: var-lib
+    hostPath:
+      path: "/var/lib/"
+  - name: procfs
+    hostPath:
+      path: "/proc"
+  - name: sysfs
+    hostPath:
+      path: "/sys"
+
+# defaultVolumeMounts -- Default volume mounts. Corresponds to `volumes`.
+# @default -- See `values.yaml`
+defaultVolumeMounts:
+  - name: var-log
+    mountPath: "/var/log/"
+    readOnly: true
+  - name: var-lib
+    mountPath: "/var/lib"
+    readOnly: true
+  - name: procfs
+    mountPath: "/host/proc"
+    readOnly: true
+  - name: sysfs
+    mountPath: "/host/sys"
+    readOnly: true
+
+# extraVolumes -- Additional Volumes to use with Vector Pods.
+extraVolumes:
+  - name: kubeconfig
+    secret:
+      secretName: "vector-kubeconfig"
+
+# extraVolumeMounts -- Additional Volume to mount into Vector Containers.
+extraVolumeMounts:
+  - name: kubeconfig
+    mountPath: "/etc/k8s"
+    readOnly: true
+
+# initContainers -- Init Containers to be added to the Vector Pods.
+initContainers: []
+
+# extraContainers -- Extra Containers to be added to the Vector Pods.
+extraContainers: []
+
+# Configuration for Vector's data persistence.
+persistence:
+  # persistence.enabled -- If true, create and use PersistentVolumeClaims.
+  enabled: false
+  # persistence.existingClaim -- Name of an existing PersistentVolumeClaim to use. Valid for the "Aggregator" role.
+  existingClaim: ""
+  # persistence.storageClassName -- Specifies the storageClassName for PersistentVolumeClaims. Valid for the
+  # "Aggregator" role.
+  # storageClassName: default
+
+  # persistence.retentionPolicy -- Configure a [PersistentVolumeClaimRetentionPolicy](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#persistentvolumeclaim-retention)
+  # for Vector's PersistentVolumeClaims. Valid for the "Aggregator" role.
+  retentionPolicy: {}
+  #  whenDeleted: Retain
+  #  whenScaled: Retain
+
+  # persistence.accessModes -- Specifies the accessModes for PersistentVolumeClaims. Valid for the "Aggregator" role.
+  accessModes:
+    - ReadWriteOnce
+  # persistence.size -- Specifies the size of PersistentVolumeClaims. Valid for the "Aggregator" role.
+  size: 10Gi
+  # persistence.finalizers -- Specifies the finalizers of PersistentVolumeClaims. Valid for the "Aggregator" role.
+  finalizers:
+    - kubernetes.io/pvc-protection
+  # persistence.selectors -- Specifies the selectors for PersistentVolumeClaims. Valid for the "Aggregator" role.
+  selectors: {}
+
+  hostPath:
+    # persistence.hostPath.enabled -- If true, use hostPath persistence. Valid for the "Agent" role, if it's disabled
+    # the "Agent" role will use emptyDir.
+    enabled: true
+    # persistence.hostPath.path -- Override path used for hostPath persistence. Valid for the "Agent" role, persistence
+    # is always used for the "Agent" role.
+    path: "/var/lib/vector"
+
+# dnsPolicy -- Specify the [dnsPolicy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy)
+# for Vector Pods.
+dnsPolicy: ClusterFirst
+
+# dnsConfig -- Specify the [dnsConfig](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config)
+# options for Vector Pods.
+dnsConfig: {}
+  # nameservers:
+  #   - 1.2.3.4
+  # searches:
+  #   - ns1.svc.cluster-domain.example
+  #   - my.dns.search.suffix
+  # options:
+  #   - name: ndots
+  #     value: "2"
+  #   - name: edns0
+
+# shareProcessNamespace -- Specify the [shareProcessNamespace](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/)
+# options for Vector Pods.
+shareProcessNamespace: false
+
+# livenessProbe -- Override default liveness probe settings. If customConfig is used, requires customConfig.api.enabled
+# to be set to true.
+livenessProbe: {}
+  # httpGet:
+  #   path: /health
+  #   port: api
+
+# readinessProbe -- Override default readiness probe settings. If customConfig is used,
+# requires customConfig.api.enabled to be set to true.
+readinessProbe: {}
+  # httpGet:
+  #   path: /health
+  #   port: api
+
+# Configure a PodMonitor for Vector, requires the PodMonitor CRD to be installed.
+podMonitor:
+  # podMonitor.enabled -- If true, create a PodMonitor for Vector.
+  enabled: false
+  # podMonitor.jobLabel -- Override the label to retrieve the job name from.
+  jobLabel: app.kubernetes.io/name
+  # podMonitor.port -- Override the port to scrape.
+  port: prom-exporter
+  # podMonitor.path -- Override the path to scrape.
+  path: /metrics
+  # podMonitor.interval -- Override the interval at which metrics should be scraped.
+  interval:
+  # podMonitor.scrapeTimeout -- Override the timeout after which the scrape is ended.
+  scrapeTimeout:
+  # podMonitor.relabelings -- [RelabelConfigs](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config)
+  # to apply to samples before scraping.
+  relabelings: []
+  # podMonitor.metricRelabelings -- [MetricRelabelConfigs](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#metric_relabel_configs)
+  # to apply to samples before ingestion.
+  metricRelabelings: []
+  # podMonitor.podTargetLabels -- [podTargetLabels](https://prometheus-operator.dev/docs/operator/api/#monitoring.coreos.com/v1.PodMonitorSpec)
+  # transfers labels on the Kubernetes Pod onto the target.
+  podTargetLabels: []
+  # podMonitor.additionalLabels -- Adds additional labels to the PodMonitor.
+  additionalLabels: {}
+  # podMonitor.honorLabels -- If true, honor_labels is set to true in the [scrape config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config).
+  honorLabels: false
+  # podMonitor.honorTimestamps -- If true, honor_timestamps is set to true in the [scrape config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config).
+  honorTimestamps: true
+
+# Log level for Vector.
+logLevel: "info"
+
+# Optional built-in HAProxy load balancer.
+haproxy:
+  # haproxy.enabled -- If true, create a HAProxy load balancer.
+  enabled: false
+
+  # Define the HAProxy image to use.
+  image:
+    # haproxy.image.repository -- Override default registry and name for HAProxy.
+    repository: haproxytech/haproxy-alpine
+    # haproxy.image.pullPolicy -- HAProxy image pullPolicy.
+    pullPolicy: IfNotPresent
+    # haproxy.image.pullSecrets -- The [imagePullSecrets](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod)
+    # to reference for the HAProxy Pods.
+    pullSecrets: []
+    # haproxy.image.tag -- The tag to use for HAProxy's image.
+    tag: "2.6.12"
+
+  # haproxy.rollWorkload -- Add a checksum of the generated ConfigMap to the HAProxy Deployment.
+  rollWorkload: true
+
+  # haproxy.replicas -- Set the number of HAProxy Pods to create.
+  replicas: 1
+
+  serviceAccount:
+    # haproxy.serviceAccount.create -- If true, create a HAProxy ServiceAccount.
+    create: true
+    # haproxy.serviceAccount.annotations -- Annotations to add to the HAProxy ServiceAccount.
+    annotations: {}
+    # haproxy.serviceAccount.name -- The name of the HAProxy ServiceAccount to use. If not set and create is true, a
+    # name is generated using the fullname template.
+    name:
+    # haproxy.serviceAccount.automountToken -- Automount API credentials for the HAProxy ServiceAccount.
+    automountToken: true
+
+  # haproxy.strategy -- Customize the [strategy](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/deployment-v1/)
+  # used to replace HAProxy Pods.
+  strategy: {}
+    # rollingUpdate:
+    #   maxSurge: 25%
+    #   maxUnavailable: 25%
+    # type: RollingUpdate
+
+  # haproxy.terminationGracePeriodSeconds -- Override HAProxy's terminationGracePeriodSeconds.
+  terminationGracePeriodSeconds: 60
+
+  # haproxy.podAnnotations -- Set annotations on HAProxy Pods.
+  podAnnotations: {}
+
+  # haproxy.podLabels -- Set labels on HAProxy Pods.
+  podLabels: {}
+
+  # haproxy.podPriorityClassName -- Set the priorityClassName on HAProxy Pods.
+  podPriorityClassName: ""
+
+  # haproxy.podSecurityContext -- Allows you to overwrite the default PodSecurityContext for HAProxy.
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  # haproxy.securityContext -- Specify securityContext on HAProxy containers.
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  # haproxy.containerPorts -- Manually define HAProxy's containerPorts, overrides automated generation of containerPorts.
+  containerPorts: []
+
+  # HAProxy's Service configuration.
+  service:
+    # haproxy.service.type -- Set type of HAProxy's Service.
+    type: ClusterIP
+    # haproxy.service.annotations -- Set annotations on HAProxy's Service.
+    annotations: {}
+    # haproxy.service.topologyKeys -- Specify the [topologyKeys](https://kubernetes.io/docs/concepts/services-networking/service-topology/#using-service-topology)
+    # field on HAProxy's Service spec.
+    topologyKeys: []
+    #   - "kubernetes.io/hostname"
+    #   - "topology.kubernetes.io/zone"
+    #   - "topology.kubernetes.io/region"
+    #   - "*"
+    # haproxy.service.ports -- Manually set HAPRoxy's Service ports, overrides automated generation of Service ports.
+    ports: []
+    # haproxy.service.externalTrafficPolicy -- Specify the [externalTrafficPolicy](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip).
+    externalTrafficPolicy: ""
+    # haproxy.service.loadBalancerIP -- Specify the [loadBalancerIP](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer).
+    loadBalancerIP: ""
+    # haproxy.service.ipFamilyPolicy -- Configure [IPv4/IPv6 dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/).
+    ipFamilyPolicy: ""
+    # haproxy.service.ipFamilies -- Configure [IPv4/IPv6 dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/).
+    ipFamilies: []
+
+  # haproxy.existingConfigMap -- Use this existing ConfigMap for HAProxy's configuration instead of creating a new one.
+  # Additionally, haproxy.containerPorts and haproxy.service.ports should be specified based on your supplied
+  # configuration. If set, this parameter takes precedence over customConfig and the chart's default configs.
+  existingConfigMap: ""
+
+  # haproxy.customConfig -- Override HAProxy's default configs, if used **all** options need to be specified.
+  # This parameter supports using Helm templates to insert values dynamically. By default, this chart will parse
+  # Vector's configuration from customConfig to generate HAProxy's config, which can be overwritten with
+  # haproxy.customConfig.
+  customConfig: ""
+
+  # haproxy.extraVolumes -- Additional Volumes to use with HAProxy Pods.
+  extraVolumes: []
+
+  # haproxy.extraVolumeMounts -- Additional Volume to mount into HAProxy Containers.
+  extraVolumeMounts: []
+
+  # haproxy.initContainers -- Init Containers to be added to the HAProxy Pods.
+  initContainers: []
+
+  # haproxy.extraContainers -- Extra Containers to be added to the HAProxy Pods.
+  extraContainers: []
+
+  autoscaling:
+    # haproxy.autoscaling.enabled -- Create a HorizontalPodAutoscaler for HAProxy.
+    enabled: false
+    # haproxy.autoscaling.external -- HAProxy is controlled by an external HorizontalPodAutoscaler.
+    external: false
+    # haproxy.autoscaling.minReplicas -- Minimum replicas for HAProxy's HPA.
+    minReplicas: 1
+    # haproxy.autoscaling.maxReplicas -- Maximum replicas for HAProxy's HPA.
+    maxReplicas: 10
+    # haproxy.autoscaling.targetCPUUtilizationPercentage -- Target CPU utilization for HAProxy's HPA.
+    targetCPUUtilizationPercentage: 80
+    # haproxy.autoscaling.targetMemoryUtilizationPercentage -- (int) Target memory utilization for HAProxy's HPA.
+    targetMemoryUtilizationPercentage:
+    # haproxy.autoscaling.customMetric -- Target a custom metric for autoscaling.
+    customMetric: {}
+      #  - type: Pods
+      #    pods:
+      #      metric:
+      #        name: utilization
+      #      target:
+      #        type: AverageValue
+      #        averageValue: 95
+
+  # haproxy.resources -- Set HAProxy resource requests and limits.
+  resources: {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  # haproxy.livenessProbe -- Override default HAProxy liveness probe settings.
+  livenessProbe:
+    tcpSocket:
+      port: 1024
+
+  # haproxy.readinessProbe -- Override default HAProxy readiness probe settings.
+  readinessProbe:
+    tcpSocket:
+      port: 1024
+
+  # haproxy.nodeSelector -- Configure a [nodeSelector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # for HAProxy Pods
+  nodeSelector: {}
+
+  # haproxy.tolerations -- Configure HAProxy Pods to be scheduled on [tainted](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
+  # nodes.
+  tolerations: []
+
+  # haproxy.affinity -- Configure [affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
+  # rules for HAProxy Pods.
+  affinity: {}
+
+# extraObjects -- Create extra manifests via values. Would be passed through `tpl` for templating.
+extraObjects: []
+  # - apiVersion: v1
+  #   kind: ConfigMap
+  #   metadata:
+  #     name: vector-dashboards
+  #     labels:
+  #       grafana_dashboard: "1"
+  #   data:
+  #     vector.json: |
+  #       {{ .Files.Get "dashboards/vector.json" | fromJson | toJson }}
+
