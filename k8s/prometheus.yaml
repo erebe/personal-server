@@ -1,0 +1,40 @@
+nodeExporter:
+  enabled: false
+alertmanager:
+  enabled: false
+
+prometheusOperator:
+  admissionWebhooks:
+    enabled: false
+  tls:
+    enabled: false
+  tolerations:
+    - key: "kubernetes.io/hostname"
+      operator: "Equal"
+      value: "toybox"
+      effect: "NoSchedule"
+
+kubeStateMetrics:
+  enabled: true
+  tolerations:
+    - key: "kubernetes.io/hostname"
+      operator: "Equal"
+      value: "toybox"
+      effect: "NoSchedule"
+
+prometheus:
+  prometheusSpec:
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "toybox"
+        effect: "NoSchedule"
+grafana:
+  tolerations:
+    - key: "kubernetes.io/hostname"
+      operator: "Equal"
+      value: "toybox"
+      effect: "NoSchedule"
+

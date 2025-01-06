@@ -3,16 +3,6 @@ env:
   - name: KUBERNETES_SERVICE_HOST
     value: "kubernetes.default.svc"
 
-extraVolumes:
-  - name: kubeconfig
-    secret:
-      secretName: "vector-kubeconfig"
-
-extraVolumeMounts:
-  - name: kubeconfig
-    mountPath: "/etc/k8s"
-    readOnly: true
-
 tolerations:
   - key: "kubernetes.io/hostname"
     operator: "Exists"
@@ -21,6 +11,8 @@ tolerations:
     key: node-role.kubernetes.io/master
     operator: Exists
 
+podMonitor:
+  enabled: true
 
 customConfig:
   data_dir: /vector-data-dir
@@ -49,69 +41,41 @@ customConfig:
       inputs:
         - kubernetes_logs
       source: |
-        # Extract kubernetes metadata
-        . = merge(., {
-          "resource": {
-            "attributes": {
+        # Convert timestamp to RFC3339Nano format
+        . = {
+          "body": { "message": .message },
+          "severity_text": get(., ["severity"]) ?? "INFO",
+          "timestamp_nanos": to_unix_timestamp!(.timestamp, unit: "nanoseconds"),
+          "resource_attributes": {
               "k8s.namespace.name": .kubernetes.namespace_name,
               "k8s.pod.name": .kubernetes.pod_name,
               "k8s.container.name": .kubernetes.container_name,
               "k8s.node.name": .kubernetes.host,
-              "service.name": get(., ["kubernetes", "labels", "app"], "unknown"),
-              "service.version": get(., ["kubernetes", "labels", "version"], "unknown"),
-              "k8s.cluster.name": get(., ["kubernetes", "cluster_name"], "unknown")
-            }
+              "service.name": get(., ["kubernetes", "labels", "app"]) ?? "unknown",
+              "service.version": get(., ["kubernetes", "labels", "version"]) ?? "unknown",
           },
-          "scope": {
-            "name": "k8s.logs",
-            "version": "1.0.0"
-          }
-        })
-
-        # Convert timestamp to RFC3339Nano format
-        .timestamp = format_timestamp!(.timestamp, format: "%+")
-
-        # Structure the log record
-        body = del(.message)
-        if !exists(.severity)
-          .severity = "INFO"
-        end
-        severity_number = {
-          "TRACE": 1,
-          "DEBUG": 5,
-          "INFO": 9,
-          "WARN": 13,
-          "ERROR": 17,
-          "FATAL": 21
-        }
-        . = merge(., {
-          "body": body,
-          "severity_number": get(severity_number, upcase(.severity), 9),
-          "severity_text": .severity,
           "attributes": {
             "container.id": .kubernetes.container_id,
             "stream": .stream,
             "log.file.path": .file
           }
-        })
-
-        # Clean up fields weve already processed
-        del(.kubernetes)
-        del(.stream)
-        del(.file)
-        del(.severity)
-
-        # Add OpenTelemetry schema version
-        . = merge(., {
-          "schema_url": "https://opentelemetry.io/schemas/1.11.0"
-        })
+        }
   sinks:
     prom_exporter:
       type: prometheus_exporter
       inputs: [host_metrics, internal_metrics]
-      address: 0.0.0.0:9090
-    stdout:
-      type: console
-      inputs: [kubernetes_logs]
+      address: "[::]:9090"
+      #stdout:
+      #  type: console
+      #  inputs: [to_otel]
+      #  encoding:
+      #    codec: json
+    quickwit_logs:
+      type: http
+      method: post
+      inputs: [to_otel]
       encoding:
-        codec: json
+        codec: "json"
+      framing:
+        method: "newline_delimited"
+      uri: "http://quickwit-indexer:7280/api/v1/otel-logs-v0_7/ingest"

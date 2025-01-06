@@ -38,17 +38,17 @@ operator:
             operator: Exists
 
 hubble:
-  enabled: true
+  enabled: false
   dashboards:
-    enabled: true
+    enabled: false
   ui:
-    enabled: true
+    enabled: false
     tolerations:
       - key: "node-role.kubernetes.io/master"
         operator: "Exists"
         effect: "NoSchedule"
   relay:
-    enabled: true
+    enabled: false
     tolerations:
       - key: "node-role.kubernetes.io/master"
         operator: "Exists"
