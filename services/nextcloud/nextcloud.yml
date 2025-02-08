@@ -34,12 +34,15 @@ spec:
         volumeMounts:
         - name: nginx-siteconfig
           mountPath: /defaults/nginx/site-confs/
-        - name: data
+        - name: data-nvme
           subPath: config
           mountPath: /config
-        - name: data
+        - name: data-nvme
           subPath: data
           mountPath: /data
+        - name: data-hdd
+          subPath: photos
+          mountPath: /data/cecile/files/photos
         - name: preview
           mountPath: /data/appdata_ocxf7jgp27m7/preview
       volumes:
@@ -50,9 +53,12 @@ spec:
         hostPath:
           path: /opt/nextcloud/preview
           type: Directory
-      - name: data
+      - name: data-nvme
         persistentVolumeClaim:
           claimName: nextcloud-pv-claim
+      - name: data-hdd
+        persistentVolumeClaim:
+          claimName: nextcloud-hdd-pv-claim
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -65,6 +71,18 @@ spec:
   resources:
     requests:
       storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nextcloud-hdd-pv-claim
+spec:
+  storageClassName: nfs-hdd
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Ti
 ---
 apiVersion: v1
 kind: Service
