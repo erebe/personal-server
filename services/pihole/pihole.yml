@@ -40,15 +40,17 @@ spec:
                 - raspberry
       containers:
       - name: pihole
-        image: pihole/pihole:2024.07.0
+        image: pihole/pihole:2025.02.7
         imagePullPolicy: IfNotPresent
         env:
         - name: TZ
           value: "Europe/Paris"
-        - name: WEBPASSWORD
+        - name: FTLCONF_webserver_api_password
           value: "pihole"
-        - name: PIHOLE_DNS_
+        - name: FTLCONF_dns_upstreams
           value: "127.0.0.1#5053"
+        - name: FTLCONF_dns_listeningMode
+          value: "ALL"
         ports:
           - containerPort: 80
             name: http
@@ -62,9 +64,9 @@ spec:
         securityContext:
           privileged: true
         volumeMounts:
-        - name: pihole-data
-          subPath: etc
-          mountPath: /etc/pihole
+          #- name: pihole-data
+          #  subPath: etc
+          #  mountPath: /etc/pihole
         - name: pihole-data
           subPath: dnsmasq
           mountPath: "/etc/dnsmasq.d"
@@ -146,7 +148,7 @@ spec:
                 - raspberry
       containers:
       - name: cloudflared
-        image: visibilityspots/cloudflared:v2024.11.0
+        image: visibilityspots/cloudflared:v2025.2.1
         imagePullPolicy: IfNotPresent
         env:
         - name: METRICS
