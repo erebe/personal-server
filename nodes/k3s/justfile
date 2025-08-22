@@ -20,8 +20,8 @@ package:
 
 k3s:
   ssh {{HOST}} "sudo mkdir -p /etc/rancher/k3s"
-  rsync --rsync-path="sudo rsync" k3s/config.yaml {{HOST}}:/etc/rancher/k3s/config.yaml
-  ssh {{HOST}} "curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.30.8+k3s1" sh -s - server"
+  #rsync --rsync-path="sudo rsync" k3s/config.yaml {{HOST}}:/etc/rancher/k3s/config.yaml
+  #ssh {{HOST}} "curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.30.8+k3s1" sh -s - server"
   rsync k3s/cilium.yaml {{HOST}}:cilium.yaml
   rsync k3s/cilium-install.sh {{HOST}}:cilium-install.sh
   ssh {{HOST}} "./cilium-install.sh"

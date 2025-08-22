@@ -27,7 +27,7 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
       - name: vaultwarden
-        image: docker.io/vaultwarden/server:1.33.2
+        image: docker.io/vaultwarden/server:1.34.3
         env:
           - name: DOMAIN
             value: "https://bitwarden.erebe.eu"
