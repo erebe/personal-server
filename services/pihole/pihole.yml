@@ -148,7 +148,7 @@ spec:
                 - raspberry
       containers:
       - name: cloudflared
-        image: visibilityspots/cloudflared:v2025.2.1
+        image: visibilityspots/cloudflared:v2025.8.1
         imagePullPolicy: IfNotPresent
         env:
         - name: METRICS
