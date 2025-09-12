@@ -1,0 +1,16 @@
+[Match]
+Name=ens18
+
+[Network]
+DHCP=ipv4
+#MTUBytes=9000
+IPv6AcceptRA=yes
+IPv6PrivacyExtensions=yes
+
+[IPv6AcceptRA]
+# Use Router Advertisement for routing
+UseAutonomous=yes
+UseMTU=yes
+UseDNS=yes
+UseDomains=yes
+UseGateway=yes
