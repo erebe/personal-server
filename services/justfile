@@ -52,8 +52,8 @@ dashy:
 	kubectl apply -f dashy/dashy.yml
 	kubectl delete pod -l app=dashy
 
-pihole:
-	kubectl apply -f pihole/pihole.yml
+adguard:
+	kubectl apply -f adguard/adguard.yml
 
 vaultwarden:
 	kubectl apply -f vaultwarden/vaultwarden.yml

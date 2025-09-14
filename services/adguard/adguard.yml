@@ -1,0 +1,92 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adguard
+  labels:
+    app: adguard
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: adguard
+  template:
+    metadata:
+      labels:
+        app: adguard
+    spec:
+      hostNetwork: true
+      dnsPolicy: "None"
+      dnsConfig:
+        nameservers:
+        - 127.0.0.1
+        - 8.8.8.8
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: "OnRootMismatch"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - raspberry
+      containers:
+      - name: adguard
+        image: adguard/adguardhome:v0.107.65
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 80
+            name: http
+            protocol: TCP
+          - containerPort: 3000
+            name: http-admin
+            protocol: TCP
+          - containerPort: 53
+            name: dns
+            protocol: TCP
+          - containerPort: 53
+            name: dns-udp
+            protocol: UDP
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: adguard-data
+          subPath: workdir
+          mountPath: /opt/adguardhome/work
+        - name: adguard-data
+          subPath: conf
+          mountPath: /opt/adguardhome/conf
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "raspberry"
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+      - key: "node.cilium.io/agent-not-ready"
+        operator: "Exists"
+      volumes:
+      - name: adguard-data
+        persistentVolumeClaim:
+          claimName: adguard-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: adguard-pv-claim
+spec:
+  storageClassName: nfs-nvme
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
