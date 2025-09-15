@@ -1,9 +1,9 @@
 [Match]
-Name=ens18
+Name=eth0
 
 [Network]
 DHCP=ipv4
-MTUBytes=9000
+#MTUBytes=9000
 IPv6AcceptRA=yes
 IPv6PrivacyExtensions=yes
 

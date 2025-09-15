@@ -3,7 +3,7 @@ Name=ens18
 
 [Network]
 DHCP=ipv4
-#MTUBytes=9000
+MTUBytes=9000
 IPv6AcceptRA=yes
 IPv6PrivacyExtensions=yes
 
