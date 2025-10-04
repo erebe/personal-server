@@ -15,3 +15,4 @@ s3 10800 IN A 10.200.0.6
 s3 10800 IN AAAA fd00:cafe::6
 proxmox 10800 IN A 10.200.0.7
 proxmox 10800 IN AAAA fd00:cafe::7
+proxmox	1800	IN	HTTPS	1 . alpn="h2,http/1,1" ipv4hint=10.200.0.7 ipv6hint=fd00:cafe::7 port=8006

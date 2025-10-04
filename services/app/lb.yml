@@ -120,6 +120,14 @@ data:
         - "[::]:443"
       protocol: Tls
       upstreams:
+        - name: qovery-gitlab-test
+          match: !Sni gitlab-test.qovery.com
+          backends: !Static
+            - addr: "10.200.0.252:443"
+          proxy_protocol: false
+          cnx_max_duration: 1h
+          load_balancing: !RoundRobin
+
         - name: wstunnel
           match: !Sni ws.erebe.eu
           backends: !Static
