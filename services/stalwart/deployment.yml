@@ -31,6 +31,26 @@ spec:
         volumeMounts:
         - name: mail-data
           mountPath: /opt/stalwart
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /healthz/live
+            port: 8080
+            httpHeaders:
+            - name: X-Forwarded-For
+              value: 127.0.0.1
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz/ready
+            port: 8080
+            httpHeaders:
+            - name: X-Forwarded-For
+              value: 127.0.0.1
+          initialDelaySeconds: 5
+          periodSeconds: 10  
       volumes:
       - name: mail-data
         persistentVolumeClaim:
