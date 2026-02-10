@@ -95,12 +95,18 @@ data:
             url: http://192.168.0.159/
             target: sametab
             id: 5_664_tplink
-          - title: CyerChef
+          - title: CyberChef
             icon: >-
               https://gchq.github.io/CyberChef/assets/aecc661b69309290f600.ico
             url: https://gchq.github.io/CyberChef/
             target: sametab
-            id: 6_664_cyerchef
+            id: 6_664_cyberchef
+          - title: KubeSpec
+            icon: >-
+              https://kubespec.dev/favicon.ico
+            url: https://kubespec.dev/
+            target: sametab
+            id: 6_665_kubespec
           - title: Warpgate
             icon: >-
               https://raw.githubusercontent.com/warp-tech/warpgate/main/warpgate-web/public/assets/logo.svg
