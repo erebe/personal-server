@@ -1,0 +1,241 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: karakeep
+---
+apiVersion: v1
+data:
+  KARAKEEP_VERSION: release
+  NEXTAUTH_URL: http://localhost:3000
+kind: ConfigMap
+metadata:
+  name: karakeep-configuration-9ck6ddc97t
+  namespace: karakeep
+---
+apiVersion: v1
+data:
+  MEILI_MASTER_KEY: Z2VuZXJhdGVkX3NlY3JldA==
+  NEXT_PUBLIC_SECRET: Im15LXN1cGVyLWR1cGVyLXNlY3JldC1zdHJpbmci
+  NEXTAUTH_SECRET: Z2VuZXJhdGVkX3NlY3JldA==
+kind: Secret
+metadata:
+  name: karakeep-secrets-t775678b29
+  namespace: karakeep
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chrome
+  namespace: karakeep
+spec:
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 9222
+    protocol: TCP
+    targetPort: 9222
+  selector:
+    app: chrome
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meilisearch
+  namespace: karakeep
+spec:
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 7700
+    protocol: TCP
+    targetPort: 7700
+  selector:
+    app: meilisearch
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: karakeep
+spec:
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 3000
+    protocol: TCP
+    targetPort: 3000
+  selector:
+    app: karakeep-web
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-pvc
+  namespace: karakeep
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: meilisearch-pvc
+  namespace: karakeep
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chrome
+  namespace: karakeep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chrome
+  template:
+    metadata:
+      labels:
+        app: chrome
+    spec:
+      containers:
+      - command:
+        - chromium-browser
+        - --headless
+        - --no-sandbox
+        - --disable-gpu
+        - --disable-dev-shm-usage
+        - --remote-debugging-address=0.0.0.0
+        - --remote-debugging-port=9222
+        - --hide-scrollbars
+        image: gcr.io/zenika-hub/alpine-chrome:124
+        imagePullPolicy: IfNotPresent
+        name: chrome
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      tolerations:
+      - key: kubernetes.io/hostname
+        operator: Equal
+        value: toybox
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meilisearch
+  namespace: karakeep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meilisearch
+  template:
+    metadata:
+      labels:
+        app: meilisearch
+    spec:
+      containers:
+      - env:
+        - name: MEILI_NO_ANALYTICS
+          value: "true"
+        envFrom:
+        - secretRef:
+            name: karakeep-secrets-t775678b29
+        - configMapRef:
+            name: karakeep-configuration-9ck6ddc97t
+        image: getmeili/meilisearch:v1.11.1
+        imagePullPolicy: IfNotPresent
+        name: meilisearch
+        volumeMounts:
+        - mountPath: /meili_data
+          name: meilisearch
+      dnsPolicy: ClusterFirst
+      tolerations:
+      - key: kubernetes.io/hostname
+        operator: Equal
+        value: toybox
+      volumes:
+      - name: meilisearch
+        persistentVolumeClaim:
+          claimName: meilisearch-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: karakeep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: karakeep-web
+  template:
+    metadata:
+      labels:
+        app: karakeep-web
+    spec:
+      containers:
+      - env:
+        - name: MEILI_ADDR
+          value: http://meilisearch:7700
+        - name: BROWSER_WEB_URL
+          value: http://chrome:9222
+        - name: DATA_DIR
+          value: /data
+        envFrom:
+        - secretRef:
+            name: karakeep-secrets-t775678b29
+        - configMapRef:
+            name: karakeep-configuration-9ck6ddc97t
+        image: ghcr.io/karakeep-app/karakeep:release
+        imagePullPolicy: Always
+        name: web
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /data
+          name: data
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      tolerations:
+      - key: kubernetes.io/hostname
+        operator: Equal
+        value: toybox
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: data-pvc
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: karakeep
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  ingressClassName: "nginx"
+  rules:
+  - host: keep.erebe.eu
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: web
+            port:
+              number: 3000
