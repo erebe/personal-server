@@ -179,6 +179,12 @@ data:
             url: https://www.notion.so/qovery/
             target: sametab
             id: 8_419_notion
+          - title: EndOfLife
+            icon: >-
+              https://endoflife.date/assets/logo-192x192.png
+            url: https://endoflife.date/
+            target: sametab
+            id: 8_420_endoflife
         icon: >-
           https://github.com/Qovery/public-resources/raw/master/qovery_square_new_logo.svg
       - name: News
