@@ -21,7 +21,7 @@ jobs:
           password: ${{ secrets.CR_PAT }}
       - name: Webhook
         id: docker_build_webhook
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           context: services/webhook
           file: services/webhook/Dockerfile
