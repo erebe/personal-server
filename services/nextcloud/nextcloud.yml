@@ -27,7 +27,7 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
       - name: nextcloud
-        image: linuxserver/nextcloud:31.0.8
+        image: linuxserver/nextcloud:32.0.6
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8083
