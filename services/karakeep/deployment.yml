@@ -13,10 +13,14 @@ metadata:
   namespace: karakeep
 ---
 apiVersion: v1
-data:
-  MEILI_MASTER_KEY: Z2VuZXJhdGVkX3NlY3JldA==
-  NEXT_PUBLIC_SECRET: Im15LXN1cGVyLWR1cGVyLXNlY3JldC1zdHJpbmci
-  NEXTAUTH_SECRET: Z2VuZXJhdGVkX3NlY3JldA==
+stringData:
+  MEILI_MASTER_KEY: generated_secret
+  NEXT_PUBLIC_SECRET: my-super-duper-secret-string
+  NEXTAUTH_SECRET: generated_secret
+  OPENAI_BASE_URL: https://openrouter.ai/api/v1
+  OPENAI_API_KEY: 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
+  INFERENCE_TEXT_MODEL: meta-llama/llama-3.3-70b-instruct
+  INFERENCE_IMAGE_MODEL: google/gemma-3-27b-it:free
 kind: Secret
 metadata:
   name: karakeep-secrets-t775678b29

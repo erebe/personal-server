@@ -4,7 +4,7 @@
 @ 10800 IN A 49.13.58.9
 @ 10800 IN AAAA 2a01:4f8:c013:7b8::1
 @ 10800 IN MX 1 mail.erebe.eu.
-@ 10800 IN TXT "v=spf1 include:_spf.tem.scaleway.com include:_spf.mx.cloudflare.net mx:erebe.eu -all"
+@ 10800 IN TXT "v=spf1 include:_spf.tem.scaleway.com mx:erebe.eu -all"
 _dmarc 10800 IN TXT "v=DMARC1; p=quarantine; rua=mailto:postmaster@erebe.eu; ruf=mailto:postmaster@erebe.eu; pct=100"
 2b37cfb5-4768-4446-b921-15caa1d4c45c._domainkey 10800 IN TXT "v=DKIM1; h=sha256; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAol63q5IiftMFMI5rP9xCdiagZMc5uTHrKhWAoMVEoqpy3fYHW7sg2qzYT2iyInYSUVisB7PrB9Yl3Q" "BVDhXHHrYfgWCj6cG0bo/kp2oAcT+Vqq8Cv0mIF0fyKVWZuCRHPYPxOX8ZuLUyfRlp5UejUhZPRJ39PN8gsOHsxVCoyD+DO1L42YPs2gF+kXWf7iAhT1bXU4rTcMa+GR2Q9h372bo/wmvkp4iZh7Bj" "2mk/RFpc2Vw9TXbQ6tiXMgQCgSPOXKrmSIvT/X342E3sUvZdqPT6zaY5FnibGPVsEcjaPIsLxHyqrPIzF38KN4TK49EkNnmdEpHx0boThis3stToBQIDAQAB"
 * 10800 IN A 49.13.58.9

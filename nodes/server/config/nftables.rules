@@ -7,6 +7,7 @@ table inet SERVER_FIREWALL {
         set denylist {
               type ipv4_addr; flags dynamic, timeout; timeout 5m;
         }
+        define whitelist = { 94.239.37.161 }
 
         chain input {
               type filter hook input priority 0; policy drop;
@@ -34,11 +35,11 @@ table inet SERVER_FIREWALL {
               #tcp dport 6443 accept comment "accept kubernetes"
         }
 
-        chain nat_pretrouting {
+        chain nat_prerouting {
               type nat hook prerouting priority 0; policy accept;
 
               ip saddr 46.148.40.0/24 drop comment "dont allow iran ip"
-              tcp dport {22, 25, 587, 2222} ct state new, untracked limit rate over 5/minute add @denylist { ip saddr } comment "add to blacklist"
+              ip saddr != $whitelist tcp dport {22, 25, 587, 2222} ct state new, untracked limit rate over 5/minute add @denylist { ip saddr } comment "add to blacklist"
               ip saddr @denylist drop comment "dont allow blacklisted ip"
 
               iif eth0 tcp dport 2222 dnat ip to 10.200.0.6:2222 comment "forward to warpgate ssh connections"

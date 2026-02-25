@@ -1,0 +1,116 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: envoy
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: envoy
+spec:
+  gatewayClassName: envoy
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: custom-proxy-config
+  addresses:
+   - type: IPAddress
+     value: 2a01:4f8:c013:7b8::1
+   - type: IPAddress
+     value: 49.13.58.9
+  listeners:
+    - name: http
+      protocol: HTTPS
+      port: 445
+      tls:
+        mode: Terminate
+        certificateRefs:
+        - kind: Secret
+          name: erebe-eu-tls
+          namespace: default
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: custom-proxy-config
+  namespace: default
+spec:
+  ipFamily: DualStack
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        name: envoy-http
+        allocateLoadBalancerNodePorts: false
+        patch:
+          type: StrategicMerge
+          value:
+            spec:
+              clusterIp: 10.43.0.11
+              clusterIps:
+              - 10.43.0.11
+              - fd02::b
+        #type: NodePort
+        #externalTrafficPolicy: Local
+      envoyDeployment:
+        pod:
+          tolerations:
+            - key: "kubernetes.io/hostname"
+              operator: "Equal"
+              value: "server"
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: blog
+spec:
+  parentRefs:
+    - name: envoy
+  hostnames:
+    - "blog.erebe.eu"
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: blog
+          port: 8087
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: response-compression
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: envoy
+  proxyProtocol:
+    optional: false
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: response-compression
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: envoy
+  #proxyProtocol:
+  #  version: "V2"
+  compressor:
+    - type: Zstd
+      zstd: {}
+    - type: Brotli
+      brotli: {}
+    - type: Gzip
+      gzip: {}

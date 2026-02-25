@@ -39,7 +39,7 @@ coub:
 	kubectl apply -f app/couber.yml
 
 karakeep:
-	kubectl apply -f karakeep/deployment.yml
+	kubectl apply -n karakeep -f karakeep/deployment.yml
 
 lb:
 	kubectl apply -f app/lb.yml

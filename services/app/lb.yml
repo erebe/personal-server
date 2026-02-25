@@ -122,6 +122,14 @@ data:
           cnx_max_duration: 1h
           load_balancing: !RoundRobin
 
+        - name: envoy-test
+          match: !Sni blog.erebe.eu
+          backends: !Static
+          - addr: "10.43.0.11:445"
+          proxy_protocol: true
+          cnx_max_duration: 1h
+          load_balancing: !RoundRobin
+
         - name: wstunnel-demo
           match: !SniRegexNot \.erebe\.(dev|eu|eus)$
           backends: !Static
