@@ -160,7 +160,7 @@ spec:
             name: karakeep-secrets-t775678b29
         - configMapRef:
             name: karakeep-configuration-9ck6ddc97t
-        image: getmeili/meilisearch:v1.11.1
+        image: getmeili/meilisearch:v1.36.0
         imagePullPolicy: IfNotPresent
         name: meilisearch
         volumeMounts:
