@@ -23,6 +23,12 @@ spec:
      value: 49.13.58.9
   listeners:
     - name: http
+      protocol: HTTP
+      port: 82
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https
       protocol: HTTPS
       port: 445
       tls:
@@ -31,6 +37,9 @@ spec:
         - kind: Secret
           name: erebe-eu-tls
           namespace: default
+      allowedRoutes:
+        namespaces:
+          from: All
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
@@ -54,7 +63,7 @@ spec:
               - 10.43.0.11
               - fd02::b
         #type: NodePort
-        #externalTrafficPolicy: Local
+        externalTrafficPolicy: Local
       envoyDeployment:
         pod:
           tolerations:
@@ -62,27 +71,6 @@ spec:
               operator: "Equal"
               value: "server"
 
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: blog
-spec:
-  parentRefs:
-    - name: envoy
-  hostnames:
-    - "blog.erebe.eu"
-  rules:
-    - backendRefs:
-        - group: ""
-          kind: Service
-          name: blog
-          port: 8087
-          weight: 1
-      matches:
-        - path:
-            type: PathPrefix
-            value: /
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: ClientTrafficPolicy

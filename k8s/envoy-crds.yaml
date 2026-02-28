@@ -1,0 +1,7 @@
+#helm template eg-crds oci://docker.io/envoyproxy/gateway-crds-helm -f envoy-crds.yaml --version v0.0.0-latest | kubectl apply --server-side -f -
+crds:
+  envoyGateway:
+    enabled: true
+  gatewayAPI:
+    enabled: true
+    channel: experimental

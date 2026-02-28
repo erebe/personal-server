@@ -78,23 +78,23 @@ spec:
   clusterIP: None
   type: ClusterIP
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
 metadata:
-  name: dashy-ingress
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  name: dashy
 spec:
-  ingressClassName: "nginx"
+  parentRefs:
+    - name: envoy
+  hostnames:
+    - "board.erebe.eu"
   rules:
-  - host: board.erebe.eu
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: dashy
-            port:
-              number: 8080
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: dashy
+          port: 8080
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /

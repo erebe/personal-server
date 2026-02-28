@@ -50,7 +50,6 @@ dns:
 k8s:
 	#helm3 repo add stable https://kubernetes-charts.storage.googleapis.com/
 	#helm3 repo update
-	kubectl apply -k k8s/nginx
 	kubectl apply -k k8s/cert-manager
 	kubectl apply -f k8s/lets-encrypt-issuer.yml
 	kubectl apply -f k8s/wildward-erebe-eu.yaml
@@ -70,5 +69,8 @@ wireguard:
 	ssh ${HOST} 'systemctl enable wg-quick@wg0'
 
 
+envoy:
+	helm template eg-crds oci://docker.io/envoyproxy/gateway-crds-helm -f k8s/envoy-crds.yaml --version v0.0.0-latest | kubectl apply --server-side --force-conflicts -f -
+	helm upgrade envoy oci://docker.io/envoyproxy/gateway-helm --version v1.7.0 -n default --create-namespace -f k8s/envoy.yaml --skip-crds
 
 

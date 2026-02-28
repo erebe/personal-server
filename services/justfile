@@ -6,9 +6,9 @@ _default:
 email:
 	sops -d --output secrets_decrypted/dovecot.yml secrets/dovecot.yml
 	sops -d --output secrets_decrypted/fetchmail.yml secrets/fetchmail.yml
-	kubectl apply -f secrets_decrypted/dovecot.yml
-	kubectl apply -f secrets_decrypted/fetchmail.yml
-	kubectl apply -f email/deployment.yml
+	kubectl delete -f secrets_decrypted/dovecot.yml
+	kubectl delete -f secrets_decrypted/fetchmail.yml
+	kubectl delete -f email/deployment.yml
   
 
 nextcloud:

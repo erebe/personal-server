@@ -122,14 +122,6 @@ data:
           cnx_max_duration: 1h
           load_balancing: !RoundRobin
 
-        - name: envoy-test
-          match: !Sni blog.erebe.eu
-          backends: !Static
-          - addr: "10.43.0.11:445"
-          proxy_protocol: true
-          cnx_max_duration: 1h
-          load_balancing: !RoundRobin
-
         - name: wstunnel-demo
           match: !SniRegexNot \.erebe\.(dev|eu|eus)$
           backends: !Static
@@ -138,10 +130,10 @@ data:
           cnx_max_duration: 10s
           load_balancing: !RoundRobin
 
-        - name: nginx-https
+        - name: envoy-https
           match: !Any
           backends: !Static
-            - addr: "[fd00:cafe::254]:444"
+            - addr: "10.43.0.11:445"
           proxy_protocol: true
           cnx_max_duration: 10m
           load_balancing: !RoundRobin
@@ -150,10 +142,10 @@ data:
         - "[::]:80"
       protocol: Tcp
       upstreams:
-        - name: nginx-http
+        - name: envoy-http
           match: !Any
           backends: !Static
-            - addr: "[fd00:cafe::254]:81"
+            - addr: "10.43.0.11:82"
           proxy_protocol: true
           cnx_max_duration: 10m
           load_balancing: !RoundRobin
