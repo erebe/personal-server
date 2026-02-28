@@ -56,3 +56,18 @@ spec:
       name: http
   clusterIP: None
   type: ClusterIP
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TLSRoute
+metadata:
+  name: wstunnel
+spec:
+  parentRefs:
+    - name: envoy
+      sectionName: tls-passthrough
+  hostnames:
+    - "ws.erebe.eu"
+  rules:
+    - backendRefs:
+        - name: wstunnel
+          port: 8084

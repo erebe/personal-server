@@ -24,13 +24,13 @@ spec:
   listeners:
     - name: http
       protocol: HTTP
-      port: 82
+      port: 81
       allowedRoutes:
         namespaces:
           from: All
     - name: https
       protocol: HTTPS
-      port: 445
+      port: 444
       tls:
         mode: Terminate
         certificateRefs:
@@ -38,6 +38,17 @@ spec:
           name: erebe-eu-tls
           namespace: default
       allowedRoutes:
+        namespaces:
+          from: All
+    - name: tls-passthrough
+      protocol: TLS
+      hostname: ws.erebe.eu
+      port: 444
+      tls:
+        mode: Passthrough
+      allowedRoutes:
+        kinds:
+          - kind: TLSRoute
         namespaces:
           from: All
 ---
