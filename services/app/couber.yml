@@ -84,6 +84,8 @@ spec:
       backendRefs:
         - name: couber
           port: 8081
+      timeouts:
+        request: "10m"
 #apiVersion: networking.k8s.io/v1
 #kind: Ingress
 #metadata:
