@@ -1,8 +1,13 @@
+#devices: "eth0,wg0"
 ipv6:
   enabled: true
 bpf:
   masquerade: false
+  lbExternalClusterIP: false
 kubeProxyReplacement: true
+
+l7Proxy: false
+envoy: false
 
 k8sServiceHost: "fd00:cafe::3"
 k8sServicePort: "6443"
@@ -25,8 +30,6 @@ affinity:
           operator: NotIn
           values:
           - raspberry
-envoy:
-  enabled: false
 operator:
   replicas: 1
   affinity:

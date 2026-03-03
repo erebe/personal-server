@@ -93,7 +93,7 @@ spec:
       kind: Gateway
       name: envoy
   proxyProtocol:
-    optional: false
+    optional: true
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
