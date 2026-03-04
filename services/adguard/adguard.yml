@@ -40,7 +40,7 @@ spec:
                 - raspberry
       containers:
       - name: adguard
-        image: adguard/adguardhome:v0.107.71
+        image: adguard/adguardhome:v0.107.72
         imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 80
