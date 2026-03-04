@@ -104,8 +104,6 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: envoy
-  #proxyProtocol:
-  #  version: "V2"
   compressor:
     - type: Zstd
       zstd: {}
