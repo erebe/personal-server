@@ -22,6 +22,15 @@ spec:
    - type: IPAddress
      value: 49.13.58.9
   listeners:
+    - name: imaps-listener
+      protocol: TCP
+      port: 993
+      allowedRoutes:
+        kinds:
+          - kind: TCPRoute
+            group: gateway.networking.k8s.io
+        namespaces:
+          from: All
     - name: http
       protocol: HTTP
       port: 81

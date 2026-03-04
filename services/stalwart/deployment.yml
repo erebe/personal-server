@@ -68,7 +68,6 @@ spec:
     requests:
       storage: 10Gi
 ---
----
 apiVersion: v1
 kind: Service
 metadata:
@@ -79,7 +78,11 @@ spec:
   ports:
     - protocol: TCP
       port: 8080
-  clusterIP: None
+      name: http
+    - protocol: TCP
+      port: 993
+      name: imaps
+  ipFamilyPolicy: RequireDualStack
   type: ClusterIP
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -99,3 +102,32 @@ spec:
       backendRefs:
         - name: email
           port: 8080
+
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: email-imaps
+spec:
+  parentRefs:
+    - name: envoy
+      sectionName: imaps-listener
+  rules:
+    - backendRefs:
+      - name: email
+        port: 993
+
+---
+# 3. BackendTrafficPolicy to enable Proxy Protocol v2 toward upstream
+#apiVersion: gateway.envoyproxy.io/v1alpha1
+#kind: BackendTrafficPolicy
+#metadata:
+#  name: email-upstream
+#  namespace: default
+#spec:
+#  targetRefs:
+#    - group: gateway.networking.k8s.io
+#      kind: TCPRoute
+#      name: email-imaps
+#  proxyProtocol:
+#    version: V2  # or V1
