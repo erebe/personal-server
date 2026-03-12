@@ -22,6 +22,15 @@ spec:
    - type: IPAddress
      value: 49.13.58.9
   listeners:
+    - name: smtp465-listener
+      protocol: TCP
+      port: 465
+      allowedRoutes:
+        kinds:
+          - kind: TCPRoute
+            group: gateway.networking.k8s.io
+        namespaces:
+          from: All
     - name: imaps-listener
       protocol: TCP
       port: 993
@@ -33,7 +42,7 @@ spec:
           from: All
     - name: http
       protocol: HTTP
-      port: 81
+      port: 80
       allowedRoutes:
         namespaces:
           from: All

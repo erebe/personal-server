@@ -1,10 +1,15 @@
 require ["fileinto", "variables", "envelope", "regex", "mailbox"];
 
+if header :is "X-Envelope-Mismatch" "Yes" {
+    fileinto "Junk";
+    stop;
+}
+
 # Extract the local-part (before @) from the recipient address
 if address :regex "to" "^([^@]+)@.*$" {
 
   if string :is "${1}" "erebe" {
-    fileinto "INBOX";
+    fileinto :create "INBOX/_erebe";
   } else {
     set :lower "folder" "INBOX/${1}";
     fileinto :create "${folder}";

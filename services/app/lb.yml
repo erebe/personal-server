@@ -73,9 +73,7 @@ data:
     rules:
     - listen_addr: 
         - "[::]:25"
-        - "[::]:465"
         - "[::]:587"
-        - "[::]:993"
       protocol: Tcp
       upstreams:
         - name: smtp
@@ -86,20 +84,12 @@ data:
           cnx_max_duration: 5m
           load_balancing: !RoundRobin
 
-        - name: smtps
+        - name: smtp
           match: !DestinationPort 587
           backends: !Static
-            - addr: "[fd00:cafe::5]:587"
+            - addr: "[fd00:cafe::5]:25"
           proxy_protocol: true
           cnx_max_duration: 5m
-          load_balancing: !RoundRobin
-
-        - name: imaps
-          match: !DestinationPort 993
-          backends: !Static
-            - addr: "[fd00:cafe::5]:993"
-          proxy_protocol: false
-          cnx_max_duration: 10m
           load_balancing: !RoundRobin
 
     - listen_addr: 
@@ -121,27 +111,3 @@ data:
           proxy_protocol: true
           cnx_max_duration: 10m
           load_balancing: !RoundRobin
-
-    - listen_addr: 
-        - "[::]:80"
-      protocol: Tcp
-      upstreams:
-        - name: envoy-http
-          match: !Any
-          backends: !Static
-            - addr: "10.43.0.11:81"
-          proxy_protocol: true
-          cnx_max_duration: 10m
-          load_balancing: !RoundRobin
-
-#    - listen_addr:
-#      - "[::]:8089"
-#      protocol: Tcp
-#      upstreams:
-#        - name: test
-#          match: !Any
-#          backends: !Static
-#            - addr: "[2001:bc8:3::7]:8089"
-#          proxy_protocol: false
-#          cnx_max_duration: 10m
-#          load_balancing: !RoundRobin
