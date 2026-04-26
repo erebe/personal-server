@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: couber
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {}
+  template:
+    metadata: {}
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "toybox"
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: "OnRootMismatch"
+      containers:
+      - name: couber
+        image: ghcr.io/erebe/couber:latest
+        imagePullPolicy: Always
+        env:
+        - name: PORT
+          value: "8081"
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: coub
+              key: OPENROUTER_API_KEY
+        ports:
+        - containerPort: 8081
+        volumeMounts:
+        - name: videos
+          mountPath: /home/app/data
+      volumes:
+      - name: videos
+        persistentVolumeClaim:
+          claimName: couber-pv-claim

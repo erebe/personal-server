@@ -36,7 +36,7 @@ wstunnel:
 	kubectl apply -f app/wstunnel.yml
 
 coub:
-	kubectl apply -f app/couber.yml
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone coub/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/coub --namespace=default
 
 karakeep:
 	kubectl apply -n karakeep -f karakeep/deployment.yml
