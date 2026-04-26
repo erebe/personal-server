@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chrome
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chrome
+  template:
+    metadata:
+      labels:
+        app: chrome
+    spec:
+      containers:
+      - command:
+        - chromium-browser
+        - --headless
+        - --no-sandbox
+        - --disable-gpu
+        - --disable-dev-shm-usage
+        - --remote-debugging-address=0.0.0.0
+        - --remote-debugging-port=9222
+        - --hide-scrollbars
+        image: gcr.io/zenika-hub/alpine-chrome:124
+        imagePullPolicy: IfNotPresent
+        name: chrome
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      tolerations:
+      - key: kubernetes.io/hostname
+        operator: Equal
+        value: toybox

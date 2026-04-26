@@ -2,19 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: wstunnel
-  labels:
-    app: wstunnel
 spec:
   replicas: 1
   strategy:
-    type: Recreate 
+    type: Recreate
   selector:
-    matchLabels:
-      app: wstunnel
+    matchLabels: {}
   template:
-    metadata:
-      labels:
-        app: wstunnel
+    metadata: {}
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -42,32 +37,3 @@ spec:
       - name: wstunnel
         secret:
           secretName: wstunnel
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: wstunnel
-spec:
-  selector:
-    app: wstunnel
-  ports:
-    - protocol: TCP
-      port: 8084
-      name: http
-  clusterIP: None
-  type: ClusterIP
----
-apiVersion: gateway.networking.k8s.io/v1alpha2
-kind: TLSRoute
-metadata:
-  name: wstunnel
-spec:
-  parentRefs:
-    - name: envoy
-      sectionName: tls-passthrough
-  hostnames:
-    - "ws.erebe.eu"
-  rules:
-    - backendRefs:
-        - name: wstunnel
-          port: 8084

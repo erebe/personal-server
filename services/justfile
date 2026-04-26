@@ -31,15 +31,13 @@ webhook:
 	kubectl apply -f secrets_decrypted/webhook.yml
 
 wstunnel:
-	sops -d --output secrets_decrypted/wstunnel.yml secrets/wstunnel.yml
-	kubectl apply -f secrets_decrypted/wstunnel.yml
-	kubectl apply -f app/wstunnel.yml
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone wstunnel/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/wstunnel-applyset --namespace=default
 
 coub:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone coub/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/coub --namespace=default
 
 karakeep:
-	kubectl apply -n karakeep -f karakeep/deployment.yml
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone karakeep/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/karakeep-applyset --namespace=karakeep
 
 lb:
 	kubectl apply -f app/lb.yml

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: meilisearch
+spec:
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 7700
+    protocol: TCP
+    targetPort: 7700
+  selector:
+    app: meilisearch

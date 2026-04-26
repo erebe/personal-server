@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meilisearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meilisearch
+  template:
+    metadata:
+      labels:
+        app: meilisearch
+    spec:
+      containers:
+      - env:
+        - name: MEILI_NO_ANALYTICS
+          value: "true"
+        envFrom:
+        - secretRef:
+            name: karakeep-secrets
+        - configMapRef:
+            name: karakeep-configuration
+        image: getmeili/meilisearch:v1.11.1
+        imagePullPolicy: IfNotPresent
+        name: meilisearch
+        volumeMounts:
+        - mountPath: /meili_data
+          name: meilisearch
+      dnsPolicy: ClusterFirst
+      tolerations:
+      - key: kubernetes.io/hostname
+        operator: Equal
+        value: toybox
+      volumes:
+      - name: meilisearch
+        persistentVolumeClaim:
+          claimName: meilisearch-pvc
