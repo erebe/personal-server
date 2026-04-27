@@ -1,10 +1,7 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: minio
-  labels:
-    app: minio
 spec:
   replicas: 1
   strategy:
@@ -13,12 +10,9 @@ spec:
       maxSurge: 1
       maxUnavailable: 1
   selector:
-    matchLabels:
-      app: minio
+    matchLabels: {}
   template:
-    metadata:
-      labels:
-        app: minio
+    metadata: {}
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -68,15 +62,3 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: minio-pv-claim
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: minio-pv-claim
-spec:
-  storageClassName: nfs-hdd
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Ti

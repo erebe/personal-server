@@ -2,19 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nextcloud
-  labels:
-    app: nextcloud
 spec:
   replicas: 1
   strategy:
-    type: Recreate 
+    type: Recreate
   selector:
-    matchLabels:
-      app: nextcloud
+    matchLabels: {}
   template:
-    metadata:
-      labels:
-        app: nextcloud
+    metadata: {}
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -59,61 +54,3 @@ spec:
       - name: data-hdd
         persistentVolumeClaim:
           claimName: nextcloud-hdd-pv-claim
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: nextcloud-pv-claim
-spec:
-  storageClassName: nfs-nvme
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 20Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: nextcloud-hdd-pv-claim
-spec:
-  storageClassName: nfs-hdd
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Ti
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: nextcloud
-spec:
-  selector:
-    app: nextcloud
-  ports:
-    - name: http
-      port: 8083
-      protocol: TCP
-  type: ClusterIP
-  clusterIP: None
-
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: nextcloud
-spec:
-  parentRefs:
-    - name: envoy
-  hostnames:
-    - cloud.erebe.eu
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
-        - name: nextcloud
-          kind: Service
-          port: 8083

@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+labels:
+  - includeSelectors: true
+    pairs:
+      app: nextcloud
+resources:
+  - deployment.yaml
+  - pvc-nvme.yaml
+  - pvc-hdd.yaml
+  - service.yaml
+  - httproute.yaml
+configMapGenerator:
+  - name: nextcloud-nginx-siteconfig
+    files:
+      - default.conf.sample

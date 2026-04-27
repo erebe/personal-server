@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: dashy
+spec:
+  parentRefs:
+    - name: envoy
+  hostnames:
+    - "board.erebe.eu"
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: dashy
+          port: 8080
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /

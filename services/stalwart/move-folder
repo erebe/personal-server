@@ -1,7 +1,7 @@
 require ["fileinto", "variables", "envelope", "regex", "mailbox"];
 
 if header :is "X-Envelope-Mismatch" "Yes" {
-    fileinto "Junk";
+    fileinto :create "Junk Mail";
     stop;
 }
 

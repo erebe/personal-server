@@ -1,10 +1,7 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: dashy
-  labels:
-    app: dashy
 spec:
   replicas: 1
   strategy:
@@ -13,12 +10,9 @@ spec:
       maxSurge: 1
       maxUnavailable: 1
   selector:
-    matchLabels:
-      app: dashy
+    matchLabels: {}
   template:
-    metadata:
-      labels:
-        app: dashy
+    metadata: {}
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -64,37 +58,3 @@ spec:
       - key: "node.kubernetes.io/unreachable"
         operator: "Exists"
         effect: "NoExecute"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: dashy
-spec:
-  selector:
-    app: dashy
-  ports:
-    - protocol: TCP
-      port: 8080
-  clusterIP: None
-  type: ClusterIP
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: dashy
-spec:
-  parentRefs:
-    - name: envoy
-  hostnames:
-    - "board.erebe.eu"
-  rules:
-    - backendRefs:
-        - group: ""
-          kind: Service
-          name: dashy
-          port: 8080
-          weight: 1
-      matches:
-        - path:
-            type: PathPrefix
-            value: /

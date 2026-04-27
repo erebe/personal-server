@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {}
+  template:
+    metadata: {}
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "toybox"
+      serviceAccountName: deployer
+      containers:
+      - name: webhook
+        image: ghcr.io/erebe/webhook:latest
+        imagePullPolicy: Always
+        args:
+        - "-hooks=/data/hook.json"
+        - "-http-methods=POST"
+        - "-port=8085"
+        - "-verbose"
+        - "-hotreload"
+        ports:
+        - containerPort: 8085
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        projected:
+          defaultMode: 0777
+          sources:
+          - secret:
+              name: webhook-config
+          - configMap:
+              name: webhook-scripts

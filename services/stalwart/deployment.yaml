@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: email
+  labels:
+    app: email
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: email
+  template:
+    metadata:
+      labels:
+        app: email
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "mail"
+      securityContext:
+        fsGroup: 65534
+      containers:
+      - name: mail
+        image: stalwartlabs/stalwart:v0.15
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: mail-data
+          mountPath: /opt/stalwart
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /healthz/live
+            port: 8080
+            httpHeaders:
+            - name: X-Forwarded-For
+              value: 127.0.0.1
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz/ready
+            port: 8080
+            httpHeaders:
+            - name: X-Forwarded-For
+              value: 127.0.0.1
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: mail-data
+        persistentVolumeClaim:
+          claimName: mail-pv-claim

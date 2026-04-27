@@ -12,8 +12,7 @@ email:
   
 
 nextcloud:
-	kubectl apply -f nextcloud/config.nginx.site-confs.default.yml
-	kubectl apply -f nextcloud/nextcloud.yml
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone nextcloud/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/nextcloud-applyset --namespace=default
 
 
 nextcloud_resync_file:
@@ -27,8 +26,7 @@ backup:
 	kubectl apply -f backup/backup-minio.yml
 
 webhook:
-	sops exec-env secrets/webhook.yml 'cp webhook/webhook.yml secrets_decrypted/; for i in $(env | grep _SECRET | cut -d = -f1); do sed -i "s#__${i}__#${!i}#g" secrets_decrypted/webhook.yml ; done'
-	kubectl apply -f secrets_decrypted/webhook.yml
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone webhook/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/webhook-applyset --namespace=default
 
 wstunnel:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone wstunnel/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/wstunnel-applyset --namespace=default
@@ -40,26 +38,25 @@ karakeep:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone karakeep/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/karakeep-applyset --namespace=karakeep
 
 lb:
-	kubectl apply -f app/lb.yml
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone lb/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/lb-applyset --namespace=default
+
+stalwart:
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone stalwart/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/stalwart-applyset --namespace=default
 
 warpgate:
 	kubectl apply -f app/warpgate.yml
 
 blog:
-	kubectl apply -f blog/blog.yml
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone blog/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/blog-applyset --namespace=default
 
 dashy:
-	kubectl apply -f dashy/configmap.yml
-	kubectl apply -f dashy/dashy.yml
-	kubectl delete pod -l app=dashy
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone dashy/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/dashy-applyset --namespace=default
 
 adguard:
-	kubectl apply -f adguard/adguard.yml
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone adguard/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/adguard-applyset --namespace=default
 
 vaultwarden:
-	kubectl apply -f vaultwarden/vaultwarden.yml
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone vaultwarden/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/vaultwarden-applyset --namespace=default
 
 minio:
-	sops -d --output secrets_decrypted/minio.yml secrets/minio.yml
-	kubectl apply -f secrets_decrypted/minio.yml
-	kubectl apply -f minio/minio.yml
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone minio/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/minio-applyset --namespace=default

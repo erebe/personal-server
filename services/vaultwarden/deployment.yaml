@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vaultwarden
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {}
+  template:
+    metadata: {}
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "toybox"
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: "OnRootMismatch"
+      containers:
+      - name: vaultwarden
+        image: docker.io/vaultwarden/server:1.35.7
+        env:
+          - name: DOMAIN
+            value: "https://bitwarden.erebe.eu"
+          - name: ROCKET_ADDRESS
+            value: "::"
+          - name: ROCKET_PORT
+            value: "8088"
+          - name: WEBSOCKET_ENABLED
+            value: "true"
+          - name: WEBSOCKET_ADDRESS
+            value: "::"
+          - name: WEBSOCKET_PORT
+            value: "8089"
+          - name: SHOW_PASSWORD_HINT
+            value: "false"
+          - name: SIGNUPS_ALLOWED
+            value: "false"
+          - name: INVITATIONS_ALLOWED
+            value: "false"
+        ports:
+        - name: http
+          containerPort: 8088
+        - name: websocket
+          containerPort: 8089
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: vaultwarden-pv-claim

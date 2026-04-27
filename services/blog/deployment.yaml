@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {}
+  template:
+    metadata: {}
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "toybox"
+      containers:
+      - name: blog
+        image: ghcr.io/erebe/blog:latest
+        imagePullPolicy: Always
+        args: ["httpd", "-f", "-h", "public", "-p", "8087"]
+        ports:
+        - containerPort: 8087

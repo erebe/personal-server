@@ -1,10 +1,7 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: adguard
-  labels:
-    app: adguard
 spec:
   replicas: 1
   strategy:
@@ -13,12 +10,9 @@ spec:
       maxSurge: 1
       maxUnavailable: 1
   selector:
-    matchLabels:
-      app: adguard
+    matchLabels: {}
   template:
-    metadata:
-      labels:
-        app: adguard
+    metadata: {}
     spec:
       hostNetwork: true
       dnsPolicy: "None"
@@ -78,15 +72,3 @@ spec:
       - name: adguard-data
         persistentVolumeClaim:
           claimName: adguard-pv-claim
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: adguard-pv-claim
-spec:
-  storageClassName: nfs-nvme
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Mi

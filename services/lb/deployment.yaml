@@ -2,8 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: turbine-lb
-  labels:
-    app: turbine-lb
 spec:
   replicas: 1
   strategy:
@@ -12,12 +10,9 @@ spec:
       maxSurge: 1
       maxUnavailable: 25%
   selector:
-    matchLabels:
-      app: turbine-lb
+    matchLabels: {}
   template:
-    metadata:
-      labels:
-        app: turbine-lb
+    metadata: {}
     spec:
       securityContext:
         runAsUser: 0
@@ -63,51 +58,3 @@ spec:
       - name: turbine-lb-config
         configMap:
           name: turbine-lb-config
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: turbine-lb-config
-data:
-  config.yaml: |
-    rules:
-    - listen_addr: 
-        - "[::]:25"
-        - "[::]:587"
-      protocol: Tcp
-      upstreams:
-        - name: smtp
-          match: !DestinationPort 25
-          backends: !Static
-            - addr: "[fd00:cafe::5]:25"
-          proxy_protocol: true
-          cnx_max_duration: 5m
-          load_balancing: !RoundRobin
-
-        - name: smtp
-          match: !DestinationPort 587
-          backends: !Static
-            - addr: "[fd00:cafe::5]:25"
-          proxy_protocol: true
-          cnx_max_duration: 5m
-          load_balancing: !RoundRobin
-
-    - listen_addr: 
-        - "[::]:443"
-      protocol: Tls
-      upstreams:
-        - name: wstunnel-demo
-          match: !SniRegexNot \.erebe\.(dev|eu|eus)$
-          backends: !Static
-            - addr: "[fd00:cafe::254]:8084"
-          proxy_protocol: false
-          cnx_max_duration: 10s
-          load_balancing: !RoundRobin
-
-        - name: envoy-https
-          match: !Any
-          backends: !Static
-            - addr: "10.43.0.11:444"
-          proxy_protocol: true
-          cnx_max_duration: 10m
-          load_balancing: !RoundRobin

@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+labels:
+  - includeSelectors: false
+    pairs:
+      app: stalwart
+resources:
+  - deployment.yaml
+  - pvc.yaml
+  - service.yaml
+  - httproute.yaml
