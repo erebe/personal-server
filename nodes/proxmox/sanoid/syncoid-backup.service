@@ -1,0 +1,8 @@
+[Unit]
+Description=Syncoid replication nvme -> backup
+After=zfs.target
+Requires=zfs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/syncoid --recursive --no-sync-snap nvme backup/nvme-backup

@@ -10,3 +10,11 @@ wireguard:
   ssh {{HOST}} "cat /etc/wireguard/wg0.conf" | diff  - secrets_decrypted/wg0.conf || exit 0
   rsync --rsync-path="rsync" secrets_decrypted/wg0.conf {{HOST}}:/etc/wireguard/wg0.conf
   ssh {{HOST}} "systemctl restart wg-quick@wg0.service && systemctl enable wg-quick@wg0.service"
+
+sanoid:
+  ssh {{HOST}} "DEBIAN_FRONTEND=noninteractive apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y sanoid"
+  ssh {{HOST}} "mkdir -p /etc/sanoid"
+  rsync --rsync-path="rsync" sanoid/sanoid.conf {{HOST}}:/etc/sanoid/sanoid.conf
+  rsync --rsync-path="rsync" sanoid/syncoid-backup.service {{HOST}}:/etc/systemd/system/syncoid-backup.service
+  rsync --rsync-path="rsync" sanoid/syncoid-backup.timer {{HOST}}:/etc/systemd/system/syncoid-backup.timer
+  ssh {{HOST}} "systemctl daemon-reload && systemctl enable --now sanoid.timer && systemctl enable --now syncoid-backup.timer"

@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily syncoid replication
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=timers.target
