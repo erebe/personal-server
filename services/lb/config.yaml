@@ -32,6 +32,14 @@ rules:
       cnx_max_duration: 10s
       load_balancing: !RoundRobin
 
+    - name: wstunnel
+      match: !SniRegex ws\.erebe\.(dev|eu|eus)$
+      backends: !Static
+        - addr: "[fd00:cafe::254]:8084"
+      proxy_protocol: false
+      cnx_max_duration: 10s
+      load_balancing: !RoundRobin
+
     - name: envoy-https
       match: !Any
       backends: !Static

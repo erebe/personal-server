@@ -7,6 +7,7 @@ labels:
       app: turbine-lb
 resources:
   - deployment.yaml
+  - default_http_route.yaml
 configMapGenerator:
   - name: turbine-lb-config
     files:
