@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cnpg-controller-manager
+spec:
+  template:
+    spec:
+      tolerations:
+        - key: kubernetes.io/hostname
+          operator: Equal
+          value: toybox

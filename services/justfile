@@ -60,3 +60,6 @@ vaultwarden:
 
 minio:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone minio/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/minio-applyset --namespace=default
+
+postgres:
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone postgres/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/postgres-applyset --namespace=postgres
