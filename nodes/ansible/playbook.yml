@@ -1,0 +1,10 @@
+---
+- name: Install curl
+  hosts: all
+  become: true
+  tasks:
+    - name: Install curl via apt
+      apt:
+        name: curl
+        state: present
+        update_cache: false
