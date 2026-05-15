@@ -1,0 +1,43 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: debian-iscsi-pvc
+spec:
+  # Must match the name defined in your StorageClass
+  storageClassName: zfs-nvme 
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debian-storage-test
+spec:
+  tolerations:
+  - key: "kubernetes.io/hostname"
+    operator: "Equal"
+    value: "toybox"
+    effect: "NoSchedule"
+  containers:
+  - name: debian-container
+    image: debian:latest
+    command: ["/bin/sh", "-c"]
+    # This keeps the pod running and writes a timestamp to the disk every 5 seconds
+    args:
+      - while true; do
+          date >> /mnt/data/test.log;
+          sleep 5;
+        done
+    volumeMounts:
+    - name: zfs-volume
+      mountPath: /mnt/data
+  volumes:
+  - name: zfs-volume
+    persistentVolumeClaim:
+      claimName: debian-iscsi-pvc
+

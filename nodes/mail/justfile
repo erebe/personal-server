@@ -5,6 +5,10 @@ _default:
 
 HOST := "erebe@192.168.1.13"
 
+iscsi:
+  ssh {{HOST}} "sudo apt-get update && sudo apt-get install -y open-iscsi lsscsi sg3-utils scsitools"
+  ssh {{HOST}} "sudo systemctl enable open-iscsi.service && sudo systemctl start open-iscsi.service"
+
 wireguard:
   sops exec-env ../../secrets/wireguard.yml 'cp wireguard/wg0.conf secrets_decrypted/; for i in $(env | grep _KEY | cut -d = -f1); do sed -i "s#__${i}__#${!i}#g" secrets_decrypted/wg0.conf ; done'
   ssh {{HOST}} "sudo cat /etc/wireguard/wg0.conf" | diff  - secrets_decrypted/wg0.conf || exit 0

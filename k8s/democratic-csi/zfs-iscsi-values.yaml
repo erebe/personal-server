@@ -1,0 +1,85 @@
+csiDriver:
+  # This must be unique if you install multiple instances
+  name: "org.democratic-csi.iscsi"
+
+# This section configures the driver itself
+driver:
+  config:
+    driver: zfs-generic-iscsi
+    sshConnection:
+      host: 10.200.0.7
+      port: 22
+      username: root
+      password: universe
+    zfs:
+      datasetParentName: nvme/k8s-test
+      detachedSnapshotsDatasetParentName: nvme/k8s-test-snaps
+    iscsi:
+      targetPortal: "10.200.0.7:3260"
+      shareStrategy: "targetCli"
+      #shareStrategy: "pcs"
+
+      # https://kifarunix.com/how-to-install-and-configure-iscsi-storage-server-on-ubuntu-18-04/
+      # https://kifarunix.com/how-install-and-configure-iscsi-storage-server-on-centos-7/
+      # https://linuxlasse.net/linux/howtos/ISCSI_and_ZFS_ZVOL
+      # http://www.linux-iscsi.org/wiki/ISCSI
+      # https://bugzilla.redhat.com/show_bug.cgi?id=1659195
+      # http://atodorov.org/blog/2015/04/07/how-to-configure-iscsi-target-on-red-hat-enterprise-linux-7/
+      shareStrategyTargetCli:
+        #sudoEnabled: true
+        basename: "iqn.2026-01.org.linux-iscsi.x8664"
+        tpg:
+          attributes:
+            # set to 1 to enable CHAP
+            authentication: 0
+            # this is required currently as we do not register all node iqns
+            # the effective outcome of this is, allow all iqns to connect
+            generate_node_acls: 1
+            cache_dynamic_acls: 1
+            # if generate_node_acls is 1 then must turn this off as well (assuming you want write ability)
+            demo_mode_write_protect: 0
+        block:
+          attributes:
+            # set to 1 to enable Thin Provisioning Unmap
+            emulate_tpu: 0
+
+      shareStrategyPcs:
+        #sudoEnabled: true
+        pcs_group: "group-nas"
+        basename: "iqn.2026-01.org.linux-iscsi.x8664"
+
+# This section automatically creates the StorageClass for you
+storageClasses:
+- name: zfs-nvme
+  defaultClass: false
+  reclaimPolicy: Delete
+  volumeBindingMode: Immediate
+  allowVolumeExpansion: true
+  parameters:
+    fsType: ext4
+
+
+node:
+  tolerations:
+    - key: "kubernetes.io/hostname"
+      operator: "Equal"
+      value: "toybox"
+      effect: "NoSchedule"
+    - key: "node.kubernetes.io/not-ready"
+      operator: "Exists"
+    - key: "node.cilium.io/agent-not-ready"
+      operator: "Exists"
+
+
+controller:
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node.kubernetes.io/unreachable"
+      operator: "Exists"
+    - key: "node.kubernetes.io/not-ready"
+      operator: "Exists"
+    - key: "node.cilium.io/agent-not-ready"
+      operator: "Exists"
+

@@ -46,6 +46,17 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - name: tls-passthrough
+      protocol: TLS
+      hostname: ws.erebe.eu
+      port: 444
+      tls:
+        mode: Passthrough
+      allowedRoutes:
+        kinds:
+          - kind: TLSRoute
+        namespaces:
+          from: All
     - name: https
       protocol: HTTPS
       port: 444
@@ -56,17 +67,6 @@ spec:
           name: erebe-eu-tls
           namespace: default
       allowedRoutes:
-        namespaces:
-          from: All
-    - name: tls-passthrough
-      protocol: TLS
-      hostname: ws.erebe.eu
-      port: 444
-      tls:
-        mode: Passthrough
-      allowedRoutes:
-        kinds:
-          - kind: TLSRoute
         namespaces:
           from: All
 ---

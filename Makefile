@@ -74,4 +74,10 @@ envoy:
 	helm upgrade envoy oci://docker.io/envoyproxy/gateway-helm --version v1.7.0 -n default --create-namespace -f k8s/envoy.yaml --skip-crds
 	kubectl apply -f k8s/gateway.yaml
 
+csi:
+	helm repo add democratic-csi https://democratic-csi.github.io/charts/
+	helm repo update
+	helm upgrade --install zfs-iscsi democratic-csi/democratic-csi \
+        --namespace democratic-csi \
+        --values k8s/democratic-csi/zfs-iscsi-values.yaml  --create-namespace
 

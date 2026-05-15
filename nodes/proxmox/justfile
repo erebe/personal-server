@@ -5,6 +5,9 @@ _default:
 
 HOST := "root@192.168.1.4"
 
+iscsi:
+  ssh {{HOST}} "DEBIAN_FRONTEND=noninteractive apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y targetcli-fb"
+
 wireguard:
   sops exec-env ../../secrets/wireguard.yml 'cp wireguard/wg0.conf secrets_decrypted/; for i in $(env | grep _KEY | cut -d = -f1); do sed -i "s#__${i}__#${!i}#g" secrets_decrypted/wg0.conf ; done'
   ssh {{HOST}} "cat /etc/wireguard/wg0.conf" | diff  - secrets_decrypted/wg0.conf || exit 0
