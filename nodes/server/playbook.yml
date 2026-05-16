@@ -1,0 +1,111 @@
+---
+- name: Configure server node
+  hosts: server
+  become: true
+  vars:
+    node_dir: "{{ inventory_dir }}/server"
+    network_unit: eth0.network
+
+  tasks:
+    - name: Base packages
+      tags: [package, never]
+      ansible.builtin.import_tasks: ../common/tasks/package.yml
+
+    - name: networkd config
+      tags: [network, never]
+      ansible.builtin.import_tasks: ../common/tasks/networkd.yml
+
+    - name: Migrate from ifupdown to systemd-networkd + systemd-resolved
+      tags: [migrate-networkd, never]
+      block:
+        - name: Enable and start systemd-networkd
+          ansible.builtin.systemd:
+            name: systemd-networkd.service
+            enabled: true
+            state: started
+
+        - name: Enable and start systemd-resolved
+          ansible.builtin.systemd:
+            name: systemd-resolved.service
+            enabled: true
+            state: started
+
+        - name: Point /etc/resolv.conf at systemd-resolved stub
+          ansible.builtin.file:
+            src: /run/systemd/resolve/stub-resolv.conf
+            dest: /etc/resolv.conf
+            state: link
+            force: true
+
+        - name: Disable ifupdown (networking.service)
+          ansible.builtin.systemd:
+            name: networking.service
+            enabled: false
+            masked: true
+
+        - name: Reboot reminder
+          ansible.builtin.debug:
+            msg: >
+              ifupdown disabled; networkd + resolved are running.
+              Reboot the host so eth0 comes up under networkd exclusively.
+
+    - name: Firewall (nftables + IPv6 router advertise + forwarding)
+      tags: [firewall, never]
+      block:
+        - name: Upload nftables.rules to /etc/nftables.conf
+          ansible.builtin.copy:
+            src: "{{ node_dir }}/config/nftables.rules"
+            dest: /etc/nftables.conf
+            owner: root
+            group: root
+            mode: '0755'
+          notify: reload nftables
+
+        - name: Enable nftables service
+          ansible.builtin.systemd:
+            name: nftables.service
+            enabled: true
+            daemon_reload: true
+
+    - name: SSH server config
+      tags: [ssh, never]
+      block:
+        - name: Upload sshd_config
+          ansible.builtin.copy:
+            src: "{{ node_dir }}/config/sshd_config"
+            dest: /etc/ssh/sshd_config
+            owner: root
+            group: root
+            mode: '0644'
+            validate: '/usr/sbin/sshd -t -f %s'
+          notify: restart sshd
+
+    - name: Sudoers drop-in for erebe
+      tags: [sudo, never]
+      ansible.builtin.copy:
+        src: "{{ node_dir }}/config/sudoers"
+        dest: /etc/sudoers.d/erebe
+        owner: root
+        group: root
+        mode: '0440'
+        validate: '/usr/sbin/visudo -cf %s'
+
+    - name: Wireguard
+      tags: [wireguard, never]
+      ansible.builtin.import_tasks: ../common/tasks/wireguard.yml
+
+    - name: K3s agent install
+      tags: [k3s, never]
+      ansible.builtin.import_tasks: ../common/tasks/k3s-agent.yml
+
+
+  handlers:
+    - name: reload nftables
+      ansible.builtin.systemd:
+        name: nftables.service
+        state: reloaded
+
+    - name: restart sshd
+      ansible.builtin.systemd:
+        name: sshd.service
+        state: restarted

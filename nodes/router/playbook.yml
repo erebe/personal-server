@@ -1,0 +1,57 @@
+---
+- name: Configure UDM router
+  hosts: router
+  # connects as root already (per inventory) — no sudo needed
+  become: false
+  vars:
+    node_dir: "{{ inventory_dir }}/router"
+
+  tasks:
+    - name: Wireguard
+      tags: [wireguard, never]
+      block:
+        - name: Load wireguard secrets from sops
+          community.sops.load_vars:
+            file: "{{ inventory_dir }}/../secrets/wireguard.yml"
+            expressions: ignore
+
+        - name: Render and upload wg0.conf to /persistent/perso
+          ansible.builtin.template:
+            src: "{{ node_dir }}/wireguard/wg0.conf.j2"
+            dest: /persistent/perso/wg0.conf
+            owner: root
+            group: root
+            mode: '0600'
+          notify: restart wireguard
+
+        - name: Upload wireguard.service unit
+          ansible.builtin.copy:
+            src: "{{ node_dir }}/wireguard/wireguard.service"
+            dest: /lib/systemd/system/wireguard.service
+            owner: root
+            group: root
+            mode: '0644'
+          notify:
+            - daemon-reload
+            - restart wireguard
+
+        - name: Enable wireguard.service
+          ansible.builtin.systemd:
+            name: wireguard.service
+            enabled: true
+            state: started
+            daemon_reload: true
+
+        - name: Reminder
+          ansible.builtin.debug:
+            msg: "Configure UDM to allow udp packet on dport 995 on internet6 in Local rules"
+
+  handlers:
+    - name: daemon-reload
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: restart wireguard
+      ansible.builtin.systemd:
+        name: wireguard.service
+        state: restarted

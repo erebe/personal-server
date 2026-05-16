@@ -1,9 +1,9 @@
 [Interface]
 Address = 10.200.0.7/32, fd00:cafe::7/128
-PrivateKey = __PROXMOX_PRIVATE_KEY__
+PrivateKey = {{ ansible_facts.PROXMOX_PRIVATE_KEY }}
 
 [Peer]
-PublicKey = __ROUTER_PUBLIC_KEY__
+PublicKey = {{ ansible_facts.ROUTER_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.0/24, fd00:cafe::/32
 Endpoint = 192.168.1.1:995
 PersistentKeepalive = 20

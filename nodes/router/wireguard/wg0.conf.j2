@@ -1,34 +1,34 @@
 [Interface]
 Address = 10.200.0.1/24, fd00:cafe::1/32
 ListenPort = 995
-PrivateKey = __ROUTER_PRIVATE_KEY__
+PrivateKey = {{ ansible_facts.ROUTER_PRIVATE_KEY }}
 
 [Peer]
-PublicKey = __RASPBERRY_PUBLIC_KEY__
+PublicKey = {{ ansible_facts.RASPBERRY_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.2/32, fd00:cafe::2/128
 
 [Peer]
-PublicKey = __LAB_PUBLIC_KEY__
+PublicKey = {{ ansible_facts.LAB_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.3/32, fd00:cafe::3/128
 
 [Peer]
-PublicKey = __TOYBOX_PUBLIC_KEY__
+PublicKey = {{ ansible_facts.TOYBOX_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.4/32, fd00:cafe::4/128
 
 [Peer]
-PublicKey = __MAIL_PUBLIC_KEY__
+PublicKey = {{ ansible_facts.MAIL_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.5/32, fd00:cafe::5/128
 
 [Peer]
-PublicKey = __MINIO_PUBLIC_KEY__
+PublicKey = {{ ansible_facts.MINIO_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.6/32, fd00:cafe::6/128
 
 [Peer]
-PublicKey = __PROXMOX_PUBLIC_KEY__
+PublicKey = {{ ansible_facts.PROXMOX_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.7/32, fd00:cafe::7/128
 
 [Peer]
-PublicKey = __SERVER_PUBLIC_KEY__
+PublicKey = {{ ansible_facts.SERVER_PUBLIC_KEY }}
 Endpoint = 49.13.58.9:995
 AllowedIPs = 10.200.0.240/28, fd00:cafe::254/123, 2a01:4f8:c013:7b8::cafe/128
 

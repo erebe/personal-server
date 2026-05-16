@@ -1,0 +1,38 @@
+---
+# Bring up wireguard tunnels from a sops-encrypted secrets bundle.
+# Renders every wg*.conf.j2 found in {{ node_dir }}/wireguard/ and enables wg-quick@<name>.
+# Requires play var: node_dir
+- name: Discover wireguard interfaces
+  ansible.builtin.set_fact:
+    wg_interfaces: "{{ query('fileglob', node_dir + '/wireguard/wg*.conf.j2') | map('basename') | map('regex_replace', '\\.conf\\.j2$', '') | list }}"
+
+- name: Load wireguard secrets from sops
+  community.sops.load_vars:
+    file: "{{ inventory_dir }}/../secrets/wireguard.yml"
+    expressions: ignore
+
+- name: Render and upload wireguard configs
+  ansible.builtin.template:
+    src: "{{ node_dir }}/wireguard/{{ item }}.conf.j2"
+    dest: "/etc/wireguard/{{ item }}.conf"
+    owner: root
+    group: root
+    mode: '0600'
+  loop: "{{ wg_interfaces }}"
+  register: wg_render
+
+- name: Enable wg-quick
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ item }}.service"
+    enabled: true
+    state: started
+  loop: "{{ wg_interfaces }}"
+
+- name: Restart wg-quick when config changed
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ item.item }}.service"
+    state: restarted
+  loop: "{{ wg_render.results }}"
+  when: item.changed
+  loop_control:
+    label: "{{ item.item }}"

@@ -1,0 +1,26 @@
+---
+- name: Configure dns node
+  hosts: dns
+  become: true
+  vars:
+    node_dir: "{{ inventory_dir }}/dns"
+    network_unit: eth0.network
+
+  tasks:
+    - name: Base packages
+      tags: [package, never]
+      ansible.builtin.import_tasks: ../common/tasks/package.yml
+
+    - name: networkd config
+      tags: [network, never]
+      ansible.builtin.import_tasks: ../common/tasks/networkd.yml
+
+    - name: Wireguard
+      tags: [wireguard, never]
+      ansible.builtin.import_tasks: ../common/tasks/wireguard.yml
+
+    - name: K3s agent install
+      tags: [k3s, never]
+      ansible.builtin.import_tasks: ../common/tasks/k3s-agent.yml
+
+

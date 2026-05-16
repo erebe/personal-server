@@ -1,0 +1,38 @@
+---
+# Install a k3s agent and join the existing cluster master at fd00:cafe::3.
+# Requires play var: node_dir; expects {{ node_dir }}/k3s/config.yaml to exist.
+- name: Pin k3s version
+  ansible.builtin.set_fact:
+    k3s_version: "{{ k3s_version | default('v1.30.14+k3s1') }}"
+
+- name: Ensure /etc/rancher/k3s exists
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Upload k3s config.yaml
+  ansible.builtin.copy:
+    src: "{{ node_dir }}/k3s/config.yaml"
+    dest: /etc/rancher/k3s/config.yaml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check installed k3s version
+  ansible.builtin.command: k3s --version
+  register: k3s_current
+  failed_when: false
+  changed_when: false
+
+- name: Install or upgrade k3s agent
+  ansible.builtin.shell:
+    cmd: >
+      curl -sfL https://get.k3s.io |
+      INSTALL_K3S_VERSION="{{ k3s_version }}"
+      K3S_URL=https://[fd00:cafe::3]:6443
+      K3S_TOKEN=12345
+      sh -s -
+  when: k3s_version not in (k3s_current.stdout | default(''))

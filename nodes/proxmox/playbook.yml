@@ -1,0 +1,83 @@
+---
+- name: Configure proxmox node
+  hosts: proxmox
+  # connects as root already (per inventory) — no sudo needed
+  become: false
+  vars:
+    node_dir: "{{ inventory_dir }}/proxmox"
+
+  tasks:
+    - name: iSCSI target tooling (targetcli-fb)
+      tags: [package, never]
+      ansible.builtin.apt:
+        name: targetcli-fb
+        update_cache: true
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+
+    - name: Wireguard
+      tags: [wireguard, never]
+      ansible.builtin.import_tasks: ../common/tasks/wireguard.yml
+
+    - name: Sanoid / Syncoid ZFS snapshots and backup
+      tags: [sanoid, never]
+      block:
+        - name: Install sanoid
+          ansible.builtin.apt:
+            name: sanoid
+            update_cache: true
+          environment:
+            DEBIAN_FRONTEND: noninteractive
+
+        - name: Ensure /etc/sanoid exists
+          ansible.builtin.file:
+            path: /etc/sanoid
+            state: directory
+            owner: root
+            group: root
+            mode: '0755'
+
+        - name: Upload sanoid.conf
+          ansible.builtin.copy:
+            src: "{{ node_dir }}/sanoid/sanoid.conf"
+            dest: /etc/sanoid/sanoid.conf
+            owner: root
+            group: root
+            mode: '0644'
+
+        - name: Upload syncoid-backup.service
+          ansible.builtin.copy:
+            src: "{{ node_dir }}/sanoid/syncoid-backup.service"
+            dest: /etc/systemd/system/syncoid-backup.service
+            owner: root
+            group: root
+            mode: '0644'
+          notify: daemon-reload
+
+        - name: Upload syncoid-backup.timer
+          ansible.builtin.copy:
+            src: "{{ node_dir }}/sanoid/syncoid-backup.timer"
+            dest: /etc/systemd/system/syncoid-backup.timer
+            owner: root
+            group: root
+            mode: '0644'
+          notify: daemon-reload
+
+        - name: Enable sanoid.timer
+          ansible.builtin.systemd:
+            name: sanoid.timer
+            enabled: true
+            state: started
+            daemon_reload: true
+
+        - name: Enable syncoid-backup.timer
+          ansible.builtin.systemd:
+            name: syncoid-backup.timer
+            enabled: true
+            state: started
+            daemon_reload: true
+
+  handlers:
+    - name: daemon-reload
+      ansible.builtin.systemd:
+        daemon_reload: true

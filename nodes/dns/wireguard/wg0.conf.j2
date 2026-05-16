@@ -1,8 +1,8 @@
 [Interface]
 Address = 10.200.0.2/32, fd00:cafe::2/128
-PrivateKey = __RASPBERRY_PRIVATE_KEY__
+PrivateKey = {{ ansible_facts.RASPBERRY_PRIVATE_KEY }}
 
 [Peer]
-PublicKey = __ROUTER_PUBLIC_KEY__
+PublicKey = {{ ansible_facts.ROUTER_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.0/24, fd00:cafe::/32
 Endpoint = 192.168.1.1:995

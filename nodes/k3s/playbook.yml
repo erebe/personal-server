@@ -1,0 +1,93 @@
+---
+- name: Configure k3s master node
+  hosts: k3s
+  become: true
+  vars:
+    node_dir: "{{ inventory_dir }}/k3s"
+    network_unit: ens18.network
+
+  tasks:
+    - name: Base packages
+      tags: [package, never]
+      ansible.builtin.import_tasks: ../common/tasks/package.yml
+
+    - name: networkd config
+      tags: [network, never]
+      ansible.builtin.import_tasks: ../common/tasks/networkd.yml
+
+    - name: Wireguard
+      tags: [wireguard, never]
+      ansible.builtin.import_tasks: ../common/tasks/wireguard.yml
+
+    - name: Base packages and k8s tooling
+      tags: [package, never]
+      block:
+        - name: Install base packages
+          ansible.builtin.apt:
+            name:
+              - nfs-common
+            update_cache: true
+
+        - name: Install helm
+          ansible.builtin.shell:
+            cmd: curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+            creates: /usr/local/bin/helm
+
+        - name: Install cilium CLI
+          ansible.builtin.shell:
+            cmd: |
+              curl -L https://github.com/cilium/cilium-cli/releases/download/v0.15.5/cilium-linux-amd64.tar.gz | tar xzvf - cilium
+            chdir: "/home/{{ ansible_user }}"
+            creates: "/home/{{ ansible_user }}/cilium"
+
+        - name: Install k9s
+          ansible.builtin.shell:
+            cmd: |
+              curl -L https://github.com/derailed/k9s/releases/download/v0.27.4/k9s_Linux_amd64.tar.gz | tar xzvf - k9s
+            chdir: "/home/{{ ansible_user }}"
+            creates: "/home/{{ ansible_user }}/k9s"
+
+    - name: K3s master setup and cilium install
+      tags: [k3s-master, never]
+      block:
+        # k3s install steps are kept disabled to mirror the commented justfile recipe.
+        # Re-enable when bootstrapping a fresh master.
+         - name: Ensure /etc/rancher/k3s exists
+           ansible.builtin.file:
+             path: /etc/rancher/k3s
+             state: directory
+             mode: '0755'
+         - name: Upload k3s config.yaml
+           ansible.builtin.copy:
+             src: "{{ node_dir }}/k3s/config.yaml"
+             dest: /etc/rancher/k3s/config.yaml
+             mode: '0644'
+         - name: Install k3s server
+           ansible.builtin.shell:
+             cmd: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.30.8+k3s1" sh -s - server
+             creates: /usr/local/bin/k3s
+
+        - name: Copy cilium.yaml to host
+          ansible.builtin.copy:
+            src: "{{ node_dir }}/k3s/cilium.yaml"
+            dest: "/home/{{ ansible_user }}/cilium.yaml"
+            owner: "{{ ansible_user }}"
+            mode: '0644'
+          become: false
+
+        - name: Copy cilium-install.sh to host
+          ansible.builtin.copy:
+            src: "{{ node_dir }}/k3s/cilium-install.sh"
+            dest: "/home/{{ ansible_user }}/cilium-install.sh"
+            owner: "{{ ansible_user }}"
+            mode: '0755'
+          become: false
+
+        - name: Run cilium-install.sh
+          ansible.builtin.command:
+            cmd: ./cilium-install.sh
+            chdir: "/home/{{ ansible_user }}"
+          become: false
+          changed_when: true
+
+

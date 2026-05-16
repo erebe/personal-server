@@ -1,5 +1,5 @@
 [Interface]
-PrivateKey = __LAPTOP_PRIVATE_KEY__
+PrivateKey = {{ ansible_facts.LAPTOP_PRIVATE_KEY }}
 Address = 2a01:4f8:c013:7b8::cafe
 Table = off
 PostUp = ip -6 rule add from 2a01:4f8:c013:7b8::/64 table 51820; ip -6 route add 2a01:4f8:c013:7b8::1 dev %i table 51820; ip -6 route add default via 2a01:4f8:c013:7b8::1 dev %i table 51820
@@ -7,7 +7,7 @@ PostDown = ip -6 rule delete table 51820
 
 # Server
 [Peer]
-PublicKey = __SERVER_PUBLIC_KEY__
+PublicKey = {{ ansible_facts.SERVER_PUBLIC_KEY }}
 
 ## set ACL ##
 AllowedIPs = ::/0

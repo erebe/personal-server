@@ -1,0 +1,46 @@
+---
+- name: Set timezone to UTC
+  community.general.timezone:
+    name: UTC
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - htop
+      - btop
+      - mtr
+      - tcpdump
+      - ncdu
+      - vim
+      - dnsutils
+      - strace
+      - linux-perf
+      - iftop
+      - wireguard
+      - nftables
+      - rsync
+      - unattended-upgrades
+    update_cache: true
+
+- name: Enable automatic security updates
+  ansible.builtin.debconf:
+    name: unattended-upgrades
+    question: unattended-upgrades/enable_auto_updates
+    value: 'true'
+    vtype: boolean
+
+- name: Install open-iscsi and helpers
+  ansible.builtin.apt:
+    name:
+      - open-iscsi
+      - lsscsi
+      - sg3-utils
+      - scsitools
+    update_cache: true
+
+- name: Enable and start open-iscsi
+  ansible.builtin.systemd:
+    name: open-iscsi.service
+    enabled: true
+    state: started

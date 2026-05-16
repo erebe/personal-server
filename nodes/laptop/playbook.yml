@@ -1,0 +1,11 @@
+---
+- name: Configure laptop wireguard tunnels
+  hosts: laptop
+  become: true
+  vars:
+    node_dir: "{{ inventory_dir }}/laptop"
+
+  tasks:
+    - name: Wireguard
+      tags: [wireguard, never]
+      ansible.builtin.import_tasks: ../common/tasks/wireguard.yml

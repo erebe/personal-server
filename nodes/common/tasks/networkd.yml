@@ -1,0 +1,26 @@
+---
+# Upload systemd-networkd config and a per-host network unit, restart if either changed.
+# Requires play vars: node_dir, network_unit
+- name: Upload networkd.conf
+  ansible.builtin.copy:
+    src: "{{ node_dir }}/config/networkd.conf"
+    dest: /etc/systemd/networkd.conf
+    owner: root
+    group: root
+    mode: '0644'
+  register: networkd_conf
+
+- name: Upload {{ network_unit }}
+  ansible.builtin.copy:
+    src: "{{ node_dir }}/config/{{ network_unit }}"
+    dest: "/etc/systemd/network/{{ network_unit }}"
+    owner: root
+    group: root
+    mode: '0644'
+  register: networkd_unit
+
+- name: Restart systemd-networkd
+  ansible.builtin.systemd:
+    name: systemd-networkd.service
+    state: restarted
+  when: networkd_conf.changed or networkd_unit.changed
