@@ -20,7 +20,7 @@
       ansible.builtin.import_tasks: ../common/tasks/wireguard.yml
 
     - name: K3s agent install
-      tags: [k3s, never]
+      tags: [k3s-agent, never]
       ansible.builtin.import_tasks: ../common/tasks/k3s-agent.yml
 
 

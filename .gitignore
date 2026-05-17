@@ -1,2 +1,3 @@
 secrets_decrypted
 blog/public/**
+nodes/.ansible_facts_cache

@@ -50,23 +50,12 @@
     - name: K3s master setup and cilium install
       tags: [k3s-master, never]
       block:
-        # k3s install steps are kept disabled to mirror the commented justfile recipe.
-        # Re-enable when bootstrapping a fresh master.
-         - name: Ensure /etc/rancher/k3s exists
-           ansible.builtin.file:
-             path: /etc/rancher/k3s
-             state: directory
-             mode: '0755'
-         - name: Upload k3s config.yaml
-           ansible.builtin.copy:
-             src: "{{ node_dir }}/k3s/config.yaml"
-             dest: /etc/rancher/k3s/config.yaml
-             mode: '0644'
-         - name: Install k3s server
-           ansible.builtin.shell:
-             cmd: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.30.8+k3s1" sh -s - server
-             creates: /usr/local/bin/k3s
+        - name: Install or upgrade k3s master
+          ansible.builtin.import_tasks: ../common/tasks/k3s-master.yml
 
+    - name: Install cilium
+      tags: [cilium, never]
+      block:
         - name: Copy cilium.yaml to host
           ansible.builtin.copy:
             src: "{{ node_dir }}/k3s/cilium.yaml"
