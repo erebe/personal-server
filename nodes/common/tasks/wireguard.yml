@@ -9,6 +9,7 @@
 - name: Load wireguard secrets from sops
   community.sops.load_vars:
     file: "{{ inventory_dir }}/../secrets/wireguard.yml"
+    name: ansible_facts
     expressions: ignore
 
 - name: Render and upload wireguard configs

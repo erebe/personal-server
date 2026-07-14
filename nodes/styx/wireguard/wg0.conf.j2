@@ -1,0 +1,9 @@
+[Interface]
+Address = 10.200.0.50/32, fd00:cafe::50/128
+PrivateKey = {{ ansible_facts.STYX_PRIVATE_KEY }}
+
+[Peer]
+PublicKey = {{ ansible_facts.ROUTER_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.0/24, fd00:cafe::/32
+Endpoint = 192.168.1.1:995
+PersistentKeepalive = 20

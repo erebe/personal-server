@@ -12,3 +12,4 @@
 - import_playbook: proxmox/playbook.yml
 - import_playbook: router/playbook.yml
 - import_playbook: laptop/playbook.yml
+- import_playbook: styx/playbook.yml

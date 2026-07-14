@@ -39,3 +39,6 @@ router *ARGS:
 
 laptop *ARGS:
     ansible-playbook laptop/playbook.yml {{ARGS}}
+
+styx *ARGS:
+    ansible-playbook styx/playbook.yml {{ARGS}}

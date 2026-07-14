@@ -28,6 +28,10 @@ PublicKey = {{ ansible_facts.PROXMOX_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.7/32, fd00:cafe::7/128
 
 [Peer]
+PublicKey = {{ ansible_facts.STYX_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.50/32, fd00:cafe::50/128
+
+[Peer]
 PublicKey = {{ ansible_facts.SERVER_PUBLIC_KEY }}
 Endpoint = 49.13.58.9:995
 AllowedIPs = 10.200.0.240/28, fd00:cafe::254/123, 2a01:4f8:c013:7b8::cafe/128

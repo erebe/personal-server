@@ -1,0 +1,11 @@
+---
+- name: Configure styx desktop wireguard tunnels
+  hosts: styx
+  become: true
+  vars:
+    node_dir: "{{ inventory_dir }}/styx"
+
+  tasks:
+    - name: Wireguard
+      tags: [wireguard, never]
+      ansible.builtin.import_tasks: ../common/tasks/wireguard.yml
