@@ -9,7 +9,7 @@ table inet SERVER_FIREWALL {
         set denylist {
               type ipv4_addr; flags dynamic, timeout; timeout 5m;
         }
-        define whitelist = { 94.239.37.161 }
+        define whitelist = { 94.239.37.161/32, 10.200.0.0/16 }
 
         chain input {
               type filter hook input priority 0; policy drop;
