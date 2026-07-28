@@ -9,3 +9,17 @@ spec:
       name: http
   clusterIP: None
   type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wstunnel-udp
+spec:
+  ports:
+    - protocol: UDP
+      port: 443
+      targetPort: 8084
+      name: https-udp
+  externalIPs:
+    - 2a01:4f8:c013:7b8::1
+    - 49.13.58.9
