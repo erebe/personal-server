@@ -5,6 +5,14 @@ if header :is "X-Envelope-Mismatch" "Yes" {
     stop;
 }
 
+if anyof (
+    address :is :domain "from" "qovery.com",
+    envelope :is "from" "no-reply@qovery.com"
+) {
+    fileinto "Junk Mail";
+    stop;
+}
+
 # Extract the local-part (before @) from the recipient address
 if address :regex "to" "^([^@]+)@.*$" {
 
