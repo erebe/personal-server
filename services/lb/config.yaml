@@ -22,6 +22,18 @@ rules:
 
 - listen_addr: 
     - "[::]:443"
+  protocol: Udp
+  upstreams:
+    - name: wstunnel
+      match: !Any
+      backends: !Static
+        - addr: "[fd00:cafe::254]:8084"
+      proxy_protocol: false
+      cnx_max_duration: 10s
+      load_balancing: !RoundRobin
+
+- listen_addr: 
+    - "[::]:443"
   protocol: Tls
   upstreams:
     - name: wstunnel-demo
