@@ -1,7 +1,7 @@
 require ["fileinto", "variables", "envelope", "regex", "mailbox"];
 
 if header :is "X-Envelope-Mismatch" "Yes" {
-    fileinto :create "Junk Mail";
+    fileinto "Junk Mail";
     stop;
 }
 
@@ -11,6 +11,25 @@ if anyof (
 ) {
     fileinto "Junk Mail";
     stop;
+}
+
+# bouyguestelecom@erebe.eu alias: only accept mail actually coming from
+# bouygues-telecom.fr, everything else is spam.
+if allof (
+   anyof (
+       envelope :is :all "to" "bouyguestelecom@erebe.eu",
+       address :is :all "to" "bouyguestelecom@erebe.eu",
+       address :is :all "cc" "bouyguestelecom@erebe.eu"
+   ),
+   not anyof (
+       address :is :domain "from" "bouygues-telecom.fr",
+       address :matches :domain "from" "*.bouygues-telecom.fr",
+       envelope :is :domain "from" "bouygues-telecom.fr",
+       envelope :matches :domain "from" "*.bouygues-telecom.fr"
+   )
+) {
+   fileinto "Junk Mail";
+   stop;
 }
 
 # Extract the local-part (before @) from the recipient address
