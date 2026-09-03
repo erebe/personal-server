@@ -1,0 +1,5 @@
+/target
+/.git
+/Dockerfile
+/.dockerignore
+/kubernetes

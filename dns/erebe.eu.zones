@@ -10,6 +10,7 @@ _dmarc 10800 IN TXT "v=DMARC1; p=quarantine; rua=mailto:postmaster@erebe.eu; ruf
 * 10800 IN A 49.13.58.9
 * 10800 IN AAAA 2a01:4f8:c013:7b8::1
 *	1800	IN	HTTPS	1 . alpn="h2,http/1.1" ipv4hint=49.13.58.9  ipv6hint=2a01:4f8:c013:7b8::1
+ws 10800 IN A 78.46.254.0
 *.warp 10800 IN A 49.13.58.9
 *.warp 10800 IN AAAA 2a01:4f8:c013:7b8::1
 cafe 10800 IN AAAA 2a01:4f8:c013:7b8::cafe

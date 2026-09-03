@@ -24,6 +24,8 @@ spec:
   dnsNames:
   - "*.erebe.eu"
   - erebe.eu
+  - "*.erebe.dev"
+  - erebe.dev
   # Issuer references are always required.
   issuerRef:
     name: letsencrypt-prod

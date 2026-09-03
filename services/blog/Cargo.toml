@@ -1,0 +1,20 @@
+[package]
+name = "blog"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tikv-jemallocator = { version = "0.7", features = ["unprefixed_malloc_on_supported_platforms"] }
+
+anyhow = "1.0.104"
+clap = { version = "4.6.6", features = ["derive", "env"] }
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "signal", "fs"] }
+tower = { version = "0.5.3", features = ["util"] }
+tower-http = { version = "0.7.1", features = ["fs", "trace", "compression-gzip", "compression-zstd"] }
+axum = "0.8.9"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+[profile.release]
+lto = "thin"
+strip = true

@@ -1,0 +1,19 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: blog
+spec:
+  parentRefs:
+    - name: envoy
+  # One hostname per directory inside public/, the first label selecting the directory to serve
+  hostnames:
+    - wstunnel.erebe.eu
+    - wstunnel.erebe.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: blog
+          port: 8087

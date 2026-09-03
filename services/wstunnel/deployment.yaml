@@ -11,8 +11,8 @@ spec:
   template:
     metadata: {}
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
+      #hostNetwork: true
+      #dnsPolicy: ClusterFirstWithHostNet
       tolerations:
       - key: "kubernetes.io/hostname"
         operator: "Equal"
@@ -25,10 +25,14 @@ spec:
         - "./wstunnel"
         - "server"
         - "wss://[::]:8084"
+        - "--enable-webtransport"
         - "--dns-resolver=dns://[fd00:cafe::2]"
         - "--restrict-config=/etc/wstunnel/restrictions.yaml"
         ports:
         - containerPort: 8084
+          protocol: TCP
+        - containerPort: 8084
+          protocol: UDP
         volumeMounts:
           - name: wstunnel
             mountPath: /etc/wstunnel

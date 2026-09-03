@@ -47,7 +47,7 @@ warpgate:
 	kubectl apply -f app/warpgate.yml
 
 blog:
-	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone blog/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/blog-applyset --namespace=default
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone blog/kubernetes/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/blog-applyset --namespace=default
 
 dashy:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone dashy/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/dashy-applyset --namespace=default

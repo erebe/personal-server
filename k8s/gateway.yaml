@@ -43,23 +43,24 @@ spec:
     - name: http
       protocol: HTTP
       port: 80
-      allowedRoutes:
-        namespaces:
-          from: All
-    - name: tls-passthrough
-      protocol: TLS
-      hostname: ws.erebe.eu
-      port: 444
-      tls:
-        mode: Passthrough
+      # Only HTTPRoutes from the dedicated https-redirect namespace may bind here.
+      # allowedRoutes can filter by namespace and kind only, never by route name,
+      # so isolating the redirect in its own namespace is what makes it exclusive.
+      # Without this, every service HTTPRoute in `default` also binds to :80 and
+      # wins precedence on its own hostname, so the redirect never fires.
       allowedRoutes:
         kinds:
-          - kind: TLSRoute
+          - group: gateway.networking.k8s.io
+            kind: HTTPRoute
         namespaces:
-          from: All
+          from: Selector
+          selector:
+            matchLabels:
+              # Applied automatically to every namespace by the apiserver.
+              kubernetes.io/metadata.name: https-redirect
     - name: https
       protocol: HTTPS
-      port: 444
+      port: 443
       tls:
         mode: Terminate
         certificateRefs:
@@ -110,8 +111,17 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: envoy
-  proxyProtocol:
-    optional: true
+  http3: {}
+  # https-erebe-eu and https-erebe-dev share the erebe-eu-tls cert, so their SANs
+  # overlap and EG would drop ALPN to http/1.1 on the TCP chains (GEP-3567).
+  # Setting ALPN explicitly suppresses that downgrade. Does not touch HTTP/3:
+  # the QUIC transport socket hardcodes ALPN "h3".
+  tls:
+    alpnProtocols:
+      - h2
+      - http/1.1
+#  proxyProtocol:
+#    optional: true
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
@@ -129,3 +139,25 @@ spec:
       brotli: {}
     - type: Gzip
       gzip: {}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: https-redirect
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: https-redirect
+  namespace: https-redirect
+spec:
+  parentRefs:
+    - name: envoy
+      namespace: default
+      sectionName: http
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301

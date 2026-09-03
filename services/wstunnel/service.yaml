@@ -3,9 +3,18 @@ kind: Service
 metadata:
   name: wstunnel
 spec:
+  ipFamilies:
+  - IPv4
+  externalIPs:
+    - '78.46.254.0'
   ports:
     - protocol: TCP
-      port: 8084
+      port: 443
+      targetPort: 8084
       name: http
-  clusterIP: None
-  type: ClusterIP
+    - protocol: UDP
+      port: 443
+      targetPort: 8084
+      name: webtransport
+  externalTrafficPolicy: Local
+  type: LoadBalancer

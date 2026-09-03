@@ -3,6 +3,7 @@
 @ IN CAA 0 issuewild "letsencrypt.org"
 @ 10800 IN A 49.13.58.9
 @ 10800 IN AAAA 2a01:4f8:c013:7b8::1
+ws 10800 IN A 78.46.254.0
 * 10800 IN A 49.13.58.9
 * 10800 IN AAAA 2a01:4f8:c013:7b8::1
 @ 10800 IN MX 1 mail.erebe.eu.

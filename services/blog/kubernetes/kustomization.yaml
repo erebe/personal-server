@@ -4,9 +4,8 @@ namespace: default
 labels:
   - includeSelectors: true
     pairs:
-      app: wstunnel
+      app: blog
 resources:
   - deployment.yaml
   - service.yaml
-generators:
-  - secret-generator.yaml
+  - httproute.yaml

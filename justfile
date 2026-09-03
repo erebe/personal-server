@@ -60,8 +60,8 @@ wireguard:
     ssh {{HOST}} 'systemctl enable wg-quick@wg0'
 
 envoy:
-    helm template eg-crds oci://docker.io/envoyproxy/gateway-crds-helm -f k8s/envoy-crds.yaml --version v1.7.0 | kubectl apply --server-side --force-conflicts -f -
-    helm upgrade envoy oci://docker.io/envoyproxy/gateway-helm --version v1.7.0 -n default --create-namespace -f k8s/envoy.yaml --skip-crds
+    helm template eg-crds oci://docker.io/envoyproxy/gateway-crds-helm -f k8s/envoy-crds.yaml --version v1.9.1 | kubectl apply --server-side --force-conflicts -f -
+    helm upgrade envoy oci://docker.io/envoyproxy/gateway-helm --version v1.9.1 -n default --create-namespace -f k8s/envoy.yaml --skip-crds
     kubectl apply -f k8s/gateway.yaml
 
 csi:
