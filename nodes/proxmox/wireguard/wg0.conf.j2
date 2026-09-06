@@ -1,9 +1,25 @@
 [Interface]
 Address = 10.200.0.7/32, fd00:cafe::7/128
+ListenPort = 51820
 PrivateKey = {{ ansible_facts.PROXMOX_PRIVATE_KEY }}
 
 [Peer]
 PublicKey = {{ ansible_facts.ROUTER_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.0/24, fd00:cafe::/32
 Endpoint = 192.168.1.1:995
+PersistentKeepalive = 20
+
+# k3s VM, on this host: reach it over vmbr0 instead of via the router.
+# The /32 + /128 win longest-prefix over the router peer's /24 + /32 above.
+[Peer]
+PublicKey = {{ ansible_facts.LAB_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.3/32, fd00:cafe::3/128
+Endpoint = 192.168.1.10:51820
+PersistentKeepalive = 20
+
+# toybox VM, same host, same reasoning.
+[Peer]
+PublicKey = {{ ansible_facts.TOYBOX_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.4/32, fd00:cafe::4/128
+Endpoint = 192.168.1.11:51820
 PersistentKeepalive = 20

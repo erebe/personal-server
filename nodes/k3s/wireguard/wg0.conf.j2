@@ -1,5 +1,6 @@
 [Interface]
 Address = 10.200.0.3/32, fd00:cafe::3/128
+ListenPort = 51820
 PrivateKey = {{ ansible_facts.LAB_PRIVATE_KEY }}
 #Mtu = 1420
 
@@ -7,3 +8,18 @@ PrivateKey = {{ ansible_facts.LAB_PRIVATE_KEY }}
 PublicKey = {{ ansible_facts.ROUTER_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.0/24, fd00:cafe::/32
 Endpoint = 192.168.1.1:995
+
+# proxmox host: NFS server for the k8s PVCs, reachable directly over vmbr0.
+[Peer]
+PublicKey = {{ ansible_facts.PROXMOX_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.7/32, fd00:cafe::7/128
+Endpoint = 192.168.1.4:51820
+PersistentKeepalive = 20
+
+# toybox VM: same host. Node IPs are the overlay addresses, so this carries
+# apiserver, kubelet and cilium VXLAN traffic between the two k3s nodes.
+[Peer]
+PublicKey = {{ ansible_facts.TOYBOX_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.4/32, fd00:cafe::4/128
+Endpoint = 192.168.1.11:51820
+PersistentKeepalive = 20

@@ -14,8 +14,8 @@ spec:
   template:
     metadata: {}
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
+#      hostNetwork: true
+#      dnsPolicy: ClusterFirstWithHostNet
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

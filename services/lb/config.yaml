@@ -7,7 +7,7 @@ rules:
     - name: smtp
       match: !DestinationPort 25
       backends: !Static
-        - addr: "[fd00:cafe::5]:25"
+        - addr: "[fd00:cafe::4]:25"
       proxy_protocol: true
       cnx_max_duration: 5m
       load_balancing: !RoundRobin
@@ -15,7 +15,7 @@ rules:
     - name: smtp
       match: !DestinationPort 587
       backends: !Static
-        - addr: "[fd00:cafe::5]:25"
+        - addr: "[fd00:cafe::4]:25"
       proxy_protocol: true
       cnx_max_duration: 5m
       load_balancing: !RoundRobin
