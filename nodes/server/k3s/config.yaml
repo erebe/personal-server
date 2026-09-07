@@ -1,5 +1,5 @@
 node-name: "server"
-node-ip: "fd00:cafe::254,10.200.0.254"
+node-ip: "fd00:cafe:1::1,10.200.1.1"
 node-external-ip: "2a01:4f8:c013:7b8::1,49.13.58.9"
 node-external-dns: "erebe.eu"
 

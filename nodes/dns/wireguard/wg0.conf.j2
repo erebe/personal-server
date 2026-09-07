@@ -3,38 +3,41 @@ Address = 10.200.0.2/32, fd00:cafe::2/128
 ListenPort = 51820
 PrivateKey = {{ ansible_facts.RASPBERRY_PRIVATE_KEY }}
 
+# Router is the hub: the whole overlay (both /24s) routes here by default, and
+# every more specific peer below carves a direct path out of it.
 [Peer]
 PublicKey = {{ ansible_facts.ROUTER_PUBLIC_KEY }}
-AllowedIPs = 10.200.0.0/24, fd00:cafe::/32
+AllowedIPs = 10.200.0.0/23, fd00:cafe::/32
 Endpoint = 192.168.1.1:995
 
-# Server (hetzner). Direct tunnel over WAN instead of hairpinning through the
-# router: this /28 + /123 is everything that terminates on the server (itself
-# .254, phone .253, laptop .252) and wins longest-prefix over the router
-# peer's /24 + /32 above. scw's .251 sits inside it but is carved out by the
-# more specific peer below.
+# Server (hetzner), hub of the public subnet. Direct tunnel over WAN instead of
+# hairpinning through the router: the /24 + /64 win longest-prefix over the
+# router peer's /23 + /32 above.
 [Peer]
 PublicKey = {{ ansible_facts.SERVER_PUBLIC_KEY }}
-AllowedIPs = 10.200.0.240/28, fd00:cafe::240/123
+AllowedIPs = 10.200.1.0/24, fd00:cafe:1::/64
 Endpoint = erebe.eu:995
 PersistentKeepalive = 20
 
 # LAN nodes, reached over 192.168.1.0/24 instead of via the router. Node IPs
 # are the overlay addresses, so these carry apiserver, kubelet and cilium
 # traffic between the k3s nodes. The /32 + /128 win longest-prefix over the
-# router peer's /24 + /32 above.
+# router peer's /23 + /32 above.
+# k3s VM.
 [Peer]
 PublicKey = {{ ansible_facts.LAB_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.3/32, fd00:cafe::3/128
 Endpoint = 192.168.1.10:51820
 PersistentKeepalive = 20
 
+# toybox VM.
 [Peer]
 PublicKey = {{ ansible_facts.TOYBOX_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.4/32, fd00:cafe::4/128
 Endpoint = 192.168.1.11:51820
 PersistentKeepalive = 20
 
+# proxmox host.
 [Peer]
 PublicKey = {{ ansible_facts.PROXMOX_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.7/32, fd00:cafe::7/128
@@ -42,11 +45,11 @@ Endpoint = 192.168.1.4:51820
 PersistentKeepalive = 20
 
 # scw (scaleway). Direct tunnel over WAN instead of relaying through the
-# server. The endpoint is the scw.erebe.eu DNS name, resolved by
-# wg-quick when the interface comes up. The /32 + /128 win
-# longest-prefix over the router peer's /24 + /32 above.
+# server. The endpoint is the scw.erebe.eu DNS name, resolved by wg-quick when
+# the interface comes up. The /32 + /128 win longest-prefix over the server
+# peer's /24 + /64 above.
 [Peer]
 PublicKey = {{ ansible_facts.SCW_PUBLIC_KEY }}
-AllowedIPs = 10.200.0.251/32, fd00:cafe::251/128
+AllowedIPs = 10.200.1.2/32, fd00:cafe:1::2/128
 Endpoint = scw.erebe.eu:995
 PersistentKeepalive = 20

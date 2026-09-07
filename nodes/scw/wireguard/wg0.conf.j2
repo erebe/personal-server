@@ -1,25 +1,29 @@
 [Interface]
-Address = 10.200.0.251/32, fd00:cafe::251/128
+Address = 10.200.1.2/32, fd00:cafe:1::2/128
 ListenPort = 995
 PrivateKey = {{ ansible_facts.SCW_PRIVATE_KEY }}
 
-# Server (hetzner) is the hub for this node: scw sits outside the LAN, so the
-# whole overlay is reached through it. .251 / ::251 falls inside the
-# 10.200.0.240/28 + fd00:cafe::240/123 pool that the router and the k3s nodes
-# already route to the server, so no other peer needs a route added.
+# Server (hetzner) is the hub of the public subnet this node sits in, and the
+# default path to the whole overlay (both /24s). The peers below carve direct
+# paths to the LAN side out of it.
 [Peer]
 PublicKey = {{ ansible_facts.SERVER_PUBLIC_KEY }}
-AllowedIPs = 10.200.0.0/24, fd00:cafe::/32
+AllowedIPs = 10.200.0.0/23, fd00:cafe::/32
 Endpoint = erebe.eu:995
 PersistentKeepalive = 20
 
 # Direct tunnels to the LAN side, instead of being relayed by the server peer
 # above. No Endpoint: they sit behind the home NAT, so scw learns their
 # endpoint from the handshake and they hold it open with PersistentKeepalive.
-# The /32 + /128 win longest-prefix over the server peer's /24 + /32.
+# The /32 + /128 win longest-prefix over the server peer's /23 + /32.
+#
+# The router peer carries the whole LAN /24, not just the router's own address:
+# it forwards traffic from every LAN spoke down this tunnel, and WireGuard
+# drops a decrypted packet whose source is outside the AllowedIPs of the peer
+# it arrived from. A /32 here silently blackholes styx -> scw.
 [Peer]
 PublicKey = {{ ansible_facts.ROUTER_PUBLIC_KEY }}
-AllowedIPs = 10.200.0.1/32, fd00:cafe::1/128
+AllowedIPs = 10.200.0.0/24, fd00:cafe:0::/64
 
 [Peer]
 PublicKey = {{ ansible_facts.RASPBERRY_PUBLIC_KEY }}

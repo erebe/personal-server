@@ -60,7 +60,7 @@ table inet SERVER_FIREWALL {
         chain nat_postrouting {
               type nat hook postrouting priority 0; policy accept;
 
-              oif eth0 ip saddr 10.200.0.0/24 masquerade comment "Allow NATing IPv4 wireguard traffic"
+              oif eth0 ip saddr 10.200.0.0/23 masquerade comment "Allow NATing IPv4 wireguard traffic"
               oif eth0 ip6 saddr fd00:cafe::/32 masquerade comment "Allow NATing IPv6 wireguard traffic"
         }
 

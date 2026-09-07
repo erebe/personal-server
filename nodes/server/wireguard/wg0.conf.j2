@@ -1,35 +1,37 @@
+# Hub of the public subnet 10.200.1.0/24 + fd00:cafe:1::/64: everything that
+# terminates outside the LAN (scw, laptop, phone) is a spoke here. The router
+# peer carries the whole LAN subnet, and the /32 peers below it are direct
+# tunnels to individual LAN nodes that would otherwise hairpin through it.
 [Interface]
-Address = 10.200.0.254/32, fd00:cafe::254/128, 2001:bc8:3d8f:cafe::1/64
+Address = 10.200.1.1/24, fd00:cafe:1::1/64, 2001:bc8:3d8f:cafe::1/64
 PrivateKey = {{ ansible_facts.SERVER_PRIVATE_KEY }}
 ListenPort = 995
 
 [Peer]
 PublicKey = {{ ansible_facts.ROUTER_PUBLIC_KEY }}
-AllowedIPs = 10.200.0.0/24, fd00:cafe::/32
+AllowedIPs = 10.200.0.0/24, fd00:cafe:0::/64
 #Endpoint = [2001:861:3886:7e00::1]:995
 
 [Peer]
 PublicKey = {{ ansible_facts.PHONE_PUBLIC_KEY }}
-AllowedIPs = 10.200.0.253/32, fd00:cafe::253/128
+AllowedIPs = 10.200.1.51/32, fd00:cafe:1::51/128
 
 [Peer]
 PublicKey = {{ ansible_facts.LAPTOP_PUBLIC_KEY }}
-AllowedIPs = 10.200.0.252/32, fd00:cafe::252/128, 2a01:4f8:c013:7b8::cafe/128
+AllowedIPs = 10.200.1.50/32, fd00:cafe:1::50/128, 2a01:4f8:c013:7b8::cafe/128
 
 # scw (scaleway). Endpoint is the scw.erebe.eu DNS name, resolved by wg-quick
-# when the interface comes up, so either side can bring the tunnel up. Its .251 / ::251 sits inside the
-# 10.200.0.240/28 + fd00:cafe::240/123 pool that the router and the k3s nodes
-# already route here, so the server relays LAN <-> scw traffic.
+# when the interface comes up, so either side can bring the tunnel up.
 [Peer]
 PublicKey = {{ ansible_facts.SCW_PUBLIC_KEY }}
-AllowedIPs = 10.200.0.251/32, fd00:cafe::251/128
+AllowedIPs = 10.200.1.2/32, fd00:cafe:1::2/128
 Endpoint = scw.erebe.eu:995
 
 # LAN nodes behind the router (192.168.1.0/24), direct tunnels instead of being
 # relayed by the router peer above. No Endpoint: they are NATed, so the server
 # learns their endpoint from the handshake and they hold it open with
 # PersistentKeepalive. The /32 + /128 win longest-prefix over the router
-# peer's /24 + /32.
+# peer's /24 + /64.
 [Peer]
 PublicKey = {{ ansible_facts.LAB_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.3/32, fd00:cafe::3/128

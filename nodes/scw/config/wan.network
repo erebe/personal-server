@@ -4,14 +4,29 @@
 Name=en*
 
 [Network]
+# DHCP=yes covers v4; the DHCPv6 client never starts because the RA carries no
+# Managed/Other flag, so the v6 address comes from SLAAC below.
 DHCP=yes
 IPv6AcceptRA=yes
-IPv6PrivacyExtensions=yes
+
+# Scaleway's gateway only accepts packets sourced from the EUI-64 address it
+# can derive from our MAC. Every other address in the announced /64 is silently
+# dropped in both directions - verified: a ping from the EUI-64 address gets
+# replies, the same ping from a random-IID address in the same /64 gets none.
+# Privacy extensions generate exactly such a random-IID temporary address and
+# then *prefer* it as the source for outgoing traffic, which is what broke IPv6
+# here (dhcpcd's `slaac private` default had the identical effect).
+IPv6PrivacyExtensions=no
+IPv6LinkLocalAddressGenerationMode=eui64
 
 [DHCPv4]
 UseDNS=yes
 UseMTU=yes
 
 [IPv6AcceptRA]
+# Pin the SLAAC interface identifier to EUI-64 instead of relying on the
+# systemd default, which prefers a stable-privacy (random) IID when the host
+# has a secret to derive one from.
+Token=eui64
 UseAutonomousPrefix=yes
 UseMTU=yes

@@ -1,5 +1,5 @@
 node-name: "scw"
-node-ip: "fd00:cafe::251,10.200.0.251"
+node-ip: "fd00:cafe:1::2,10.200.1.2"
 # k3s wants literal addresses here, so they are resolved from the
 # scw.erebe.eu A / AAAA records at render time - see the playbook vars.
 node-external-ip: "{{ scw_ipv6 }},{{ scw_ipv4 }}"

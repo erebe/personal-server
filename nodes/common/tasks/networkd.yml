@@ -1,6 +1,14 @@
 ---
 # Upload systemd-networkd config and a per-host network unit, restart if either changed.
 # Requires play vars: node_dir, network_unit
+#
+# networkd has to be the *only* thing configuring the network. Provider images
+# ship dhcpcd and cloud-init/netplan, and nothing stops all three from
+# configuring the same link at once: on scw that is how the WAN ended up with a
+# dhcpcd `slaac private` IPv6 address that the provider's gateway filters,
+# while our own unit sat unused because netplan's generated unit in
+# /run/systemd/network sorts ahead of it and networkd applies only the first
+# matching unit.
 - name: Upload networkd.conf
   ansible.builtin.copy:
     src: "{{ node_dir }}/config/networkd.conf"
@@ -19,8 +27,82 @@
     mode: '0644'
   register: networkd_unit
 
+- name: Look up which units the host actually has
+  ansible.builtin.service_facts:
+
+- name: Disable dhcpcd
+  # Deliberately not stopped: dhcpcd releases its leases on stop (`dhcpcd -x`)
+  # and it holds the same DHCPv4 address as networkd, so stopping it mid-play
+  # would tear down the address ansible is connected over. Masking it and
+  # rebooting is the safe path on a remote host.
+  ansible.builtin.systemd:
+    name: dhcpcd.service
+    enabled: false
+  when: "'dhcpcd.service' in ansible_facts.services"
+  register: dhcpcd_disabled
+
+- name: Mask dhcpcd so nothing can pull it back in
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    masked: true
+  loop:
+    - dhcpcd.service
+    - dhcpcd@.service
+  when: item in ansible_facts.services
+  register: dhcpcd_masked
+
+- name: Check for cloud-init
+  ansible.builtin.stat:
+    path: /etc/cloud/cloud.cfg.d
+  register: cloud_init_dir
+
+- name: Stop cloud-init from generating network config
+  ansible.builtin.copy:
+    dest: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+    content: |
+      # Managed by ansible: networkd owns the network on this host, so
+      # cloud-init must not regenerate /etc/netplan on the next boot.
+      network: {config: disabled}
+    owner: root
+    group: root
+    mode: '0644'
+  when: cloud_init_dir.stat.isdir | default(false)
+
+- name: Find netplan config and the units it generated
+  ansible.builtin.find:
+    paths: "{{ item.path }}"
+    patterns: "{{ item.patterns }}"
+  loop:
+    - {path: /etc/netplan, patterns: '*.yaml,*.yml'}
+    - {path: /run/systemd/network, patterns: '*netplan*'}
+  loop_control:
+    label: "{{ item.path }}"
+  register: netplan_files
+
+- name: Remove netplan config and the units it generated
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ netplan_files.results | map(attribute='files') | flatten }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: netplan_removed
+
+- name: Enable systemd-networkd
+  ansible.builtin.systemd:
+    name: systemd-networkd.service
+    enabled: true
+    state: started
+
 - name: Restart systemd-networkd
   ansible.builtin.systemd:
     name: systemd-networkd.service
     state: restarted
-  when: networkd_conf.changed or networkd_unit.changed
+  when: networkd_conf.changed or networkd_unit.changed or netplan_removed.changed
+
+- name: Reboot reminder
+  ansible.builtin.debug:
+    msg: >
+      dhcpcd is masked but still running with the leases it already took;
+      reboot the host so the link comes up under {{ network_unit }} alone.
+  when: dhcpcd_disabled.changed or dhcpcd_masked.changed

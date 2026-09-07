@@ -1,5 +1,5 @@
 [Interface]
-Address = 10.200.0.252/32, fd00:cafe::252/128
+Address = 10.200.1.50/32, fd00:cafe:1::50/128
 PrivateKey = {{ ansible_facts.LAPTOP_PRIVATE_KEY }}
 dns = 10.200.0.2
 PostUp = ip route add 192.168.0.0/16 dev $(ip route show default | awk '/default/ {print $5}') via $(ip route show default | awk '/default/ {print $3}')

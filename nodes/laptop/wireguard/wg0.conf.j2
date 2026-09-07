@@ -1,9 +1,11 @@
 [Interface]
-Address = 10.200.0.252/32, fd00:cafe::252/128
+Address = 10.200.1.50/32, fd00:cafe:1::50/128
 PrivateKey = {{ ansible_facts.LAPTOP_PRIVATE_KEY }}
 
+# Server (hetzner) is the hub for this node: the whole overlay (both /24s) is
+# reached through it.
 [Peer]
 PublicKey = {{ ansible_facts.SERVER_PUBLIC_KEY }}
-AllowedIPs = 10.200.0.0/24, fd00:cafe::/32
+AllowedIPs = 10.200.0.0/23, fd00:cafe::/32
 Endpoint = erebe.eu:995
 PersistentKeepalive = 20
