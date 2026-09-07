@@ -38,7 +38,7 @@ karakeep:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone karakeep/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/karakeep-applyset --namespace=karakeep
 
 stalwart:
-	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone stalwart/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/stalwart-applyset --namespace=default
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone stalwart/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/stalwart-applyset --namespace=default --force-conflicts
 
 warpgate:
 	kubectl apply -f app/warpgate.yml
