@@ -9,6 +9,16 @@ PublicKey = {{ ansible_facts.ROUTER_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.0/24, fd00:cafe::/32
 Endpoint = 192.168.1.1:995
 
+# Server (hetzner). Direct tunnel over WAN instead of hairpinning through the
+# router: this /28 + /123 is everything that terminates on the server (itself
+# .254, phone .253, laptop .252) and wins longest-prefix over the router
+# peer's /24 + /32 above.
+[Peer]
+PublicKey = {{ ansible_facts.SERVER_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.240/28, fd00:cafe::240/123
+Endpoint = erebe.eu:995
+PersistentKeepalive = 20
+
 # proxmox host: NFS server for the k8s PVCs, reachable directly over vmbr0.
 [Peer]
 PublicKey = {{ ansible_facts.PROXMOX_PUBLIC_KEY }}

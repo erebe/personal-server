@@ -1,0 +1,26 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: TCPRoute
+metadata:
+  name: email-smtp
+spec:
+  parentRefs:
+    - name: envoy
+      sectionName: smtp25-listener
+    - name: envoy
+      sectionName: smtp587-listener
+  rules:
+    - backendRefs:
+        - name: email
+          port: 25
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: email-smtp
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: TCPRoute
+      name: email-smtp
+  proxyProtocol:
+    version: V2

@@ -22,9 +22,6 @@ k3s *ARGS:
 toybox *ARGS:
     ansible-playbook toybox/playbook.yml {{ARGS}}
 
-mail *ARGS:
-    ansible-playbook mail/playbook.yml {{ARGS}}
-
 dns *ARGS:
     ansible-playbook dns/playbook.yml {{ARGS}}
 

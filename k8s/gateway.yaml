@@ -22,6 +22,29 @@ spec:
    - type: IPAddress
      value: 49.13.58.9
   listeners:
+    # Plain TCP (not TLS/Passthrough): Envoy Gateway only attaches the
+    # tls_inspector listener filter when it has to match on SNI or a TLS
+    # fingerprint, so this listener gets a bare tcp_proxy filter chain that
+    # never waits for client bytes. That is what makes SMTP's server-first
+    # 220 banner work here while it would deadlock behind TLS passthrough.
+    - name: smtp25-listener
+      protocol: TCP
+      port: 25
+      allowedRoutes:
+        kinds:
+          - kind: TCPRoute
+            group: gateway.networking.k8s.io
+        namespaces:
+          from: All
+    - name: smtp587-listener
+      protocol: TCP
+      port: 587
+      allowedRoutes:
+        kinds:
+          - kind: TCPRoute
+            group: gateway.networking.k8s.io
+        namespaces:
+          from: All
     - name: smtp465-listener
       protocol: TCP
       port: 465

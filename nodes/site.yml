@@ -7,7 +7,6 @@
 - import_playbook: server/playbook.yml
 - import_playbook: k3s/playbook.yml
 - import_playbook: dns/playbook.yml
-- import_playbook: mail/playbook.yml
 - import_playbook: toybox/playbook.yml
 - import_playbook: proxmox/playbook.yml
 - import_playbook: router/playbook.yml

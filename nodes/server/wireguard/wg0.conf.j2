@@ -15,3 +15,20 @@ AllowedIPs = 10.200.0.253/32, fd00:cafe::253/128
 [Peer]
 PublicKey = {{ ansible_facts.LAPTOP_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.252/32, fd00:cafe::252/128, 2a01:4f8:c013:7b8::cafe/128
+
+# LAN nodes behind the router (192.168.1.0/24), direct tunnels instead of being
+# relayed by the router peer above. No Endpoint: they are NATed, so the server
+# learns their endpoint from the handshake and they hold it open with
+# PersistentKeepalive. The /32 + /128 win longest-prefix over the router
+# peer's /24 + /32.
+[Peer]
+PublicKey = {{ ansible_facts.LAB_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.3/32, fd00:cafe::3/128
+
+[Peer]
+PublicKey = {{ ansible_facts.TOYBOX_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.4/32, fd00:cafe::4/128
+
+[Peer]
+PublicKey = {{ ansible_facts.PROXMOX_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.7/32, fd00:cafe::7/128

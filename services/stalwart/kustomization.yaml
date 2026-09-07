@@ -10,3 +10,4 @@ resources:
   - pvc.yaml
   - service.yaml
   - httproute.yaml
+  - tcproute.yaml
