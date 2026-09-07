@@ -1,6 +1,8 @@
 ---
 # Install a k3s agent and join the existing cluster master at fd00:cafe::3.
 # Requires play var: node_dir; expects {{ node_dir }}/k3s/config.yaml to exist.
+# It is rendered as a template, so a node's config may reference play vars
+# (scw uses that to pull its public IPs from DNS instead of hardcoding them).
 - name: Pin k3s version
   ansible.builtin.set_fact:
     k3s_version: "{{ k3s_version | default('v1.35.4+k3s1') }}"
@@ -14,7 +16,7 @@
     mode: '0755'
 
 - name: Upload k3s config.yaml
-  ansible.builtin.copy:
+  ansible.builtin.template:
     src: "{{ node_dir }}/k3s/config.yaml"
     dest: /etc/rancher/k3s/config.yaml
     owner: root

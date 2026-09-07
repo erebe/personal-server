@@ -1,0 +1,12 @@
+node-name: "scw"
+node-ip: "fd00:cafe::251,10.200.0.251"
+# k3s wants literal addresses here, so they are resolved from the
+# scw.erebe.eu A / AAAA records at render time - see the playbook vars.
+node-external-ip: "{{ scw_ipv6 }},{{ scw_ipv4 }}"
+
+# https://docs.k3s.io/installation/network-options#dual-stack-ipv4--ipv6-networking
+kubelet-arg: "node-ip=::"
+token: 12345
+node-label: []
+node-taint:
+  - kubernetes.io/hostname=scw:NoSchedule

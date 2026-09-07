@@ -5,6 +5,7 @@
 # Run one task:   ansible-playbook server/playbook.yml --tags wireguard
 
 - import_playbook: server/playbook.yml
+- import_playbook: scw/playbook.yml
 - import_playbook: k3s/playbook.yml
 - import_playbook: dns/playbook.yml
 - import_playbook: toybox/playbook.yml

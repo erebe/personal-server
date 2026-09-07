@@ -1,0 +1,17 @@
+# Scaleway hands out both v4 and v6 over DHCP/RA, and the NIC name is not
+# stable across instance types (ens2 / eth0), so match on any ethernet device.
+[Match]
+Name=en*
+
+[Network]
+DHCP=yes
+IPv6AcceptRA=yes
+IPv6PrivacyExtensions=yes
+
+[DHCPv4]
+UseDNS=yes
+UseMTU=yes
+
+[IPv6AcceptRA]
+UseAutonomousPrefix=yes
+UseMTU=yes

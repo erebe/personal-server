@@ -28,6 +28,9 @@ dns *ARGS:
 server *ARGS:
     ansible-playbook server/playbook.yml {{ARGS}}
 
+scw *ARGS:
+    ansible-playbook scw/playbook.yml {{ARGS}}
+
 proxmox *ARGS:
     ansible-playbook proxmox/playbook.yml {{ARGS}}
 

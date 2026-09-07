@@ -1,0 +1,38 @@
+[Interface]
+Address = 10.200.0.251/32, fd00:cafe::251/128
+ListenPort = 995
+PrivateKey = {{ ansible_facts.SCW_PRIVATE_KEY }}
+
+# Server (hetzner) is the hub for this node: scw sits outside the LAN, so the
+# whole overlay is reached through it. .251 / ::251 falls inside the
+# 10.200.0.240/28 + fd00:cafe::240/123 pool that the router and the k3s nodes
+# already route to the server, so no other peer needs a route added.
+[Peer]
+PublicKey = {{ ansible_facts.SERVER_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.0/24, fd00:cafe::/32
+Endpoint = erebe.eu:995
+PersistentKeepalive = 20
+
+# Direct tunnels to the LAN side, instead of being relayed by the server peer
+# above. No Endpoint: they sit behind the home NAT, so scw learns their
+# endpoint from the handshake and they hold it open with PersistentKeepalive.
+# The /32 + /128 win longest-prefix over the server peer's /24 + /32.
+[Peer]
+PublicKey = {{ ansible_facts.ROUTER_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.1/32, fd00:cafe::1/128
+
+[Peer]
+PublicKey = {{ ansible_facts.RASPBERRY_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.2/32, fd00:cafe::2/128
+
+[Peer]
+PublicKey = {{ ansible_facts.LAB_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.3/32, fd00:cafe::3/128
+
+[Peer]
+PublicKey = {{ ansible_facts.TOYBOX_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.4/32, fd00:cafe::4/128
+
+[Peer]
+PublicKey = {{ ansible_facts.PROXMOX_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.7/32, fd00:cafe::7/128

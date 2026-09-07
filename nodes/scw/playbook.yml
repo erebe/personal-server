@@ -1,0 +1,99 @@
+---
+- name: Configure scw node
+  hosts: scw
+  become: true
+  vars:
+    node_dir: "{{ inventory_dir }}/scw"
+    network_unit: wan.network
+    # Public addresses are never hardcoded: they come from the scw.erebe.eu
+    # A / AAAA records in dns/erebe.eu.zones, resolved on the control node.
+    # getent rather than the dig lookup, which needs dnspython.
+    scw_dns_name: scw.erebe.eu
+    scw_ipv4: "{{ lookup('pipe', 'getent ahostsv4 ' ~ scw_dns_name ~ ' || true').split() | first | default('') }}"
+    scw_ipv6: "{{ lookup('pipe', 'getent ahostsv6 ' ~ scw_dns_name ~ ' || true').split() | first | default('') }}"
+
+  tasks:
+    - name: Base packages
+      tags: [package, never]
+      ansible.builtin.import_tasks: ../common/tasks/package.yml
+
+    - name: networkd config
+      tags: [network, never]
+      ansible.builtin.import_tasks: ../common/tasks/networkd.yml
+
+    - name: Migrate from ifupdown to systemd-networkd + systemd-resolved
+      tags: [migrate-networkd, never]
+      block:
+        - name: Enable and start systemd-networkd
+          ansible.builtin.systemd:
+            name: systemd-networkd.service
+            enabled: true
+            state: started
+
+        - name: Enable and start systemd-resolved
+          ansible.builtin.systemd:
+            name: systemd-resolved.service
+            enabled: true
+            state: started
+
+        - name: Point /etc/resolv.conf at systemd-resolved stub
+          ansible.builtin.file:
+            src: /run/systemd/resolve/stub-resolv.conf
+            dest: /etc/resolv.conf
+            state: link
+            force: true
+
+        - name: Reboot reminder
+          ansible.builtin.debug:
+            msg: >
+              ifupdown disabled; networkd + resolved are running.
+              Reboot the host so eth0 comes up under networkd exclusively.
+
+    - name: Firewall (nftables)
+      tags: [firewall, never]
+      block:
+        - name: Upload nftables.rules to /etc/nftables.conf
+          ansible.builtin.copy:
+            src: "{{ node_dir }}/config/nftables.rules"
+            dest: /etc/nftables.conf
+            owner: root
+            group: root
+            mode: '0755'
+          notify: reload nftables
+
+        - name: Enable nftables service
+          ansible.builtin.systemd:
+            name: nftables.service
+            enabled: true
+            state: started
+            daemon_reload: true
+
+    - name: Wireguard
+      tags: [wireguard, never]
+      ansible.builtin.import_tasks: ../common/tasks/wireguard.yml
+
+    - name: Resolve scw public addresses from its DNS records
+      tags: [k3s-agent, never]
+      ansible.builtin.assert:
+        that:
+          - scw_ipv4 is match('^\d+\.\d+\.\d+\.\d+$')
+          - scw_ipv6 is search(':')
+        fail_msg: >-
+          Could not resolve A/AAAA for {{ scw_dns_name }} (got v4='{{ scw_ipv4 }}'
+          v6='{{ scw_ipv6 }}'). Publish the zone with `just dns` first.
+        success_msg: "{{ scw_dns_name }} -> {{ scw_ipv4 }} / {{ scw_ipv6 }}"
+
+    - name: K3s agent install
+      tags: [k3s-agent, never]
+      ansible.builtin.import_tasks: ../common/tasks/k3s-agent.yml
+
+  handlers:
+    - name: reload nftables
+      ansible.builtin.systemd:
+        name: nftables.service
+        state: reloaded
+
+    - name: restart sshd
+      ansible.builtin.systemd:
+        name: sshd.service
+        state: restarted

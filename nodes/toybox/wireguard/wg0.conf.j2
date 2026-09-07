@@ -33,3 +33,21 @@ PublicKey = {{ ansible_facts.LAB_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.3/32, fd00:cafe::3/128
 Endpoint = 192.168.1.10:51820
 PersistentKeepalive = 20
+
+# scw (scaleway). Direct tunnel over WAN instead of relaying through the
+# server. The endpoint is the scw.erebe.eu DNS name, resolved by
+# wg-quick when the interface comes up. The /32 + /128 win
+# longest-prefix over the server peer's /28 + /123 above.
+[Peer]
+PublicKey = {{ ansible_facts.SCW_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.251/32, fd00:cafe::251/128
+Endpoint = scw.erebe.eu:995
+PersistentKeepalive = 20
+
+# dns (raspberry pi), reached over 192.168.1.0/24 instead of via the router.
+# The /32 + /128 win longest-prefix over the router peer's /24 + /32 above.
+[Peer]
+PublicKey = {{ ansible_facts.RASPBERRY_PUBLIC_KEY }}
+AllowedIPs = 10.200.0.2/32, fd00:cafe::2/128
+Endpoint = 192.168.1.2:51820
+PersistentKeepalive = 20

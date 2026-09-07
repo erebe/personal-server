@@ -1,0 +1,29 @@
+#cloud-config
+
+# Do not create the distro default user (debian/ubuntu/...), so uid 1000 stays free.
+users:
+  - name: erebe
+    uid: 1000
+    primary_group: erebe
+    groups: [users, adm, sudo, systemd-journal]
+    shell: /bin/bash
+    lock_passwd: true
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    ssh_authorized_keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDRkTOUgBls/YcPTakwpTB7VrO+D7IELRfAt53eCzO/69fZO87SxQ1SMRluOcDMsSa51r4/AEchnCzTA/hX1ZH/OC0aUY+lj2+u2f1uY8pC4HAE0FB2sV2BBsM5DbF9dkbjj4AfHUbaFyfMFJicDRoJYpyYz+9lx7JkFFmivSqSDWN2zT+MjB4WNmv86cr+KY+N7bugzjuqSR5v0EytxNrF5uOY5CGjiWnynWb2WnQf1l8xVS6NsM7h5rT6+TQtej6TNQ+9PLOD4N0KBhdzNEs1UsYU+YZnKJIrUZRveS9jb5b/L8mqxnceN4ooI1aEhcaSxOsvem8St/PgNHoXpsH0UZysW4HhuaqaPbBZVRhFbYoksVx2VYyVzFIdyrWvhB16Blv7SBNXmrtBOXY5571oeMCcWtZhvxXCt5WN61lCTiQG1+vOLy9cAvUbsXvN/Y5uK0TtI2S2GHyBNHv3mzGalAumtknQFIt5okiR2REYgUb84VKbouwGB4I8kfgxKDZeK4+3gOequY14Eqh3zU6N7P/1KzaiC9hMjFLDrOxdQPAED1uupEweOaZHd3nrqh70Z+ZHVN5IvhAa5XpXUXyjlpOz9OI3EoUQ4M0weWxfp05FlNjDX4zUotlbVJasFLvaBuMczXe4REza9ScjqlE01yQ+Hx8/chnIBNJOTL4KcQ== openpgp:0xDBA17AD7"
+
+# root has no usable password and its authorized_keys gets the "disabled" banner
+disable_root: true
+ssh_pwauth: false
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/10-hardening.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      PermitRootLogin no
+      PubkeyAuthentication yes
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PermitEmptyPasswords no
+
