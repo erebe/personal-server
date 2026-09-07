@@ -15,3 +15,10 @@ configMapGenerator:
   - name: nextcloud-nginx-siteconfig
     files:
       - default.conf.sample
+  # Mounted at /config/php/zz-timezone.ini. The `zz-` target name is what makes
+  # PHP load it after the image's php-local.ini - see the file's own header.
+  - name: nextcloud-php-config
+    files:
+      - zz-timezone.ini=php-timezone.ini
+components:
+  - ../_components/toleration-toybox

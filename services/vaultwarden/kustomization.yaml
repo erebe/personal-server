@@ -10,3 +10,5 @@ resources:
   - pvc.yaml
   - service.yaml
   - httproute.yaml
+components:
+  - ../_components/toleration-toybox

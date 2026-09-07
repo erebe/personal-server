@@ -18,3 +18,5 @@ configMapGenerator:
       - deploy.sh
 generators:
   - secret-generator.yaml
+components:
+  - ../_components/toleration-toybox

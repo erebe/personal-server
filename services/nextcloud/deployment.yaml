@@ -13,10 +13,6 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
-      tolerations:
-      - key: "kubernetes.io/hostname"
-        operator: "Equal"
-        value: "toybox"
       securityContext:
         fsGroup: 65534
         fsGroupChangePolicy: "OnRootMismatch"
@@ -40,10 +36,19 @@ spec:
           mountPath: /data/cecile/files/photos
         - name: preview
           mountPath: /data/appdata_ocxf7jgp27m7/preview
+        # A single-file subPath mount nested inside the /config PVC: it adds
+        # this one file to /config/php without shadowing php-local.ini or
+        # www2.conf, which the image seeds there and expects to keep.
+        - name: php-config
+          mountPath: /config/php/zz-timezone.ini
+          subPath: zz-timezone.ini
       volumes:
       - name: nginx-siteconfig
         configMap:
           name: nextcloud-nginx-siteconfig
+      - name: php-config
+        configMap:
+          name: nextcloud-php-config
       - name: preview
         hostPath:
           path: /opt/nextcloud/preview

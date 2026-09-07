@@ -23,3 +23,5 @@ configMapGenerator:
       - NEXTAUTH_URL=http://localhost:3000
 generators:
   - secret-generator.yaml
+components:
+  - ../_components/toleration-toybox

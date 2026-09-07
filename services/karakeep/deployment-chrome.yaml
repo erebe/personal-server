@@ -22,12 +22,8 @@ spec:
         - --remote-debugging-address=0.0.0.0
         - --remote-debugging-port=9222
         - --hide-scrollbars
-        image: gcr.io/zenika-hub/alpine-chrome:124
+        image: zenika/alpine-chrome:124
         imagePullPolicy: IfNotPresent
         name: chrome
       dnsPolicy: ClusterFirst
       restartPolicy: Always
-      tolerations:
-      - key: kubernetes.io/hostname
-        operator: Equal
-        value: toybox

@@ -44,6 +44,7 @@ dns:
 
 k8s:
     kubectl apply -k k8s/cert-manager
+    kubectl apply -f k8s/coredns-custom.yaml
     kubectl apply -f k8s/lets-encrypt-issuer.yml
     kubectl apply -f k8s/wildward-erebe-eu.yaml
     kubectl delete secret cloudflare-credentials --namespace cert-manager || exit 0

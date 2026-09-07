@@ -1,0 +1,38 @@
+# k3s ships a Corefile that ends with two unconditional imports:
+#
+#   import /etc/coredns/custom/*.override   (inside the .:53 server block)
+#   import /etc/coredns/custom/*.server     (top level)
+#
+# and mounts this ConfigMap - `optional: true`, so its absence is not an error -
+# at /etc/coredns/custom. CoreDNS's import plugin logs
+#
+#   [WARNING] No files matching import glob pattern: /etc/coredns/custom/*.server
+#   [WARNING] No files matching import glob pattern: /etc/coredns/custom/*.override
+#
+# every time it loads its config, which the reload plugin does on a timer:
+# ~280 lines an hour, ~6.8k a day, and by volume the single noisiest thing in
+# kube-system.
+#
+# Giving each glob one comment-only file makes both match, so the warnings stop
+# while the resolved config stays byte-for-byte what it is today. These are also
+# the right keys to put real customisations in later: `.server` holds whole
+# server blocks (`example.com:53 { ... }`), `.override` holds directives that
+# are spliced into the existing `.:53` block.
+#
+# Not owned by the k3s addon that manages the `coredns` ConfigMap and
+# Deployment, so applying this does not fight the auto-deploy controller.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  placeholder.server: |
+    # Intentionally empty - present only so the *.server import glob matches.
+    # Add whole server blocks here, e.g.:
+    #   example.com:53 {
+    #       forward . 10.0.0.1
+    #   }
+  placeholder.override: |
+    # Intentionally empty - present only so the *.override import glob matches.
+    # Directives added here are spliced into the default .:53 server block.

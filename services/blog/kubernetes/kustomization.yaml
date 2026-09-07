@@ -9,3 +9,5 @@ resources:
   - deployment.yaml
   - service.yaml
   - httproute.yaml
+components:
+  - ../../_components/toleration-toybox

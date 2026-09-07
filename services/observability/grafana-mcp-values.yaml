@@ -28,6 +28,15 @@ grafana:
     name: ""
     key: ""
 
+# Without an org, mcp-grafana logs on *every single tool call*:
+#   No org ID found in request headers or environment variables, using default
+#   org. Set GRAFANA_ORG_ID or pass X-Grafana-Org-Id header to target a
+#   specific org.
+# This OSS install has exactly one org, the default, whose ID is 1 - so naming
+# it explicitly changes no behaviour and silences the warning.
+env:
+  GRAFANA_ORG_ID: "1"
+
 # The same secret the Grafana release uses, applied by `just observability`.
 # GRAFANA_USERNAME/GRAFANA_PASSWORD are a documented auth mode for mcp-grafana.
 envValueFrom:

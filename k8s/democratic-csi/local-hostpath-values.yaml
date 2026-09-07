@@ -48,7 +48,12 @@ storageClasses:
     # Directories have no size to grow.
     allowVolumeExpansion: false
     parameters:
-      fsType: ""
+      # A bind-mounted directory has no filesystem of its own, so this stays
+      # empty - it is only spelled out to keep external-provisioner from
+      # logging the "fstype" deprecation warning on every provision. See the
+      # note in zfs-iscsi-values.yaml; the key is immutable, so `just csi`
+      # needs the class deleted first for a change here to take.
+      csi.storage.k8s.io/fstype: ""
 
 driver:
   config:

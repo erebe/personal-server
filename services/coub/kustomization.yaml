@@ -12,3 +12,5 @@ resources:
   - httproute.yaml
 generators:
   - secret-generator.yaml
+components:
+  - ../_components/toleration-toybox

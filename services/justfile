@@ -35,7 +35,7 @@ coub:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone coub/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/coub --namespace=default
 
 karakeep:
-	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone karakeep/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/karakeep-applyset --namespace=karakeep
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone karakeep/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/karakeep-applyset --namespace=karakeep --force-conflicts
 
 stalwart:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone stalwart/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/stalwart-applyset --namespace=default --force-conflicts
@@ -53,7 +53,7 @@ adguard:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone adguard/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/adguard-applyset --namespace=default
 
 vaultwarden:
-	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone vaultwarden/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/vaultwarden-applyset --namespace=default
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone vaultwarden/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/vaultwarden-applyset --namespace=default --force-conflicts
 
 minio:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone minio/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/minio-applyset --namespace=default

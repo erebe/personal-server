@@ -56,7 +56,14 @@ storageClasses:
   volumeBindingMode: Immediate
   allowVolumeExpansion: true
   parameters:
-    fsType: ext4
+    # `fsType` is the legacy spelling. external-provisioner matches the key
+    # case-insensitively and logs, on every provision:
+    #   "fstype" is deprecated and will be removed in a future release,
+    #   please use "csi.storage.k8s.io/fstype" instead
+    # StorageClass parameters are immutable, so changing this key means the
+    # class has to be deleted and recreated (`just csi` re-creates it). Bound
+    # PVs are unaffected - each carries its own fsType in .spec.csi.fsType.
+    csi.storage.k8s.io/fstype: ext4
 
 
 node:

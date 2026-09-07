@@ -18,10 +18,6 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
-      tolerations:
-      - key: "kubernetes.io/hostname"
-        operator: "Equal"
-        value: "toybox"
       securityContext:
         fsGroup: 65534
       containers:

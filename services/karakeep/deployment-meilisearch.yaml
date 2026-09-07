@@ -28,10 +28,6 @@ spec:
         - mountPath: /meili_data
           name: meilisearch
       dnsPolicy: ClusterFirst
-      tolerations:
-      - key: kubernetes.io/hostname
-        operator: Equal
-        value: toybox
       volumes:
       - name: meilisearch
         persistentVolumeClaim:

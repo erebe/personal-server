@@ -11,3 +11,5 @@ resources:
   - service.yaml
   - httproute.yaml
   - tcproute.yaml
+components:
+  - ../_components/toleration-toybox
