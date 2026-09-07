@@ -67,17 +67,25 @@ postgres:
 # Loki + Prometheus + Grafana on scw, Alloy as a DaemonSet everywhere
 observability:
 	helm repo add grafana https://grafana.github.io/helm-charts
+	helm repo add grafana-community https://grafana-community.github.io/helm-charts
 	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-	helm repo update grafana prometheus-community
+	helm repo update grafana grafana-community prometheus-community
 	kubectl create namespace observability --dry-run=client -o yaml | kubectl apply -f -
 	sops -d secrets/grafana.yml | kubectl apply -f -
+	sops -d secrets/grafana-mcp.yml | kubectl apply -f -
 	# CRDs first, and out of band: helm does not upgrade CRDs on `helm upgrade`,
 	# and at ~4.4MB these need server-side apply. Same pattern as `just envoy`.
 	helm template kps-crds prometheus-community/prometheus-operator-crds --version 31.0.1 | kubectl apply --server-side --force-conflicts -f -
 	helm upgrade --install loki grafana/loki --version 7.3.0 --namespace observability -f observability/loki-values.yaml
 	helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack --version 90.0.0 --namespace observability -f observability/kube-prometheus-stack-values.yaml
 	helm upgrade --install alloy grafana/alloy --version 1.12.1 --namespace observability -f observability/alloy-values.yaml
+	helm upgrade --install alloy-events grafana/alloy --version 1.12.1 --namespace observability -f observability/alloy-events-values.yaml
+	helm upgrade --install grafana-mcp grafana-community/grafana-mcp --version 0.22.0 --namespace observability -f observability/grafana-mcp-values.yaml --post-renderer observability/grafana-mcp-patch/postrender.sh
 
 # Print the provisioned Grafana admin password
 observability_password:
 	sops -d --extract '["stringData"]["admin-password"]' secrets/grafana.yml
+
+# Print the bearer token callers need to reach the grafana-mcp server
+observability_mcp_token:
+	sops -d --extract '["stringData"]["server-auth-token"]' secrets/grafana-mcp.yml

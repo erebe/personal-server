@@ -25,7 +25,9 @@ kubectl -n observability port-forward svc/loki 3100:3100
 | --- | --- | --- |
 | `loki` | `grafana/loki` 7.3.0 | StatefulSet, 1 pod, 50Gi |
 | `kube-prometheus-stack` | `prometheus-community/kube-prometheus-stack` 90.0.0 | Prometheus (1, 50Gi), Grafana (1, 10Gi), operator, kube-state-metrics, node-exporter |
-| `alloy` | `grafana/alloy` 1.12.1 | DaemonSet, all nodes |
+| `alloy` | `grafana/alloy` 1.12.1 | DaemonSet, all nodes - pod logs |
+| `alloy-events` | `grafana/alloy` 1.12.1 | Deployment, 1 pod - Kubernetes events |
+| `grafana-mcp` | `grafana-community/grafana-mcp` 0.22.0 | MCP server over Grafana, ClusterIP only |
 
 Plus the operator CRDs from `prometheus-community/prometheus-operator-crds`
 31.0.1, applied separately - see below.
@@ -40,6 +42,84 @@ with a `nodeSelector` plus a toleration for its
 `kubernetes.io/hostname=scw:NoSchedule` taint. Grafana uses
 `strategy: Recreate` because sqlite on a ReadWriteOnce volume tolerates exactly
 one writer.
+
+### grafana-mcp
+
+An MCP server exposing Grafana as tools an LLM client can call - dashboards,
+Prometheus and Loki queries, alert rules. Reachable across the WireGuard mesh at
+scw's own internal addresses, no port-forward:
+
+```
+cd services
+claude mcp add --transport sse grafana http://10.200.1.2:8000/sse \
+  -H "Authorization: Bearer $(sops -d --extract '["stringData"]["server-auth-token"]' secrets/grafana-mcp.yml)"
+```
+
+Callers must present that bearer token - `MCP_GRAFANA_SERVER_TOKEN`, from
+`services/secrets/grafana-mcp.yml` (sops), applied by `just observability`.
+Without it the server answers 401. It is separate from the Grafana credentials
+the server itself uses. `just observability_mcp_token` prints it.
+
+`--allowed-hosts` is **not optional**. Unset, it defaults to the loopback
+variants of `--address` - `localhost:8000`, `127.0.0.1:8000`, `[::1]:8000`, see
+`DefaultAllowedHosts` in `http_security.go` - so a client connecting to
+`http://10.200.1.2:8000` sends `Host: 10.200.1.2:8000`, matches nothing, and is
+rejected with **403**. It is DNS-rebinding protection, and the mesh addresses
+plus the in-cluster Service names have to be listed explicitly.
+
+That works through `service.externalIPs`, set to scw's Kubernetes InternalIPs -
+which are its wireguard addresses, per `node-ip` in `nodes/scw/k3s/config.yaml`.
+Cilium's kube-proxy replacement programs a service frontend for each, so a
+connection from anywhere on the mesh is load-balanced straight to the pod.
+
+Cilium picks up `wg0` without any extra configuration. Its documentation:
+
+> by default, a NodePort or LoadBalancer service or a service with externalIPs
+> will be accessible through the IP addresses of native devices which have the
+> default route on the host **or have Kubernetes InternalIP or ExternalIP
+> assigned**
+
+`wg0` carries the InternalIP, so it is auto-detected - the commented-out
+`devices: "eth0,wg0"` in `nodes/k3s/k3s/cilium.yaml` is not needed for this.
+externalIPs support is on by default with `kubeProxyReplacement: true`; there is
+no longer any `externalIPs.enabled` gate in Cilium 1.19.
+
+`ipFamilyPolicy: PreferDualStack` is patched in by `grafana-mcp-patch/` as a
+helm `--post-renderer`, because the chart exposes no value for it. Without it the
+Service would be IPv6 single-stack - this cluster's `service-cidr` is
+`fd02::/112,10.43.0.0/16`, IPv6 first - and its EndpointSlice would carry only
+IPv6 backends, leaving the IPv4 externalIP with a frontend and nothing behind it.
+`10.200.1.2:8000` would simply not answer.
+
+The Service is a plain `ClusterIP`. `externalIPs` is not tied to the service
+type and does all the work on its own, so `LoadBalancer` would only have added a
+NodePort allocation - reachable on every node's IP at a port in the 30000-32767
+range - and an `EXTERNAL-IP` stuck at `<pending>`, because nothing here assigns
+LoadBalancer addresses: no cloud provider, and Cilium's LB IPAM
+(`CiliumLoadBalancerIPPool`) is not configured. Nor could it announce over a
+wireguard mesh, which has no L2 broadcast domain for `l2announcements` to use.
+
+Security posture, in three layers. It authenticates to Grafana as `admin` and
+the `api` tool category proxies arbitrary Grafana API calls, so the blast radius
+of reaching it is large - hence:
+
+1. **Caller authentication.** `MCP_GRAFANA_SERVER_TOKEN` makes every request
+   without a matching `Authorization: Bearer` return 401.
+2. **The node firewall.** `nodes/scw/config/nftables.rules` is `policy drop` and
+   accepts port 8000 only from `wg0`, so it is not reachable from the internet
+   at all. This is now defence in depth rather than the only control.
+3. **Read-only.** `disableWrite: true` unregisters the create/update tools;
+   queries and discovery are unaffected.
+
+Auth is basic auth against the same `grafana-admin` sops secret the Grafana
+release uses (`GRAFANA_USERNAME`/`GRAFANA_PASSWORD`, a documented mode
+upstream). The alternative, `grafana.apiKeySecret`, needs a service account
+token minted by hand through the Grafana UI or API - Grafana has no way to
+provision one declaratively - so it would add a manual step for no gain.
+
+`disabledCategories` drops `oncall`, `incident`, `sift`, `asserts` and
+`pyroscope` - Grafana Cloud and Enterprise features that do not exist in this
+install, so leaving them registered only offers tools that always error.
 
 ### Why the operator, and why the CRDs are applied by hand
 
@@ -91,6 +171,34 @@ coverage, not HA: no clustering, no leader election, no replication.
 
 `node-exporter` is a DaemonSet for the same reason. `kube-state-metrics` is a
 single instance next to Prometheus.
+
+### Why Kubernetes events are a second Alloy release
+
+`alloy-events` is a one-replica Deployment running
+`loki.source.kubernetes_events`, and it is separate from the DaemonSet for the
+mirror-image reason. Events are cluster-scoped API objects, not node-local
+files, so a DaemonSet would watch the same stream from every node and push a
+copy of every event per node. Upstream is explicit that the component is not
+safe deployed that way - its `clustering` block only *minimises* duplicates,
+warning that "when a namespace moves from one cluster node to another the new
+node may re-deliver events that were already sent by the previous node".
+
+One replica avoids the problem entirely. Nothing needs to be highly available:
+if the pod is down, events in that window go uncollected, the same trade already
+made for metrics and logs.
+
+The component attaches `namespace`, `job` and `instance` labels itself, so no
+processing stage is needed - query them straight away:
+
+```
+{job="kubernetes-events"}
+{job="kubernetes-events", namespace="observability"}
+```
+
+Kind, name, reason and message stay in the logfmt line rather than becoming
+labels; they are high-cardinality and would multiply Loki streams. RBAC comes
+free - the chart's default ClusterRole already grants `get/list/watch` on
+events.
 
 ### Where the volumes live
 

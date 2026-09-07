@@ -1,0 +1,77 @@
+# Alloy, second release: Kubernetes Events -> Loki.
+#
+# Separate from the log-shipping DaemonSet on purpose. Events are cluster-scoped
+# API objects, not node-local files, so a DaemonSet would watch the same stream
+# from every node and push N copies of every event. Upstream is explicit that
+# loki.source.kubernetes_events is not safe to run that way - its `clustering`
+# block only *minimises* duplicates, warning that "when a namespace moves from
+# one cluster node to another the new node may re-deliver events that were
+# already sent by the previous node".
+#
+# One replica sidesteps all of that. There is nothing to make highly available
+# here: if this pod is down, events for that window are simply not collected,
+# which is the same trade already made for metrics and logs.
+controller:
+  type: deployment
+  replicas: 1
+  nodeSelector:
+    kubernetes.io/hostname: scw
+  tolerations:
+    - key: kubernetes.io/hostname
+      operator: Equal
+      value: scw
+      effect: NoSchedule
+
+# The operator's CRDs exist, so this can be scraped properly.
+serviceMonitor:
+  enabled: true
+
+alloy:
+  # Nothing to shard: one replica watching one cluster-wide event stream.
+  clustering:
+    enabled: false
+
+  enableReporting: false
+
+  # This one reads the Kubernetes API, not the host filesystem - no /var/log
+  # mount and no need to run as root, unlike the log-shipping DaemonSet.
+  mounts:
+    varlog: false
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+  configMap:
+    content: |-
+      logging {
+        level  = "warn"
+        format = "logfmt"
+      }
+
+      // Watches Event objects through the API server. `namespaces` left unset
+      // means every namespace. In-cluster auth is automatic, and the chart's
+      // default ClusterRole already grants get/list/watch on events.
+      //
+      // No loki.process stage: the component already attaches `namespace` (of
+      // the involved object), `job` (from job_name below) and `instance`
+      // labels itself, so events are queryable as
+      //   {job="kubernetes-events", namespace="observability"}
+      // straight away. Everything else - kind, name, reason, message - stays in
+      // the logfmt line, which is where it belongs: those are high-cardinality
+      // and would multiply Loki streams if promoted to labels.
+      loki.source.kubernetes_events "cluster" {
+        job_name   = "kubernetes-events"
+        log_format = "logfmt"
+
+        forward_to = [loki.write.default.receiver]
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+        }
+      }

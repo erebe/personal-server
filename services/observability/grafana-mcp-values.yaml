@@ -1,0 +1,121 @@
+# grafana-mcp - an MCP server exposing Grafana (dashboards, Prometheus and Loki
+# queries, alert rules) as tools an LLM client can call.
+#
+# Reachable across the WireGuard mesh at the scw node's own internal addresses,
+# with no port-forward:
+#
+#   claude mcp add --transport sse grafana http://10.200.1.2:8000/sse
+#
+# Callers must present a bearer token (MCP_GRAFANA_SERVER_TOKEN below), so the
+# node firewall is defence in depth rather than the only thing standing between
+# an admin-capable Grafana proxy and whoever can route to it.
+#
+# Chart comes from grafana-community, not grafana: the chart in grafana's own
+# repo is flagged `deprecated: true` and is stuck on app 0.8.2.
+
+replicas: 1
+
+grafana:
+  # The stack's Grafana Service listens on :80.
+  url: "http://kube-prometheus-stack-grafana.observability.svc.cluster.local:80"
+  # Deliberately left empty. Setting either of these makes the chart inject
+  # GRAFANA_SERVICE_ACCOUNT_TOKEN, and a service account token has to be minted
+  # by hand through the Grafana UI or API - there is no way to provision one
+  # declaratively. Basic auth against the credentials we already manage in sops
+  # is equivalent here and needs no manual step.
+  apiKey: ""
+  apiKeySecret:
+    name: ""
+    key: ""
+
+# The same secret the Grafana release uses, applied by `just observability`.
+# GRAFANA_USERNAME/GRAFANA_PASSWORD are a documented auth mode for mcp-grafana.
+envValueFrom:
+  # Authenticates *callers to this MCP server* - distinct from the Grafana
+  # credentials below. With it set, a request without
+  # `Authorization: Bearer <token>` is rejected with 401.
+  MCP_GRAFANA_SERVER_TOKEN:
+    secretKeyRef:
+      name: grafana-mcp
+      key: server-auth-token
+
+  GRAFANA_USERNAME:
+    secretKeyRef:
+      name: grafana-admin
+      key: admin-user
+  GRAFANA_PASSWORD:
+    secretKeyRef:
+      name: grafana-admin
+      key: admin-password
+
+# Host-header allowlist for the SSE listener - DNS-rebinding protection.
+#
+# This is not optional here. Left unset it defaults to the loopback variants of
+# --address (localhost:8000, 127.0.0.1:8000, [::1]:8000 - see
+# DefaultAllowedHosts in http_security.go), so a client connecting to
+# http://10.200.1.2:8000 sends `Host: 10.200.1.2:8000`, matches nothing, and is
+# rejected with 403. The mesh addresses and the in-cluster Service names have to
+# be listed explicitly.
+extraArgs:
+  - "--allowed-hosts"
+  - "10.200.1.2:8000,[fd00:cafe:1::2]:8000,grafana-mcp:8000,grafana-mcp.observability:8000,grafana-mcp.observability.svc.cluster.local:8000"
+
+# Read-only. The server authenticates as Grafana **admin**, so leaving write
+# tools registered would let anything that reaches this port create, modify or
+# delete dashboards, folders and alert rules. Querying metrics, logs and
+# dashboards - the reason to run this at all - is unaffected. Set to false if you
+# actually want an LLM writing to Grafana.
+disableWrite: true
+
+# Grafana Cloud / Enterprise features that do not exist in this OSS install.
+# Leaving them on just gives the model tools that always error.
+disabledCategories:
+  - oncall
+  - incident
+  - sift
+  - asserts
+  - pyroscope
+
+service:
+  enabled: true
+  # ClusterIP, not LoadBalancer. All the reachability below comes from
+  # externalIPs; LoadBalancer would add nothing but a NodePort allocation and an
+  # EXTERNAL-IP that stays <pending> forever, since nothing in this cluster
+  # assigns LoadBalancer addresses - no cloud provider, and Cilium's LB IPAM is
+  # not configured (nor could it announce over a wireguard mesh, which has no L2
+  # broadcast domain).
+  type: ClusterIP
+  # Matches the image's ENTRYPOINT, which is fixed at
+  # `--transport sse --address 0.0.0.0:8000`.
+  port: 8000
+
+  # scw's Kubernetes InternalIPs, which are its addresses on the wireguard mesh
+  # (nodes/scw/k3s/config.yaml sets node-ip to exactly these). Cilium programs a
+  # service frontend for each, so a connection from anywhere on the mesh to
+  # 10.200.1.2:8000 is load-balanced straight to the pod.
+  externalIPs:
+    - "10.200.1.2"
+    - "fd00:cafe:1::2"
+
+# No Ingress and no Gateway API route - reachability is the externalIPs above,
+# scoped to the VPN by the node firewall.
+ingress:
+  enabled: false
+route:
+  main:
+    enabled: false
+
+nodeSelector:
+  kubernetes.io/hostname: scw
+tolerations:
+  - key: kubernetes.io/hostname
+    operator: Equal
+    value: scw
+    effect: NoSchedule
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 256Mi

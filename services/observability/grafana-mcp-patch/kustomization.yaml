@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# `all.yaml` is written by postrender.sh from helm's rendered output.
+resources:
+  - all.yaml
+patches:
+  # This cluster's service-cidr is "fd02::/112,10.43.0.0/16" - IPv6 first - so a
+  # Service that says nothing gets IPv6 single-stack, and its EndpointSlice
+  # carries only IPv6 backends. The IPv4 externalIP would then have a frontend
+  # with nothing behind it: 10.200.1.2:8000 would simply not answer.
+  #
+  # PreferDualStack gives the Service both families, so both externalIPs resolve
+  # to real backends. The chart exposes no ipFamilyPolicy value, so it has to be
+  # patched in here.
+  - target:
+      kind: Service
+      name: grafana-mcp
+    patch: |-
+      - op: add
+        path: /spec/ipFamilyPolicy
+        value: PreferDualStack
