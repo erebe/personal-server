@@ -1,0 +1,20 @@
+# Full-tunnel profile: everything leaves through the server, which is also the
+# hub of the public subnet this address belongs to. Alternative to wg0.conf,
+# where styx is a LAN spoke behind the router on 10.200.0.50 - the two are not
+# meant to be up at the same time.
+[Interface]
+Address = 10.200.1.52/32, fd00:cafe:1::52/128
+PrivateKey = {{ ansible_facts.STYX_PRIVATE_KEY }}
+# Derived in group_vars/all.yml from the 1500-byte IPv4 transport.
+MTU = {{ wg_mtu }}
+DNS = 10.200.0.2
+# Keep the local LAN reachable: the default route below would otherwise swallow
+# it. Pins 192.168.0.0/16 to the physical gateway before the tunnel takes over.
+PostUp = ip route add 192.168.0.0/16 dev $(ip route show default | awk '/default/ {print $5}') via $(ip route show default | awk '/default/ {print $3}')
+PostDown = ip route del 192.168.0.0/16 dev $(ip route show default | awk '/default/ {print $5}') via $(ip route show default | awk '/default/ {print $3}')
+
+[Peer]
+PublicKey = {{ ansible_facts.SERVER_PUBLIC_KEY }}
+AllowedIPs = 0.0.0.0/0, ::/0
+Endpoint = {{ server_ipv4 }}:995
+PersistentKeepalive = 20

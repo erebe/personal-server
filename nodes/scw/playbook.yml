@@ -5,12 +5,9 @@
   vars:
     node_dir: "{{ inventory_dir }}/scw"
     network_unit: wan.network
-    # Public addresses are never hardcoded: they come from the scw.erebe.eu
-    # A / AAAA records in dns/erebe.eu.zones, resolved on the control node.
-    # getent rather than the dig lookup, which needs dnspython.
-    scw_dns_name: scw.erebe.eu
-    scw_ipv4: "{{ lookup('pipe', 'getent ahostsv4 ' ~ scw_dns_name ~ ' || true').split() | first | default('') }}"
-    scw_ipv6: "{{ lookup('pipe', 'getent ahostsv6 ' ~ scw_dns_name ~ ' || true').split() | first | default('') }}"
+    # scw_dns_name / scw_ipv4 / scw_ipv6 come from group_vars/all.yml: public
+    # addresses are never hardcoded, they are resolved from the scw.erebe.eu
+    # A / AAAA records on the control node.
 
   tasks:
     - name: Base packages

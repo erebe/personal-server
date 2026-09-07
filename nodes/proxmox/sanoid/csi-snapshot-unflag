@@ -1,0 +1,29 @@
+#!/bin/sh
+# sanoid post_snapshot_script for the democratic-csi datasets.
+#
+# democratic-csi sets democratic-csi:managed_resource=true on every zvol it
+# provisions, and ZFS snapshots inherit their dataset's user properties. So a
+# plain sanoid snapshot of nvme/k8s-test/pvc-* comes out looking exactly like a
+# CSI-managed snapshot, and DeleteVolume then refuses the whole volume with
+#     rpc error: code = FailedPrecondition desc = filesystem has dependent snapshots
+# leaving the PVC stuck in Terminating forever.
+#
+# Clearing the property on the snapshots sanoid just took keeps both halves
+# working: the snapshots (and syncoid's replication of them) stay, and the
+# driver can still delete the volume. Real CSI snapshots are unaffected - the
+# driver sets the property *locally* on those, so they keep the flag and stay
+# protected.
+set -u
+
+for target in ${SANOID_TARGETS:-}; do
+    case "${target}" in
+        nvme/k8s-test/*) ;;
+        *) continue ;;
+    esac
+    for snap in ${SANOID_SNAPNAMES:-}; do
+        # Best effort: a snapshot may already be gone by the time we get here.
+        zfs set democratic-csi:managed_resource=false "${target}@${snap}" 2>/dev/null || true
+    done
+done
+
+exit 0

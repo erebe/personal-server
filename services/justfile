@@ -60,3 +60,24 @@ minio:
 
 postgres:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone postgres/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/postgres-applyset --namespace=postgres
+
+# Chart versions are pinned on purpose, so that a `just observability` months
+# from now deploys what it deploys today. Bump them deliberately.
+
+# Loki + Prometheus + Grafana on scw, Alloy as a DaemonSet everywhere
+observability:
+	helm repo add grafana https://grafana.github.io/helm-charts
+	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+	helm repo update grafana prometheus-community
+	kubectl create namespace observability --dry-run=client -o yaml | kubectl apply -f -
+	sops -d secrets/grafana.yml | kubectl apply -f -
+	# CRDs first, and out of band: helm does not upgrade CRDs on `helm upgrade`,
+	# and at ~4.4MB these need server-side apply. Same pattern as `just envoy`.
+	helm template kps-crds prometheus-community/prometheus-operator-crds --version 31.0.1 | kubectl apply --server-side --force-conflicts -f -
+	helm upgrade --install loki grafana/loki --version 7.3.0 --namespace observability -f observability/loki-values.yaml
+	helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack --version 90.0.0 --namespace observability -f observability/kube-prometheus-stack-values.yaml
+	helm upgrade --install alloy grafana/alloy --version 1.12.1 --namespace observability -f observability/alloy-values.yaml
+
+# Print the provisioned Grafana admin password
+observability_password:
+	sops -d --extract '["stringData"]["admin-password"]' secrets/grafana.yml

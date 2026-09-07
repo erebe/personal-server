@@ -1,0 +1,148 @@
+# Loki - single binary, single replica, local filesystem on a zfs-nvme PVC.
+#
+# SingleBinary is the only mode that does not require object storage, and it is
+# the right one here: SimpleScalable and Distributed both hard-require S3.
+# Everything the chart would normally spin up for HA (read/write/backend
+# targets, memcached tiers, the nginx gateway, the canary) is switched off, so
+# the whole of Loki is one pod.
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false
+
+  # Chart 7.3.0 declares appVersion 3.6.12, but its own `loki.image.tag` default
+  # is still 3.6.11 - so the chart ships one patch behind the version it says it
+  # was built for. Pin the tag the appVersion names. (Loki upstream is at 3.7.7;
+  # not jumping there, because this chart templates the Loki config and has not
+  # been updated for 3.7.)
+  image:
+    tag: "3.6.12"
+
+  commonConfig:
+    # One ingester means one copy. Leaving this at the chart default of 3 makes
+    # every write block waiting for a quorum that can never form.
+    replication_factor: 1
+
+  storage:
+    type: filesystem
+
+  # A real install needs an explicit schema. Never edit an entry in place once
+  # data has been written under it - add a new one with a future `from` date.
+  schemaConfig:
+    configs:
+      - from: "2026-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+
+  limits_config:
+    retention_period: 720h # 30d, enforced by the compactor below
+    reject_old_samples: true
+    reject_old_samples_max_age: 168h
+    max_cache_freshness_per_query: 10m
+    split_queries_by_interval: 15m
+    query_timeout: 300s
+    ingestion_rate_mb: 16
+    ingestion_burst_size_mb: 32
+    # Grafana's log-volume histogram and Explore's label browser both hit
+    # /loki/api/v1/index/volume, which is gated behind this.
+    volume_enabled: true
+    allow_structured_metadata: true
+
+  compactor:
+    working_directory: /var/loki/compactor
+    compaction_interval: 10m
+    # Retention is a no-op unless the compactor enforces it, and the compactor
+    # will not run deletes without somewhere to journal the delete requests.
+    retention_enabled: true
+    delete_request_store: filesystem
+
+  analytics:
+    reporting_enabled: false
+
+singleBinary:
+  replicas: 1
+  # The chart's default is a hard pod anti-affinity across hostnames. With one
+  # replica pinned to one node it buys nothing and only risks blocking a
+  # rollout, so drop it - placement is the nodeSelector below. It has to be
+  # `null` and not `{}`: Helm merges maps, so an empty map leaves the chart's
+  # own keys in place.
+  affinity: null
+  nodeSelector:
+    kubernetes.io/hostname: scw
+  tolerations:
+    - key: kubernetes.io/hostname
+      operator: Equal
+      value: scw
+      effect: NoSchedule
+  persistence:
+    enabled: true
+    # scw's own NVMe RAID1 - see the note in prometheus-values.yaml. Chunk
+    # flushes and the WAL stay on the node.
+    storageClass: local-hostpath-scw
+    size: 50Gi
+    # Keep the volume if the StatefulSet is ever scaled down or deleted;
+    # the chart otherwise garbage-collects the PVC along with it.
+    enableStatefulSetAutoDeletePVC: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 2Gi
+
+# Now that the operator's CRDs exist, Loki can be scraped by a ServiceMonitor
+# and can contribute its own dashboards and recording rules. selfMonitoring is
+# a different thing - it deploys a whole extra agent - and stays off.
+monitoring:
+  serviceMonitor:
+    enabled: true
+  dashboards:
+    enabled: true
+  # Some of those dashboards need these to have anything to plot.
+  rules:
+    enabled: true
+  selfMonitoring:
+    enabled: false
+
+# --- everything below is HA machinery we do not want ---
+
+# nginx in front of the read/write split. With a single binary there is nothing
+# to split, so clients talk to the `loki` service directly.
+gateway:
+  enabled: false
+
+# SimpleScalable targets - must be 0 in SingleBinary mode.
+write:
+  replicas: 0
+read:
+  replicas: 0
+backend:
+  replicas: 0
+
+# memcached tiers. Loki keeps an in-process embedded cache without them.
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+# Synthetic log producer used to alert on Loki's own liveness, and the chart's
+# helm-test pod.
+lokiCanary:
+  enabled: false
+test:
+  enabled: false
+
+# Bundled object storage - not used, we are on the filesystem.
+minio:
+  enabled: false
+
+# The chart otherwise runs a kiwigrid/k8s-sidecar next to Loki that watches the
+# cluster for rule ConfigMaps. We define no alerting rules, so it is a second
+# container doing nothing.
+sidecar:
+  rules:
+    enabled: false

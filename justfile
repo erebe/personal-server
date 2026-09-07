@@ -70,3 +70,6 @@ csi:
     helm upgrade --install zfs-iscsi democratic-csi/democratic-csi \
         --namespace democratic-csi \
         --values k8s/democratic-csi/zfs-iscsi-values.yaml --create-namespace
+    helm upgrade --install local-hostpath democratic-csi/democratic-csi \
+        --namespace democratic-csi \
+        --values k8s/democratic-csi/local-hostpath-values.yaml --create-namespace

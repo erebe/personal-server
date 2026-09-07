@@ -1,0 +1,48 @@
+---
+# Public addresses of the two WireGuard hubs.
+#
+# These are resolved on the control node and baked into the rendered wg0.conf
+# as literals, rather than leaving the DNS name in the Endpoint for wg-quick to
+# resolve. wg-quick only resolves an Endpoint once, when the interface comes
+# up, so a node booting before DNS is reachable would fail to establish the
+# tunnel - and on the nodes that carry the DNS server itself that is a
+# chicken-and-egg. A literal address removes the dependency entirely; the cost
+# is that the playbook has to be re-run when a hub changes IP.
+#
+# getent rather than the community.general.dig lookup, which needs dnspython.
+# Lazily evaluated: the lookup only runs when something actually references it.
+server_dns_name: erebe.eu
+scw_dns_name: scw.erebe.eu
+
+server_ipv4: >-
+  {{ lookup('pipe', 'getent ahostsv4 ' ~ server_dns_name ~ ' || true').split() | first
+     | mandatory(msg='Could not resolve an A record for ' ~ server_dns_name ~ '. Publish the zone with `just dns` first, or check the resolver on the control node.') }}
+scw_ipv4: >-
+  {{ lookup('pipe', 'getent ahostsv4 ' ~ scw_dns_name ~ ' || true').split() | first
+     | mandatory(msg='Could not resolve an A record for ' ~ scw_dns_name ~ '. Publish the zone with `just dns` first, or check the resolver on the control node.') }}
+scw_ipv6: >-
+  {{ lookup('pipe', 'getent ahostsv6 ' ~ scw_dns_name ~ ' || true').split() | first
+     | mandatory(msg='Could not resolve an AAAA record for ' ~ scw_dns_name ~ '. Publish the zone with `just dns` first, or check the resolver on the control node.') }}
+
+# WireGuard tunnel MTU.
+#
+# The transport is IPv4 over a 1500-byte path (verified with DF-bit probes on
+# both measurable legs: LAN -> erebe.eu and scw -> erebe.eu). Per-packet
+# encapsulation on the wire is:
+#
+#   20  outer IPv4 header (no options)
+#    8  UDP header
+#   16  WireGuard data message header (type+reserved 4, receiver index 4,
+#       counter 8)
+#   16  Poly1305 authentication tag
+#   --
+#   60  bytes
+#
+# 1500 - 60 = 1440. It also happens to be a multiple of 16, and WireGuard pads
+# the plaintext to a 16-byte boundary before sealing, so a full-size packet
+# needs zero padding and lands at exactly 1500 on the wire.
+#
+# This replaces wg-quick's default, which is (link MTU - 80): it always budgets
+# for a 40-byte IPv6 outer header, giving 1420 and wasting 20 bytes per packet
+# on an IPv4 transport.
+wg_mtu: 1440

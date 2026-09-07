@@ -1,5 +1,7 @@
 [Interface]
 PrivateKey = {{ ansible_facts.LAPTOP_PRIVATE_KEY }}
+# Derived in group_vars/all.yml from the 1500-byte IPv4 transport.
+MTU = {{ wg_mtu }}
 Address = 2a01:4f8:c013:7b8::cafe
 Table = off
 PostUp = ip -6 rule add from 2a01:4f8:c013:7b8::/64 table 51820; ip -6 route add 2a01:4f8:c013:7b8::1 dev %i table 51820; ip -6 route add default via 2a01:4f8:c013:7b8::1 dev %i table 51820
@@ -11,7 +13,7 @@ PublicKey = {{ ansible_facts.SERVER_PUBLIC_KEY }}
 
 ## set ACL ##
 AllowedIPs = ::/0
-Endpoint = erebe.eu:995
+Endpoint = {{ server_ipv4 }}:995
 
 PersistentKeepalive = 20
 

@@ -2,6 +2,8 @@
 Address = 10.200.0.7/32, fd00:cafe::7/128
 ListenPort = 51820
 PrivateKey = {{ ansible_facts.PROXMOX_PRIVATE_KEY }}
+# Derived in group_vars/all.yml from the 1500-byte IPv4 transport.
+MTU = {{ wg_mtu }}
 
 # Router is the hub: the whole overlay (both /24s) routes here by default, and
 # every more specific peer below carves a direct path out of it.
@@ -16,7 +18,7 @@ Endpoint = 192.168.1.1:995
 [Peer]
 PublicKey = {{ ansible_facts.SERVER_PUBLIC_KEY }}
 AllowedIPs = 10.200.1.0/24, fd00:cafe:1::/64
-Endpoint = erebe.eu:995
+Endpoint = {{ server_ipv4 }}:995
 PersistentKeepalive = 20
 
 # k3s VM, on this host: reach it over vmbr0 instead of via the router.
@@ -34,13 +36,13 @@ Endpoint = 192.168.1.11:51820
 PersistentKeepalive = 20
 
 # scw (scaleway). Direct tunnel over WAN instead of relaying through the
-# server. The endpoint is the scw.erebe.eu DNS name, resolved by wg-quick when
-# the interface comes up. The /32 + /128 win longest-prefix over the server
+# server. scw.erebe.eu is resolved to a literal by ansible at render time, so
+# bringing this tunnel up never waits on DNS. The /32 + /128 win over the server
 # peer's /24 + /64 above.
 [Peer]
 PublicKey = {{ ansible_facts.SCW_PUBLIC_KEY }}
 AllowedIPs = 10.200.1.2/32, fd00:cafe:1::2/128
-Endpoint = scw.erebe.eu:995
+Endpoint = {{ scw_ipv4 }}:995
 PersistentKeepalive = 20
 
 # dns (raspberry pi), reached over 192.168.1.0/24 instead of via the router.

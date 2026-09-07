@@ -1,0 +1,136 @@
+# Alloy - the log shipper (promtail's replacement).
+#
+# This is the one component that is NOT a single instance, and it cannot be: it
+# tails container log files off each node's own filesystem, so a single pod
+# would only ever see the logs of the pods sharing its node. A DaemonSet is one
+# pod per node by design - that is coverage, not high availability, and there is
+# no leader election or replication involved.
+controller:
+  type: daemonset
+  # Every node, whatever it is tainted with - including scw. Without this the
+  # tainted nodes silently ship no logs.
+  tolerations:
+    - operator: Exists
+
+# Alloy exposes its own metrics on :12345. With the operator's CRDs in place
+# that is a ServiceMonitor rather than a scrape annotation.
+serviceMonitor:
+  enabled: true
+
+alloy:
+  # Clustering exists to shard scrape targets between Alloy peers. Each pod here
+  # only ever reads its own node's files, so there is nothing to shard.
+  clustering:
+    enabled: false
+
+  enableReporting: false
+
+  mounts:
+    # /var/log/pods/... - where the containerd CRI writes container logs.
+    varlog: true
+
+  # Those log files are root-owned with no world read bit.
+  securityContext:
+    runAsUser: 0
+
+  extraEnv:
+    # HOSTNAME inside the pod is the *pod* name, so the node name has to come
+    # from the downward API for the discovery field selector to match anything.
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+  configMap:
+    content: |-
+      logging {
+        level  = "warn"
+        format = "logfmt"
+      }
+
+      // Only the pods scheduled on this node. Discovering the whole cluster
+      // would hand every DaemonSet pod the same target list, and each would
+      // then look for log files that live on some other machine.
+      discovery.kubernetes "pods" {
+        role = "pod"
+
+        selectors {
+          role  = "pod"
+          field = "spec.nodeName=" + sys.env("NODE_NAME")
+        }
+      }
+
+      discovery.relabel "pod_logs" {
+        targets = discovery.kubernetes.pods.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          target_label  = "node"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_container_name"]
+          separator     = "/"
+          target_label  = "job"
+        }
+
+        // Log files live at
+        //   /var/log/pods/<namespace>_<pod>_<uid>/<container>/<n>.log
+        // The concatenated source labels give "<uid>/<container>", and the
+        // leading glob stands in for the namespace_pod_ prefix so we do not
+        // have to reconstruct it.
+        rule {
+          source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+          separator     = "/"
+          action        = "replace"
+          replacement   = "/var/log/pods/*$1/*.log"
+          target_label  = "__path__"
+        }
+      }
+
+      local.file_match "pod_logs" {
+        path_targets = discovery.relabel.pod_logs.output
+      }
+
+      loki.source.file "pod_logs" {
+        targets    = local.file_match.pod_logs.targets
+        forward_to = [loki.process.pod_logs.receiver]
+      }
+
+      loki.process "pod_logs" {
+        // containerd writes CRI-format lines:
+        //   <timestamp> <stream> <F|P> <message>
+        // This lifts the real timestamp, splits out stdout/stderr and
+        // reassembles partial lines, leaving only the message as the log body.
+        stage.cri {}
+
+        forward_to = [loki.write.default.receiver]
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+        }
+      }

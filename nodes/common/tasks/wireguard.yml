@@ -2,6 +2,13 @@
 # Bring up wireguard tunnels from a sops-encrypted secrets bundle.
 # Renders every wg*.conf.j2 found in {{ node_dir }}/wireguard/ and enables wg-quick@<name>.
 # Requires play var: node_dir
+# Optional play var: wg_autostart - the subset of interfaces to enable and start.
+# Defaults to all of them, which is what every always-on node wants. styx sets
+# it because it carries one full-tunnel profile per exit node and chooses
+# between them locally with systemctl: starting them all would put two
+# interfaces holding the same address in a fight over the default route.
+# Interfaces left out are still rendered, just not touched - so a local
+# `systemctl enable --now wg-quick@wgall-scw` survives the next playbook run.
 - name: Discover wireguard interfaces
   ansible.builtin.set_fact:
     wg_interfaces: "{{ query('fileglob', node_dir + '/wireguard/wg*.conf.j2') | map('basename') | map('regex_replace', '\\.conf\\.j2$', '') | list }}"
@@ -22,18 +29,22 @@
   loop: "{{ wg_interfaces }}"
   register: wg_render
 
+- name: Decide which interfaces this node brings up
+  ansible.builtin.set_fact:
+    wg_started: "{{ wg_autostart | default(wg_interfaces) }}"
+
 - name: Enable wg-quick
   ansible.builtin.systemd:
     name: "wg-quick@{{ item }}.service"
     enabled: true
     state: started
-  loop: "{{ wg_interfaces }}"
+  loop: "{{ wg_started }}"
 
 - name: Restart wg-quick when config changed
   ansible.builtin.systemd:
     name: "wg-quick@{{ item.item }}.service"
     state: restarted
   loop: "{{ wg_render.results }}"
-  when: item.changed
+  when: item.changed and item.item in wg_started
   loop_control:
     label: "{{ item.item }}"

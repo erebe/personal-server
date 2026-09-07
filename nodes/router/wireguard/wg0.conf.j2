@@ -6,6 +6,8 @@
 Address = 10.200.0.1/24, fd00:cafe::1/64
 ListenPort = 995
 PrivateKey = {{ ansible_facts.ROUTER_PRIVATE_KEY }}
+# Derived in group_vars/all.yml from the 1500-byte IPv4 transport.
+MTU = {{ wg_mtu }}
 
 [Peer]
 PublicKey = {{ ansible_facts.RASPBERRY_PUBLIC_KEY }}
@@ -20,29 +22,25 @@ PublicKey = {{ ansible_facts.TOYBOX_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.4/32, fd00:cafe::4/128
 
 [Peer]
-PublicKey = {{ ansible_facts.MINIO_PUBLIC_KEY }}
-AllowedIPs = 10.200.0.6/32, fd00:cafe::6/128
-
-[Peer]
 PublicKey = {{ ansible_facts.PROXMOX_PUBLIC_KEY }}
 AllowedIPs = 10.200.0.7/32, fd00:cafe::7/128
 
 [Peer]
 PublicKey = {{ ansible_facts.STYX_PUBLIC_KEY }}
-AllowedIPs = 10.200.0.50/32, fd00:cafe::50/128
+AllowedIPs = 10.200.0.52/32, fd00:cafe::52/128
 
 # Server (hetzner): hub of the public subnet. Everything in 10.200.1.0/24 is
 # reached through it, except the peers carved out below with a longer prefix.
 # The trailing /128 is the laptop's wgpub address, which terminates there.
 [Peer]
 PublicKey = {{ ansible_facts.SERVER_PUBLIC_KEY }}
-Endpoint = 49.13.58.9:995
+Endpoint = {{ server_ipv4 }}:995
 AllowedIPs = 10.200.1.0/24, fd00:cafe:1::/64, 2a01:4f8:c013:7b8::cafe/128
 
 # scw (scaleway): direct tunnel over WAN rather than relayed by the server.
 # The /32 + /128 win longest-prefix over the server peer's /24 + /64 above.
 [Peer]
 PublicKey = {{ ansible_facts.SCW_PUBLIC_KEY }}
-Endpoint = scw.erebe.eu:995
+Endpoint = {{ scw_ipv4 }}:995
 AllowedIPs = 10.200.1.2/32, fd00:cafe:1::2/128
 PersistentKeepalive = 20

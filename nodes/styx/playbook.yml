@@ -4,6 +4,10 @@
   become: true
   vars:
     node_dir: "{{ inventory_dir }}/styx"
+    # Only the overlay link is brought up by ansible. wgall (exit via server)
+    # and wgall-scw (exit via scw) are rendered but left alone: styx picks one
+    # at startup with `systemctl enable --now wg-quick@<name>`.
+    wg_autostart: [wg0]
 
   tasks:
     - name: Wireguard

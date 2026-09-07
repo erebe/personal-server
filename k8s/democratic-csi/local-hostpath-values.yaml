@@ -1,0 +1,114 @@
+# democratic-csi, second instance: plain directories on scw's local NVMe RAID1.
+#
+# This exists so the write-heavy observability volumes (Prometheus TSDB, Loki
+# chunks) stay on the node instead of crossing WireGuard to iSCSI on
+# 10.200.0.7. k3s's bundled local-storage is disabled cluster-wide
+# (nodes/k3s/k3s/config.yaml) and cannot simply be re-enabled: k3s marks its
+# local-path class as default and nfs-nvme already holds that role, which would
+# leave two defaults and make karakeep's unqualified PVCs ambiguous.
+
+csiDriver:
+  # Must be unique per cluster - the zfs-iscsi release owns
+  # org.democratic-csi.iscsi.
+  name: "org.democratic-csi.local-hostpath"
+
+  # The driver deliberately does not advertise PUBLISH_UNPUBLISH_VOLUME (it is
+  # commented out in src/driver/controller-client-common/index.js:68) - a
+  # directory is bind-mounted by the node plugin, never attached by a
+  # controller. Left at the chart's default of true, every pod would block
+  # forever waiting on a VolumeAttachment that nothing creates.
+  attachRequired: false
+
+  # Without this, a pod that does not run as root cannot write to its own
+  # volume. kubelet only applies a pod's fsGroup to a CSI volume according to
+  # this policy, and the default (ReadWriteOnceWithFSType) requires an fsType -
+  # which a bind-mounted directory does not have, so kubelet silently skips the
+  # chown and the directory stays root:root 0770. Prometheus (65534) then dies
+  # with `open /data/queries.active: permission denied`.
+  #
+  # `File` makes kubelet apply the ownership regardless of fsType, so each
+  # workload's own fsGroup takes the directory - 65534 for Prometheus, 10001
+  # for Loki. The driver does not advertise VOLUME_MOUNT_GROUP
+  # (controller-client-common/index.js:112), so kubelet does the chown itself
+  # rather than handing the group to the driver.
+  #
+  # NOTE: this field may be immutable on an existing CSIDriver object. If the
+  # helm upgrade does not take, delete it and re-run - no volumes are lost:
+  #   kubectl delete csidriver org.democratic-csi.local-hostpath
+  fsGroupPolicy: File
+
+storageClasses:
+  - name: local-hostpath-scw
+    defaultClass: false
+    reclaimPolicy: Delete
+    # The volume is a directory on one specific machine, so binding has to wait
+    # until the scheduler has placed the pod. Immediate would bind the PV before
+    # anything knows which node the workload lands on.
+    volumeBindingMode: WaitForFirstConsumer
+    # Directories have no size to grow.
+    allowVolumeExpansion: false
+    parameters:
+      fsType: ""
+
+driver:
+  config:
+    driver: local-hostpath
+    instance_id: scw
+    local-hostpath:
+      # These two must be identical, and the path has to be hostPath-mounted
+      # into the driver container - see node.extraVolumes below.
+      shareBasePath: "/var/lib/csi-local-hostpath"
+      controllerBasePath: "/var/lib/csi-local-hostpath"
+      dirPermissionsMode: "0770"
+      dirPermissionsUser: 0
+      dirPermissionsGroup: 0
+      snapshots:
+        # rsync/cp into a sibling directory. Enough for a clone; this is not a
+        # replication mechanism - these volumes are deliberately node-local.
+        default_driver: filecopy
+
+# For a local driver the component that creates the directory must run on the
+# machine that owns it, so the controller sidecars ride along on the node
+# DaemonSet rather than sitting in their own Deployment. With the DaemonSet
+# pinned to scw below, provisioning can only ever happen on scw.
+controller:
+  enabled: true
+  strategy: node
+  # Nothing to attach - see csiDriver.attachRequired.
+  externalAttacher:
+    enabled: false
+
+  # This cluster has no VolumeSnapshot CRDs and no snapshot-controller, so the
+  # snapshotter sidecar cannot do anything except log a watch failure forever:
+  #   Failed to watch *v1.VolumeSnapshotClass: the server could not find the
+  #   requested resource (get volumesnapshotclasses.snapshot.storage.k8s.io)
+  # Re-enable it alongside the CRDs if VolumeSnapshots are ever wanted.
+  externalSnapshotter:
+    enabled: false
+
+  # A directory has no size to grow, and the storage class sets
+  # allowVolumeExpansion: false - so the resizer has nothing to resize.
+  externalResizer:
+    enabled: false
+
+node:
+  # scw only. This is that node's local disk; there is nothing for this driver
+  # to do anywhere else, and the taint has to be tolerated explicitly.
+  nodeSelector:
+    kubernetes.io/hostname: scw
+  tolerations:
+    - key: kubernetes.io/hostname
+      operator: Equal
+      value: scw
+      effect: NoSchedule
+
+  driver:
+    extraVolumeMounts:
+      - name: local-hostpath
+        mountPath: /var/lib/csi-local-hostpath
+
+  extraVolumes:
+    - name: local-hostpath
+      hostPath:
+        path: /var/lib/csi-local-hostpath
+        type: DirectoryOrCreate

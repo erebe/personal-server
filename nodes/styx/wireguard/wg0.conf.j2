@@ -1,6 +1,8 @@
 [Interface]
-Address = 10.200.0.50/32, fd00:cafe::50/128
+Address = 10.200.0.52/32, fd00:cafe::52/128
 PrivateKey = {{ ansible_facts.STYX_PRIVATE_KEY }}
+# Derived in group_vars/all.yml from the 1500-byte IPv4 transport.
+MTU = {{ wg_mtu }}
 
 # Router is the hub for this node: the whole overlay (both /24s) is reached
 # through it.

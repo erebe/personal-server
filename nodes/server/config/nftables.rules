@@ -17,10 +17,26 @@ table inet SERVER_FIREWALL {
               ct state invalid drop comment "early drop of invalid packets"
               ct state {established, related} accept comment "accept all connections related to connections made by us"
 
+              # `lo` is left as iif: it cannot be renamed, removed or
+              # re-created, so none of the ifindex hazards apply, and this keeps
+              # the line identical to scw's.
               iif lo accept comment "accept loopback"
               iifname wg0 accept comment "accept wireguard traffic"
-              iif != eth0 ip daddr 10.42.0.0/16  accept comment "Allow incoming kube traffic"
-              iif != eth0 ip6 daddr fd01::/48 accept comment "Allow incoming kube traffic"
+              iifname != "eth0" ip daddr 10.42.0.0/16  accept comment "Allow incoming kube traffic"
+              iifname != "eth0" ip6 daddr fd01::/48 accept comment "Allow incoming kube traffic"
+
+              # The rules above only cover traffic addressed to a *pod*. Anything
+              # a pod sends to the node itself - node-exporter on :9100 and the
+              # kubelet on :10250, both hostNetwork - is addressed to the node IP
+              # instead, arrives on the CNI bridge rather than wg0, and so falls
+              # through to `policy drop`. Not currently reachable here, because
+              # Prometheus runs on scw and its scrapes of this node arrive over
+              # wg0; this only bites for a pod on server scraping server. Kept in
+              # step with scw's rules so it does not become a puzzle later.
+              # Matching on the pod source range, with the WAN excluded, so the
+              # internet cannot spoof its way in.
+              iifname != "eth0" ip saddr 10.42.0.0/16 accept comment "Allow pods to reach host services (node-exporter, kubelet)"
+              iifname != "eth0" ip6 saddr fd01::/48 accept comment "Allow pods to reach host services (node-exporter, kubelet)"
 
               meta l4proto icmp accept comment "Accept ICMP"
               meta l4proto ipv6-icmp accept comment "accept all ICMP types"
@@ -60,8 +76,8 @@ table inet SERVER_FIREWALL {
         chain nat_postrouting {
               type nat hook postrouting priority 0; policy accept;
 
-              oif eth0 ip saddr 10.200.0.0/23 masquerade comment "Allow NATing IPv4 wireguard traffic"
-              oif eth0 ip6 saddr fd00:cafe::/32 masquerade comment "Allow NATing IPv6 wireguard traffic"
+              oifname "eth0" ip saddr 10.200.0.0/23 masquerade comment "Allow NATing IPv4 wireguard traffic"
+              oifname "eth0" ip6 saddr fd00:cafe::/32 masquerade comment "Allow NATing IPv6 wireguard traffic"
         }
 
         chain output {

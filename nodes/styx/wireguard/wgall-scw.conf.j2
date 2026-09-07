@@ -1,0 +1,24 @@
+# Full-tunnel profile with scw as the exit node: everything leaves through
+# Scaleway (151.115.97.109). Same address as wgall.conf, which exits through
+# the server instead - we only care about egress here, so the two profiles
+# share .52 and are never up at the same time.
+#
+# Pick the exit at startup by enabling exactly one of:
+#   systemctl enable --now wg-quick@wgall       # exit via server
+#   systemctl enable --now wg-quick@wgall-scw   # exit via scw
+[Interface]
+Address = 10.200.1.52/32, fd00:cafe:1::52/128
+PrivateKey = {{ ansible_facts.STYX_PRIVATE_KEY }}
+# Derived in group_vars/all.yml from the 1500-byte IPv4 transport.
+MTU = {{ wg_mtu }}
+DNS = 10.200.0.2
+# Keep the local LAN reachable: the default route below would otherwise swallow
+# it. Pins 192.168.0.0/16 to the physical gateway before the tunnel takes over.
+PostUp = ip route add 192.168.0.0/16 dev $(ip route show default | awk '/default/ {print $5}') via $(ip route show default | awk '/default/ {print $3}')
+PostDown = ip route del 192.168.0.0/16 dev $(ip route show default | awk '/default/ {print $5}') via $(ip route show default | awk '/default/ {print $3}')
+
+[Peer]
+PublicKey = {{ ansible_facts.SCW_PUBLIC_KEY }}
+AllowedIPs = 0.0.0.0/0, ::/0
+Endpoint = {{ scw_ipv4 }}:995
+PersistentKeepalive = 20

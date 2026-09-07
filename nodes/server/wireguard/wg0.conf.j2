@@ -1,10 +1,12 @@
 # Hub of the public subnet 10.200.1.0/24 + fd00:cafe:1::/64: everything that
-# terminates outside the LAN (scw, laptop, phone) is a spoke here. The router
+# terminates outside the LAN (scw, laptop, phone, styx) is a spoke here. The router
 # peer carries the whole LAN subnet, and the /32 peers below it are direct
 # tunnels to individual LAN nodes that would otherwise hairpin through it.
 [Interface]
 Address = 10.200.1.1/24, fd00:cafe:1::1/64, 2001:bc8:3d8f:cafe::1/64
 PrivateKey = {{ ansible_facts.SERVER_PRIVATE_KEY }}
+# Derived in group_vars/all.yml from the 1500-byte IPv4 transport.
+MTU = {{ wg_mtu }}
 ListenPort = 995
 
 [Peer]
@@ -20,12 +22,19 @@ AllowedIPs = 10.200.1.51/32, fd00:cafe:1::51/128
 PublicKey = {{ ansible_facts.LAPTOP_PUBLIC_KEY }}
 AllowedIPs = 10.200.1.50/32, fd00:cafe:1::50/128, 2a01:4f8:c013:7b8::cafe/128
 
-# scw (scaleway). Endpoint is the scw.erebe.eu DNS name, resolved by wg-quick
-# when the interface comes up, so either side can bring the tunnel up.
+# styx on its wgall full-tunnel profile. Its other profile (wg0) is a LAN spoke
+# on 10.200.0.50 behind the router, so the same key appears as a peer on both
+# hubs with a different address on each.
+[Peer]
+PublicKey = {{ ansible_facts.STYX_PUBLIC_KEY }}
+AllowedIPs = 10.200.1.52/32, fd00:cafe:1::52/128
+
+# scw (scaleway). Endpoint is scw.erebe.eu resolved to a literal by ansible at
+# render time, so either side can bring the tunnel up without waiting on DNS.
 [Peer]
 PublicKey = {{ ansible_facts.SCW_PUBLIC_KEY }}
 AllowedIPs = 10.200.1.2/32, fd00:cafe:1::2/128
-Endpoint = scw.erebe.eu:995
+Endpoint = {{ scw_ipv4 }}:995
 
 # LAN nodes behind the router (192.168.1.0/24), direct tunnels instead of being
 # relayed by the router peer above. No Endpoint: they are NATed, so the server

@@ -1,0 +1,289 @@
+# kube-prometheus-stack: prometheus-operator, Prometheus, Grafana,
+# kube-state-metrics and node-exporter in one release.
+#
+# This replaces the separate `prometheus` and `grafana` releases. The reason to
+# take on the operator is the CRDs - PodMonitor/ServiceMonitor/PrometheusRule -
+# so a workload can declare its own scrape config next to its manifests instead
+# of relying on prometheus.io/* annotations. The 32 bundled dashboards and the
+# kubernetes-mixin recording and alerting rules come along with it.
+#
+# Loki and Alloy stay as their own releases; the stack has no equivalent.
+
+# CRDs are applied out of band, by `just observability`, from the separate
+# prometheus-operator-crds chart with `kubectl apply --server-side`. Helm does
+# not upgrade CRDs on `helm upgrade`, and these are ~4.4MB - the `prometheuses`
+# one alone is 813KB - which is why they get server-side apply. Same pattern the
+# root justfile already uses for the envoy CRDs.
+crds:
+  enabled: false
+
+# No routing, no receivers, no secrets for any of it. Alerts stay visible in
+# Prometheus and in Grafana's alerting view; nothing pages anyone.
+alertmanager:
+  enabled: false
+
+windowsMonitoring:
+  enabled: false
+
+# --- k3s reality check -------------------------------------------------------
+#
+# These four scrape control-plane components that this cluster either does not
+# run or does not expose, and each would otherwise sit permanently Down with its
+# alerts firing forever:
+#
+#  - controller-manager / scheduler: k3s runs them inside the k3s process and
+#    binds their metrics to localhost unless told otherwise, which
+#    nodes/k3s/k3s/config.yaml does not.
+#  - kube-proxy: nodes/k3s/k3s/config.yaml sets disable-kube-proxy: true.
+#  - etcd: a single k3s server, so the datastore is sqlite. There is no etcd.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+
+# The matching rule groups, or the alerts fire about components that are
+# deliberately absent.
+defaultRules:
+  create: true
+  rules:
+    kubeControllerManager: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    kubeProxy: false
+    etcd: false
+    # No Alertmanager deployed, so its own alerts are noise too.
+    alertmanager: false
+    windows: false
+
+prometheusOperator:
+  nodeSelector:
+    kubernetes.io/hostname: scw
+  tolerations:
+    - key: kubernetes.io/hostname
+      operator: Equal
+      value: scw
+      effect: NoSchedule
+  # The validating webhook for PrometheusRule needs a cert, which means two
+  # extra hook Jobs plus a MutatingWebhookConfiguration and a
+  # ValidatingWebhookConfiguration. It only buys early syntax errors on rules we
+  # are not writing by hand.
+  admissionWebhooks:
+    enabled: false
+  tls:
+    enabled: false
+
+prometheus:
+  prometheusSpec:
+    retention: 90d
+    # local-hostpath enforces no quota (see the storage note in the README), so
+    # this is the only real budget. Prometheus also wedges on a full filesystem
+    # rather than pruning, so it has to evict its own blocks first.
+    retentionSize: 40GB
+
+    scrapeInterval: 10s
+    evaluationInterval: 10s
+    externalLabels:
+      cluster: erebe
+
+    # Pick up Monitors and Rules from every namespace, whatever their labels.
+    # Left at the chart default these selectors only match objects carrying this
+    # release's labels, so a PodMonitor written next to some other service would
+    # be silently ignored - which would defeat the point of moving to the
+    # operator.
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+
+    nodeSelector:
+      kubernetes.io/hostname: scw
+    tolerations:
+      - key: kubernetes.io/hostname
+        operator: Equal
+        value: scw
+        effect: NoSchedule
+
+    # Chart defaults plus fsGroupChangePolicy: the volume's ownership comes from
+    # fsGroup via the local-hostpath driver's fsGroupPolicy: File, and without
+    # OnRootMismatch kubelet re-walks the whole TSDB on every restart.
+    securityContext:
+      runAsGroup: 2000
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 2000
+      fsGroupChangePolicy: OnRootMismatch
+      seccompProfile:
+        type: RuntimeDefault
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        memory: 4Gi
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-hostpath-scw
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+
+# Single instance, next to the rest of the stack.
+kubeStateMetrics:
+  enabled: true
+kube-state-metrics:
+  nodeSelector:
+    kubernetes.io/hostname: scw
+  tolerations:
+    - key: kubernetes.io/hostname
+      operator: Equal
+      value: scw
+      effect: NoSchedule
+
+# Host metrics need an agent on every node, so this one is a DaemonSet that has
+# to tolerate every taint in the cluster - every node here carries one.
+nodeExporter:
+  enabled: true
+prometheus-node-exporter:
+  tolerations:
+    - operator: Exists
+
+# --- Grafana -----------------------------------------------------------------
+# Values for the bundled grafana subchart, which is the same
+# grafana-community/grafana 13.2.2 the standalone release used.
+grafana:
+  enabled: true
+  replicas: 1
+
+  # sqlite on a ReadWriteOnce volume: replace rather than overlap, or the new
+  # pod comes up while the old one still holds the volume and the database.
+  deploymentStrategy:
+    type: Recreate
+
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: local-hostpath-scw
+    size: 10Gi
+
+  nodeSelector:
+    kubernetes.io/hostname: scw
+  tolerations:
+    - key: kubernetes.io/hostname
+      operator: Equal
+      value: scw
+      effect: NoSchedule
+
+  # fsGroup takes ownership of the volume via the csi driver's
+  # fsGroupPolicy: File; OnRootMismatch stops a chown of the tree every restart.
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 472
+    runAsGroup: 472
+    fsGroup: 472
+    fsGroupChangePolicy: OnRootMismatch
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 1Gi
+
+  # Credentials from services/secrets/grafana.yml (sops), applied by
+  # `just observability` before this chart runs.
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+
+  # The stack provisions the Prometheus datasource itself (named "Prometheus").
+  # Loki is not part of the stack, so it is added here.
+  additionalDataSources:
+    - name: Loki
+      uid: loki
+      type: loki
+      access: proxy
+      url: http://loki.observability.svc.cluster.local:3100
+      jsonData:
+        maxLines: 5000
+
+  grafana.ini:
+    server:
+      root_url: https://obs.erebe.eu
+    analytics:
+      reporting_enabled: false
+      check_for_updates: false
+    users:
+      allow_sign_up: false
+    auth.anonymous:
+      enabled: false
+
+  # Dashboards from grafana.com, on top of the 32 the stack ships as ConfigMaps.
+  # Only two are worth adding: the stack already covers cluster, namespace, node
+  # and pod views with the kubernetes-mixin dashboards, so 15757-15760 and 3662
+  # are now redundant and were dropped.
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      # Richer than the stack's own node dashboards, and the community default.
+      # Resolves its datasource through its own template variable.
+      node-exporter-full:
+        gnetId: 1860
+        revision: 45
+      # The stack has no Loki dashboard. This one hardcodes
+      # "datasource": "${DS_LOKI}" inline, so it needs the mapping. The list
+      # form is deliberate - the string shorthand seds *every* datasource field
+      # in the file.
+      loki-logs:
+        gnetId: 13639
+        revision: 2
+        datasource:
+          - name: DS_LOKI
+            value: Loki
+
+  # The chart only knows how to emit an Ingress; this cluster routes with
+  # Gateway API, so the route is handed over as a raw object.
+  extraObjects:
+    - apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      metadata:
+        name: grafana
+      spec:
+        parentRefs:
+          - name: envoy
+            namespace: default
+            sectionName: https
+        hostnames:
+          - obs.erebe.eu
+        rules:
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+            backendRefs:
+              - name: kube-prometheus-stack-grafana
+                port: 80
+
+  # Nothing runs `helm test` here.
+  testFramework:
+    enabled: false

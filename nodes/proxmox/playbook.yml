@@ -45,6 +45,14 @@
             group: root
             mode: '0644'
 
+        - name: Upload csi-snapshot-unflag post-snapshot hook
+          ansible.builtin.copy:
+            src: "{{ node_dir }}/sanoid/csi-snapshot-unflag"
+            dest: /usr/local/bin/csi-snapshot-unflag
+            owner: root
+            group: root
+            mode: '0755'
+
         - name: Upload syncoid-backup.service
           ansible.builtin.copy:
             src: "{{ node_dir }}/sanoid/syncoid-backup.service"

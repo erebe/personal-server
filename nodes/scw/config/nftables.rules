@@ -22,14 +22,24 @@ table inet SCW_FIREWALL {
               iifname != "en*" ip daddr 10.42.0.0/16 accept comment "Allow incoming kube traffic"
               iifname != "en*" ip6 daddr fd01::/48 accept comment "Allow incoming kube traffic"
 
+              # The rules above only cover traffic addressed to a *pod*. Anything
+              # a pod sends to the node itself - node-exporter on :9100 and the
+              # kubelet on :10250, both hostNetwork - is addressed to 10.200.1.2
+              # / fd00:cafe:1::2 instead, arrives on the CNI bridge rather than
+              # wg0, and so fell through to `policy drop`. scw is the only node
+              # where this bites, because it is the only one that is both
+              # firewalled and running Prometheus: a scrape of any other node
+              # leaves over wg0 and is accepted by the wireguard rule there.
+              # Matching on the pod source range, with the WAN excluded, so the
+              # internet cannot spoof its way in.
+              iifname != "en*" ip saddr 10.42.0.0/16 accept comment "Allow pods to reach host services (node-exporter, kubelet)"
+              iifname != "en*" ip6 saddr fd01::/48 accept comment "Allow pods to reach host services (node-exporter, kubelet)"
+
               meta l4proto icmp accept comment "Accept ICMP"
               meta l4proto ipv6-icmp accept comment "accept all ICMP types"
               udp dport 546 ip6 saddr { fc00::/7, fe80::/10 } accept comment "allow DHCPv6 client"
 
               tcp dport 22 accept comment "accept SSH"
-
-              tcp dport { 80, 443 } accept comment "accept http"
-              udp dport 443 accept comment "accept http3"
 
               udp dport 995 accept comment "accept wireguard"
         }
@@ -55,6 +65,25 @@ table inet SCW_FIREWALL {
 
         chain nat_postrouting {
               type nat hook postrouting priority 0; policy accept;
+
+              # Exit-node egress. The WAN is enp65s0f0, hence en* rather than the
+              # eth0 the server node uses. Masquerade is mandatory here, not just
+              # convenient: Scaleway drops any packet whose source is not the
+              # EUI-64 address it assigned, so the overlay prefix can never be
+              # routed out as-is. This picks that address only because
+              # IPv6PrivacyExtensions is off in wan.network - with temporary
+              # addresses enabled it could pick a filtered one instead.
+              oifname "en*" ip saddr 10.200.0.0/23 masquerade comment "NAT wireguard exit traffic"
+              oifname "en*" ip6 saddr fd00:cafe::/32 masquerade comment "NAT wireguard exit traffic"
+
+              # styx reuses .52 on both its exit profiles, so the rest of the
+              # overlay routes that address to the server. Without this, a reply
+              # from e.g. the pihole would be sent there and dropped while styx
+              # is attached here. Masquerading into wg0 makes styx's overlay
+              # traffic appear to come from scw itself, which does have a return
+              # path from everywhere.
+              oifname wg0 ip saddr 10.200.1.52 masquerade comment "styx exits here but is addressed on the server"
+              oifname wg0 ip6 saddr fd00:cafe:1::52 masquerade comment "styx exits here but is addressed on the server"
         }
 
         chain output {

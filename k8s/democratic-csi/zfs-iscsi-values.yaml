@@ -60,10 +60,18 @@ storageClasses:
 
 
 node:
+  # The node plugin is a DaemonSet: it has to run wherever a zfs-nvme volume
+  # gets mounted, so it needs a toleration per tainted node. Without the scw
+  # entry, pods on scw that claim a zfs-nvme PVC stay stuck in
+  # ContainerCreating - the volume has nothing to attach it.
   tolerations:
     - key: "kubernetes.io/hostname"
       operator: "Equal"
       value: "toybox"
+      effect: "NoSchedule"
+    - key: "kubernetes.io/hostname"
+      operator: "Equal"
+      value: "scw"
       effect: "NoSchedule"
     - key: "node.kubernetes.io/not-ready"
       operator: "Exists"
@@ -72,6 +80,15 @@ node:
 
 
 controller:
+  # No VolumeSnapshot CRDs and no snapshot-controller in this cluster, so this
+  # sidecar only ever logs a watch failure in a loop:
+  #   Failed to watch *v1.VolumeSnapshotClass: the server could not find the
+  #   requested resource (get volumesnapshotclasses.snapshot.storage.k8s.io)
+  # Snapshots of these volumes come from sanoid on the storage host instead.
+  # Re-enable this together with the CRDs if CSI VolumeSnapshots are wanted.
+  externalSnapshotter:
+    enabled: false
+
   tolerations:
     - key: "node-role.kubernetes.io/master"
       operator: "Exists"
