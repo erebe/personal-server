@@ -339,13 +339,16 @@ scw.
 ## Things worth knowing
 
 - **Nothing enforces the claim sizes.** `local-hostpath` provisions a plain
-  directory under `/var/lib/csi-local-hostpath` on scw and applies no quota, so
-  every size above is documentation. The only real budget is
+  directory under `/zdata` on scw and applies no quota, so every size above is
+  documentation. ZFS at least makes a real cap possible (`zfs set quota=`), but
+  quotas are per dataset and the driver creates directories under `/zdata/v/`,
+  not a dataset per volume - so one would bound the driver as a whole, and
+  nothing sets one today. The only real budget is
   `prometheusSpec.retentionSize: 40GB`, which also protects Prometheus from a
   full filesystem - it wedges rather than pruning when the disk fills. **Loki
   has no byte-based retention at all**, only `retention_period: 720h`, so its
   footprint is whatever 30 days of ingest happens to be. There is a lot of room
-  on 2TB, but it is the one genuinely unbounded thing here.
+  on the 1.66T zdata mirror, but it is the one genuinely unbounded thing here.
 
 - **Nothing here is backed up.** All volumes live only on scw, no snapshots and
   no off-node copy, so rebuilding that node loses everything. For metrics and

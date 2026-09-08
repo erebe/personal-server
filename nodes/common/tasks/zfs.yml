@@ -1,0 +1,204 @@
+---
+# ZFS from Debian contrib, built on the host by DKMS.
+#
+# ZFS cannot ship in main: the CDDL and the GPL are not compatible, so Debian
+# distributes the source and every machine compiles it against its own kernel.
+# That is all `zfs-dkms` is - source plus a build hook - and it is why `contrib`
+# has to be enabled and why kernel headers are a hard dependency here rather
+# than a convenience.
+#
+# Optional play var: zfs_scrub_pools - the pools to put on a weekly scrub.
+# Defaults to none, so a node that imports this file for the module and the
+# tools alone gets no timers.
+#
+# Re-running only rebuilds when the running kernel has no module.
+
+- name: Read the Debian architecture
+  # The headers meta-package is named for the dpkg architecture, which no fact
+  # spells the Debian way - ansible_facts.architecture is 'x86_64', the package
+  # is linux-headers-amd64.
+  ansible.builtin.command: dpkg --print-architecture
+  register: deb_architecture
+  changed_when: false
+  # Read-only, and the package list below is templated from it - without this
+  # `--check` skips the task and then fails on an undefined stdout.
+  check_mode: false
+
+- name: Look for deb822 apt sources
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/debian.sources
+  register: deb822_sources
+
+- name: Add contrib to the deb822 sources
+  # trixie ships /etc/apt/sources.list.d/debian.sources and leaves
+  # /etc/apt/sources.list as a one-line pointer at it. Every stanza gets
+  # contrib, the security one included - that is where zfs-dkms actually comes
+  # from once a CVE has been fixed (2.3.9-0+deb13u1 on scw today, out of
+  # trixie-security/contrib, not trixie/contrib).
+  #
+  # Editing the components in place rather than dropping in a sources file of
+  # our own, because the URI is not ours to guess: on scw it is
+  # `mirror+file:///etc/apt/mirrors/debian.list`, a provider indirection, and a
+  # second stanza pointing at deb.debian.org would quietly add a second mirror.
+  ansible.builtin.replace:
+    path: /etc/apt/sources.list.d/debian.sources
+    regexp: '^(Components:(?!.*\bcontrib\b).*)$'
+    replace: '\1 contrib'
+  when: deb822_sources.stat.exists
+
+- name: Add contrib to sources.list
+  # The one-line format, for whichever node is still on it. Commented-out lines
+  # are left alone: `^deb` does not match a line that starts with '#'.
+  ansible.builtin.replace:
+    path: /etc/apt/sources.list
+    regexp: '^(deb(?:-src)?(?!.*\bcontrib\b)\s.*\bmain\b.*)$'
+    replace: '\1 contrib'
+  when: not deb822_sources.stat.exists
+
+- name: Accept the CDDL/GPL note before it is asked
+  # zfs-dkms's postinst raises a debconf *note* about the licence
+  # incompatibility. Ansible drives apt with DEBIAN_FRONTEND=noninteractive so
+  # it would be skipped here anyway; pre-seeding it also stops a later
+  # interactive `apt install` on the box from parking on it.
+  ansible.builtin.debconf:
+    name: zfs-dkms
+    question: zfs-dkms/note-incompatible-licenses
+    value: 'true'
+    vtype: note
+
+- name: Install ZFS and the headers DKMS builds against
+  # linux-headers-<arch> is the *meta*-package, and that is the whole point of
+  # it: it depends on the headers for the current kernel, so a kernel upgrade
+  # pulls matching headers in and the kernel-package hooks rebuild the module on
+  # the spot. Installing linux-headers-$(uname -r) by hand instead is how scw
+  # ended up with a module built for 6.12.105 while it booted 6.12.107 - the
+  # build had succeeded, the package looked installed, `dpkg -l` showed
+  # zfs-dkms, and `zfs version` still answered "The ZFS modules cannot be
+  # auto-loaded".
+  #
+  # update_cache because contrib may have just been added above.
+  ansible.builtin.apt:
+    name:
+      - "linux-headers-{{ deb_architecture.stdout }}"
+      - dkms
+      - zfs-dkms
+      - zfsutils-linux
+      - zfs-zed
+    update_cache: true
+
+- name: Check whether the running kernel has a zfs module
+  ansible.builtin.command: modinfo -k {{ ansible_facts.kernel }} zfs
+  register: zfs_modinfo
+  changed_when: false
+  failed_when: false
+  # Read-only. The build below is deliberately left to skip under `--check`.
+  check_mode: false
+
+- name: Build the module for the running kernel
+  # A safety net, not the normal path: apt's own hooks build for every kernel
+  # whose headers are present. This catches the case the hooks cannot see -
+  # headers that arrived after the module was first built, or a build that was
+  # interrupted. autoinstall is version-agnostic, so nothing here has to know
+  # that zfs is at 2.3.9.
+  #
+  # It fails loudly if the headers for the running kernel are genuinely absent,
+  # which is the right outcome: the alternative is a host that looks configured
+  # and has no filesystem.
+  ansible.builtin.command: dkms autoinstall -k {{ ansible_facts.kernel }}
+  when: zfs_modinfo.rc != 0
+  register: zfs_dkms_build
+  changed_when: zfs_dkms_build.rc == 0
+
+- name: Load zfs on boot
+  # zfsutils-linux ships /usr/lib/modules-load.d/zfs.conf with the module line
+  # commented out and leaves the load to udev, on demand. Same filename under
+  # /etc shadows it - the documented systemd override - so the module is there
+  # before anything asks, which is what a pool import at boot needs.
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/zfs.conf
+    content: |
+      # Managed by ansible. Shadows the commented-out line in
+      # /usr/lib/modules-load.d/zfs.conf so the module loads unconditionally.
+      zfs
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Load zfs now
+  community.general.modprobe:
+    name: zfs
+    state: present
+  # community.general.modprobe runs modprobe for real even under `--check`, and
+  # under `--check` neither the install nor the build above actually happened -
+  # so on a host that has no module yet the dry run would fail here reporting a
+  # state it was never asked to change.
+  when: not ansible_check_mode
+
+- name: Read back the versions
+  # Not skipped as a formality: `zfs version` is the one command that needs both
+  # halves working, and it exits non-zero with "The ZFS modules cannot be
+  # auto-loaded" when the module is missing for the running kernel - so this is
+  # what turns that state into a failed play instead of a green one.
+  #
+  # Under `--check` nothing above has loaded anything, so there is nothing to
+  # read back.
+  ansible.builtin.command: zfs version
+  register: zfs_version
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Show the userspace and module versions
+  # Both come out of the same source package, so they match unless an older
+  # module is still resident from before an upgrade - in which case the host
+  # wants a reboot, and this is where that shows up.
+  ansible.builtin.debug:
+    msg: "{{ zfs_version.stdout_lines }}"
+  when: not ansible_check_mode
+
+- name: Default the weekly scrub list to nothing
+  ansible.builtin.set_fact:
+    zfs_scrub_pools: "{{ zfs_scrub_pools | default([]) }}"
+
+- name: Look for the pools asked for a weekly scrub
+  # zfs-scrub-weekly@<pool>.timer instantiates for a pool the host does not
+  # have just as happily as for one it does: systemd resolves the template, the
+  # symlink lands, and then `zpool scrub <pool>` fails every week with
+  # "cannot open '<pool>': no such pool" into a journal nobody reads.
+  ansible.builtin.command: zpool list -H -o name {{ item }}
+  loop: "{{ zfs_scrub_pools }}"
+  register: zfs_pool_probe
+  changed_when: false
+  failed_when: false
+  # Read-only, and the assert below reads its rc - without this `--check` skips
+  # the task and then fails on an undefined rc.
+  check_mode: false
+
+- name: Fail on a pool this host does not have
+  # Loudly rather than skipped: the list is hand-written in the play vars, and a
+  # typo that is silently skipped leaves a node that looks like it scrubs and
+  # never reads its disks - the exact state this is here to end. A pool that
+  # exists but is not imported trips this too, and gets the same answer: a timer
+  # for a pool that is not imported scrubs nothing.
+  ansible.builtin.assert:
+    that: zfs_scrub_missing | length == 0
+    fail_msg: >-
+      Named in zfs_scrub_pools but `zpool list` cannot see it:
+      {{ zfs_scrub_missing | join(', ') }}. Fix the list in the play vars, or
+      import the pool.
+  vars:
+    zfs_scrub_missing: "{{ zfs_pool_probe.results | rejectattr('rc', 'eq', 0) | map(attribute='item') | list }}"
+
+- name: Enable and start the weekly scrub timer
+  # zfsutils-linux ships zfs-scrub-weekly@.timer disabled. `enabled` alone only
+  # drops the symlink in /etc/systemd/system/timers.target.wants/, which systemd
+  # reads when timers.target comes up - so the timer would sit unarmed until the
+  # next reboot, on a host that may not reboot for months. `state: started` arms
+  # it now.
+  #
+  # The unit it pulls in, zfs-scrub@<pool>.service, is static: the timer is the
+  # only thing that should ever start it.
+  ansible.builtin.systemd:
+    name: "zfs-scrub-weekly@{{ item }}.timer"
+    enabled: true
+    state: started
+  loop: "{{ zfs_scrub_pools }}"

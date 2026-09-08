@@ -1,4 +1,5 @@
-# democratic-csi, second instance: plain directories on scw's local NVMe RAID1.
+# democratic-csi, second instance: plain directories on scw's ZFS mirror
+# `zdata` (nvme0n1p4 + nvme1n1p5), mounted at /mnt/zdata.
 #
 # This exists so the write-heavy observability volumes (Prometheus TSDB, Loki
 # chunks) stay on the node instead of crossing WireGuard to iSCSI on
@@ -6,6 +7,15 @@
 # (nodes/k3s/k3s/config.yaml) and cannot simply be re-enabled: k3s marks its
 # local-path class as default and nfs-nvme already holds that role, which would
 # leave two defaults and make karakeep's unqualified PVCs ambiguous.
+#
+# These volumes used to sit on /var/lib/csi-local-hostpath, i.e. scw's 200G
+# ext4 root on md1. The reason to move them is checksums, not space: ZFS
+# checksums every block and a mirror can rebuild a bad one from the other leg,
+# where md1 can only notice that its two legs disagree and cannot say which
+# one is right. Do not expect much from compression=on - Prometheus already
+# packs its TSDB blocks and Loki gzips its chunks, so lz4 mostly early-aborts
+# on both; it earns its keep on Grafana's sqlite and costs nothing on the rest.
+# Still node-local, still not replicated anywhere off scw.
 
 csiDriver:
   # Must be unique per cluster - the zfs-iscsi release owns
@@ -62,8 +72,21 @@ driver:
     local-hostpath:
       # These two must be identical, and the path has to be hostPath-mounted
       # into the driver container - see node.extraVolumes below.
-      shareBasePath: "/var/lib/csi-local-hostpath"
-      controllerBasePath: "/var/lib/csi-local-hostpath"
+      #
+      # This is the zdata mountpoint itself, not a subdirectory: the driver
+      # appends its own layout, volumes at <basePath>/v/<volume-id> and
+      # filecopy snapshots at <basePath>/s/<id>
+      # (getVolumeExtraPath/getSnapshotExtraPath,
+      # src/driver/controller-client-common/index.js:237).
+      #
+      # Changing this does not move volumes that already exist: CreateVolume
+      # writes the absolute path into the PV's volumeAttributes.path
+      # (controller-local-hostpath/index.js:51) and the node plugin bind-mounts
+      # that stored value, so old PVs keep pointing at
+      # /var/lib/csi-local-hostpath/v/<id>. Their directories have to be moved
+      # under /mnt/zdata/v/ and the PVs recreated, or the data is stranded.
+      shareBasePath: "/mnt/zdata"
+      controllerBasePath: "/mnt/zdata"
       dirPermissionsMode: "0770"
       dirPermissionsUser: 0
       dirPermissionsGroup: 0
@@ -110,10 +133,23 @@ node:
   driver:
     extraVolumeMounts:
       - name: local-hostpath
-        mountPath: /var/lib/csi-local-hostpath
+        mountPath: /mnt/zdata
 
   extraVolumes:
     - name: local-hostpath
       hostPath:
-        path: /var/lib/csi-local-hostpath
-        type: DirectoryOrCreate
+        path: /mnt/zdata
+        # Directory, not DirectoryOrCreate: /mnt/zdata is a ZFS mountpoint, and
+        # DirectoryOrCreate lets kubelet mkdir it on the root fs when the pool
+        # is not imported. The driver then provisions happily into md1 - no
+        # mirror, no checksums, no compression - and nothing reports an error
+        # until the pool comes back and hides the stale files under the
+        # mountpoint. Directory makes kubelet refuse the mount instead, so the
+        # DaemonSet pod sits in ContainerCreating with a FailedMount event:
+        #   hostPath type check failed: /mnt/zdata is not a directory
+        #
+        # This only catches a missing /mnt/zdata. If the pool is exported but the
+        # mountpoint directory it left behind is still there, kubelet cannot
+        # tell the difference and neither can this field - `zfs mount zdata`
+        # before trusting the volumes.
+        type: Directory
