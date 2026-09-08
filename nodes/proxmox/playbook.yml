@@ -5,6 +5,11 @@
   become: false
   vars:
     node_dir: "{{ inventory_dir }}/proxmox"
+    # This host is the puller, not a source: nothing reaches it over ssh to
+    # fetch snapshots, so the shared sanoid task must not authorize the syncoid
+    # key here. See the note on that task - on this host in particular the key
+    # would land in pmxcfs and then fail the play.
+    sanoid_pulled_remotely: false
 
   tasks:
     - name: iSCSI target tooling (targetcli-fb)
@@ -22,28 +27,8 @@
     - name: Sanoid / Syncoid ZFS snapshots and backup
       tags: [sanoid, never]
       block:
-        - name: Install sanoid
-          ansible.builtin.apt:
-            name: sanoid
-            update_cache: true
-          environment:
-            DEBIAN_FRONTEND: noninteractive
-
-        - name: Ensure /etc/sanoid exists
-          ansible.builtin.file:
-            path: /etc/sanoid
-            state: directory
-            owner: root
-            group: root
-            mode: '0755'
-
-        - name: Upload sanoid.conf
-          ansible.builtin.copy:
-            src: "{{ node_dir }}/sanoid/sanoid.conf"
-            dest: /etc/sanoid/sanoid.conf
-            owner: root
-            group: root
-            mode: '0644'
+        - name: Snapshot policy
+          ansible.builtin.import_tasks: ../common/tasks/sanoid.yml
 
         - name: Upload csi-snapshot-unflag post-snapshot hook
           ansible.builtin.copy:
@@ -53,37 +38,71 @@
             group: root
             mode: '0755'
 
-        - name: Upload syncoid-backup.service
+        # The private half of the pair. Kept in sops rather than generated on
+        # the box with openssh_keypair so that every source node's playbook can
+        # authorize the public half without proxmox being reachable, and so a
+        # rebuilt proxmox comes back with the key those nodes already trust.
+        # Same posture the wireguard private keys already have.
+        #
+        # Already loaded into syncoid_secrets by the shared task above, which
+        # needs the public half for its own authorized_key entry.
+        - name: Ensure /etc/syncoid exists
+          # 0700: it holds a private key, and ssh refuses one that is readable
+          # by anyone else.
+          ansible.builtin.file:
+            path: /etc/syncoid
+            state: directory
+            owner: root
+            group: root
+            mode: '0700'
+
+        - name: Install the key proxmox authenticates to scw with
+          # The block scalar plus `trim` is not decoration: openssh rejects a
+          # private key without a trailing newline, and rejects one with a
+          # blank line at the end just as flatly.
           ansible.builtin.copy:
-            src: "{{ node_dir }}/sanoid/syncoid-backup.service"
-            dest: /etc/systemd/system/syncoid-backup.service
+            content: |
+              {{ syncoid_secrets.SYNCOID_PRIVATE_KEY | trim }}
+            dest: /etc/syncoid/id_scw
+            owner: root
+            group: root
+            mode: '0600'
+          # Or the key ends up in the play output, and in whatever collects it.
+          no_log: true
+
+        - name: Upload the syncoid units
+          # One pair per replication job: syncoid-backup pulls nvme -> backup
+          # locally, syncoid-scw pulls scw:zdata -> backup over wireguard.
+          ansible.builtin.copy:
+            src: "{{ node_dir }}/sanoid/{{ item }}"
+            dest: "/etc/systemd/system/{{ item }}"
             owner: root
             group: root
             mode: '0644'
+          loop:
+            - syncoid-backup.service
+            - syncoid-backup.timer
+            - syncoid-scw.service
+            - syncoid-scw.timer
           notify: daemon-reload
 
-        - name: Upload syncoid-backup.timer
-          ansible.builtin.copy:
-            src: "{{ node_dir }}/sanoid/syncoid-backup.timer"
-            dest: /etc/systemd/system/syncoid-backup.timer
-            owner: root
-            group: root
-            mode: '0644'
-          notify: daemon-reload
-
-        - name: Enable sanoid.timer
+        - name: Enable the syncoid timers
+          # `state: started` arms them now; `enabled` alone would leave them
+          # waiting for the next boot. daemon_reload here rather than relying
+          # on the handler, which only runs at the end of the play - systemd
+          # has to have read the unit files before it can enable them.
           ansible.builtin.systemd:
-            name: sanoid.timer
+            name: "{{ item }}"
             enabled: true
             state: started
             daemon_reload: true
-
-        - name: Enable syncoid-backup.timer
-          ansible.builtin.systemd:
-            name: syncoid-backup.timer
-            enabled: true
-            state: started
-            daemon_reload: true
+          loop:
+            - syncoid-backup.timer
+            - syncoid-scw.timer
+          # Under `--check` the unit files above were not written, so systemd
+          # cannot find a timer that does not exist yet and the dry run fails
+          # on the one thing it could not have verified anyway.
+          when: not ansible_check_mode
 
   handlers:
     - name: daemon-reload

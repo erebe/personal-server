@@ -11,7 +11,13 @@
       tags: [package, never]
       ansible.builtin.import_tasks: ../common/tasks/package.yml
 
+    # Tagged like every other node's. Without the tags this task was the one
+    # thing in the repo that a bare `just toybox` would run - and what it runs
+    # is a rewrite of this host's network config, on the node carrying
+    # postgres, minio and karakeep. `--tags network` meanwhile skipped it, so
+    # it had never actually been applied here either.
     - name: networkd config
+      tags: [network, never]
       ansible.builtin.import_tasks: ../common/tasks/networkd.yml
 
     - name: Wireguard

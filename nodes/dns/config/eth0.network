@@ -11,7 +11,7 @@ MTUBytes=9000
 
 [IPv6AcceptRA]
 # Use Router Advertisement for routing
-UseAutonomous=yes
+UseAutonomousPrefix=yes
 UseMTU=yes
 UseDNS=yes
 UseDomains=yes

@@ -114,7 +114,8 @@ just server --tags wireguard        # render + reload wg0.conf
 just server --tags firewall         # push nftables.rules
 just scw    --tags k3s-agent        # install/upgrade k3s
 just k3s    --tags k3s-master,cilium
-just proxmox --tags sanoid
+just proxmox --tags sanoid          # sanoid.conf + the syncoid timers
+just scw    --tags sanoid           # sanoid.conf + the key proxmox pulls with
 just <node> --tags <tag> --check    # dry run — do this first
 ```
 
@@ -240,7 +241,7 @@ for mail.
 | `nfs-nvme` | proxmox `fd00:cafe::7:/nvme` over NFSv4 | **cluster default** |
 | `nfs-hdd` | proxmox `fd00:cafe::7:/backup/data` | bulk / backup |
 | `zfs-nvme` | democratic-csi zfs-generic-iscsi to proxmox | block; see snapshot caveat below |
-| `local-hostpath-scw` | plain directories on scw's local NVMe | observability only, `WaitForFirstConsumer` |
+| `local-hostpath-zdata` | plain directories on scw's `zdata` ZFS mirror (`/mnt/zdata`) | observability only, `WaitForFirstConsumer`, node-deployment provisioning |
 
 Installed by root `just k8s` (NFS provisioners) and `just csi` (democratic-csi).
 `benchmarks/storage-benchmark.csv` has fio numbers across all four.
@@ -250,6 +251,30 @@ sanoid snapshots exist (fixed by the `post_snapshot_script` in
 `nodes/proxmox/sanoid/`, applied with `just proxmox --tags sanoid`); IPv6-first
 service CIDR means a Service without `ipFamilyPolicy: PreferDualStack` gets
 IPv6-only endpoints, which is why `grafana-mcp` needs a Helm post-renderer.
+
+### ZFS snapshots and replication
+
+sanoid takes the snapshots, syncoid moves them, both driven by systemd timers.
+Two hosts run sanoid, each with its own `sanoid/sanoid.conf` under `nodes/<node>/`
+(the file cannot include another, so the shared `template_*` blocks are
+duplicated on purpose); the install half is `nodes/common/tasks/sanoid.yml` and
+both are applied with `--tags sanoid`.
+
+| Pair | Direction | When | Retention |
+| --- | --- | --- | --- |
+| `nvme` -> `backup/nvme-backup` | local, on proxmox | `syncoid-backup.timer`, 00:01 | 36 hourly + 7 daily on source, 90 daily on target |
+| scw `zdata` -> `backup/scw-backup` | **pull** over wg0, proxmox -> `erebe@10.200.1.2` | `syncoid-scw.timer`, 03:00 | same |
+| `backup/data` | not replicated | — | `template_archive`: 30 daily, 8 weekly, 12 monthly |
+
+Things to know before touching it: pulls, not pushes, so the credential lives
+on the host holding the backups (`/etc/syncoid/id_scw`, from
+`secrets/syncoid.yml`, authorized for `erebe` on scw with `from=` and
+`restrict`); snapshot names are **UTC** because the packaged `sanoid.service`
+sets `TZ=UTC`, which is why 03:00 local is after scw's daily and why a replica
+can look 2h stale when it is not; a replica section needs `autosnap = no` or
+the next incremental has to roll it back; and **nothing monitors either timer**,
+while a pull that fails for more than 7 days outlives the last common daily and
+needs a full send.
 
 ## Services inventory
 

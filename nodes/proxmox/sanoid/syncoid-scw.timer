@@ -1,0 +1,21 @@
+[Unit]
+Description=Daily syncoid replication from scw
+
+[Timer]
+# 03:00 local, not OnCalendar=daily (which is 00:00).
+#
+# scw's sanoid runs with Environment=TZ=UTC (the packaged unit does), so its
+# daily snapshot is named and taken at 00:00 UTC - 02:00 here in CEST. A pull
+# before that finds the newest daily already a day old, and since the replica
+# prunes the hourlies it receives, its newest *daily* would sit permanently 24h
+# behind for no reason. That is what syncoid-backup.timer at 00:01 does to
+# nvme's replica today.
+#
+# It also keeps this transfer, which crosses the WAN, out of the same slot as
+# the local nvme job.
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=timers.target

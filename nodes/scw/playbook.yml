@@ -22,6 +22,12 @@
       tags: [zfs, never]
       ansible.builtin.import_tasks: ../common/tasks/zfs.yml
 
+    # Snapshots, and the login proxmox pulls them with - the shared task does
+    # both, keyed on this play's ansible_user (erebe here).
+    - name: Sanoid snapshots
+      tags: [sanoid, never]
+      ansible.builtin.import_tasks: ../common/tasks/sanoid.yml
+
     - name: networkd config
       tags: [network, never]
       ansible.builtin.import_tasks: ../common/tasks/networkd.yml

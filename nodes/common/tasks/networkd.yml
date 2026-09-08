@@ -94,11 +94,47 @@
     enabled: true
     state: started
 
-- name: Restart systemd-networkd
+- name: Restart systemd-networkd when its global config changed
+  # Only networkd.conf needs this: `networkctl reload` re-reads .network and
+  # .netdev files, but networkd.conf itself (IPv4Forwarding here) is read once,
+  # at startup. The reconfigure below then repairs what the restart drops.
   ansible.builtin.systemd:
     name: systemd-networkd.service
     state: restarted
+  when: networkd_conf.changed
+
+- name: Apply the unit to the links it matches
+  # NOT `systemctl restart systemd-networkd`, which is what this task used to
+  # do on its own. A restart re-adds the default route and the link route to
+  # the gateway, but *not* the DHCPv4 subnet route - so the host is left with
+  # no on-link route for its own LAN. Every neighbour then resolves via the
+  # default gateway and the frames leave addressed to the router's MAC, which
+  # will not hairpin them back onto the segment they came from.
+  #
+  # That is how k3s lost every WireGuard peer on 192.168.1.0/24 at once while
+  # the router and both WAN peers stayed up: those are reached *through* the
+  # gateway anyway, so they never needed the missing route. Reproduced on the
+  # host, both directions:
+  #   systemctl restart systemd-networkd -> 192.168.1.0/24 gone, ping .11 fails
+  #   networkctl reconfigure ens18       -> route back, ping .11 OK
+  #
+  # The link name cannot be derived from the unit name - scw's wan.network
+  # matches `en*` and lands on two interfaces - so ask networkd which links it
+  # actually applied this file to.
+  ansible.builtin.shell:
+    cmd: |
+      set -eu
+      networkctl reload
+      for link in $(networkctl list --no-legend | awk '{print $2}'); do
+        if networkctl status --no-pager "$link" 2>/dev/null \
+             | grep -qF "/etc/systemd/network/{{ network_unit }}"; then
+          echo "reconfiguring $link"
+          networkctl reconfigure "$link"
+        fi
+      done
   when: networkd_conf.changed or networkd_unit.changed or netplan_removed.changed
+  register: networkd_applied
+  changed_when: true
 
 - name: Reboot reminder
   ansible.builtin.debug:
