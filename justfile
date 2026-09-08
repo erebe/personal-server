@@ -1,5 +1,3 @@
-HOST := 'root@erebe.eu'
-
 release app:
     #!/usr/bin/env bash
     SECRET=$(sops exec-env services/secrets/webhook.yml 'echo ${DEPLOYER_SECRET}')
@@ -19,28 +17,32 @@ install:
 
 dns:
     #!/usr/bin/env bash
+    set -euo pipefail
     CF_KEY=$(sops -d --extract '["apirest"]["key"]' secrets/cloudflare.yml)
-    curl -s --request POST \
-        --url https://api.cloudflare.com/client/v4/zones/8c0e6a032ba22e5ffa9906458e47b838/dns_records/import \
-        --header 'Content-Type: multipart/form-data' \
-        --header 'X-Auth-Email: cloudflare@erebe.eu' \
-        --header "Authorization: Bearer ${CF_KEY}" \
-        --form 'file=@dns/erebe.eus.zones' \
-        --form proxied=false | jq .success
-    curl -s --request POST \
-        --url https://api.cloudflare.com/client/v4/zones/0acc1290d9dd674f677b6d3580611e6a/dns_records/import \
-        --header 'Content-Type: multipart/form-data' \
-        --header 'X-Auth-Email: cloudflare@erebe.eu' \
-        --header "Authorization: Bearer ${CF_KEY}" \
-        --form 'file=@dns/erebe.eu.zones' \
-        --form proxied=false | jq .success
-    curl -s --request POST \
-        --url https://api.cloudflare.com/client/v4/zones/8b8062d04b84fe017d647cbaa46e29e7/dns_records/import \
-        --header 'Content-Type: multipart/form-data' \
-        --header 'X-Auth-Email: cloudflare@erebe.eu' \
-        --header "Authorization: Bearer ${CF_KEY}" \
-        --form 'file=@dns/erebe.dev.zones' \
-        --form proxied=false | jq .success
+    # zone id : zone file. Cloudflare's import *replaces* the zone, so these
+    # files are the source of truth - records are never edited in the dashboard.
+    #
+    # The -f check is not paranoia. curl posts an empty body for a missing
+    # `--form file=@...`, and the reply arrives as a lone `null` out of
+    # `jq .success`, sitting between the other zones' `true`s. That is how a
+    # third zone here - erebe.eus, whose file went away in f3c1638 - kept being
+    # "published" long after there was nothing left to publish. Fail loudly.
+    for zone in \
+        0acc1290d9dd674f677b6d3580611e6a:dns/erebe.eu.zones \
+        8b8062d04b84fe017d647cbaa46e29e7:dns/erebe.dev.zones
+    do
+        zone_id="${zone%%:*}"
+        zone_file="${zone#*:}"
+        [[ -f "${zone_file}" ]] || { echo "no such zone file: ${zone_file}" >&2; exit 1; }
+        printf '%s -> ' "${zone_file}"
+        curl -s --request POST \
+            --url "https://api.cloudflare.com/client/v4/zones/${zone_id}/dns_records/import" \
+            --header 'Content-Type: multipart/form-data' \
+            --header 'X-Auth-Email: cloudflare@erebe.eu' \
+            --header "Authorization: Bearer ${CF_KEY}" \
+            --form "file=@${zone_file}" \
+            --form proxied=false | jq .success
+    done
 
 k8s:
     kubectl apply -k k8s/cert-manager
@@ -53,12 +55,6 @@ k8s:
     helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
     helm upgrade --install nfs-nvme nfs-subdir-external-provisioner/nfs-subdir-external-provisioner -f k8s/nfs-provisioner-nvme-values.yaml
     helm upgrade --install nfs-hdd  nfs-subdir-external-provisioner/nfs-subdir-external-provisioner -f k8s/nfs-provisioner-hdd-values.yaml
-
-wireguard:
-    sops exec-env secrets/wireguard.yml 'cp wireguard/wg0.conf secrets_decrypted/; for i in $(env | grep _KEY | cut -d = -f1); do sed -i "s#__${i}__#${!i}#g" secrets_decrypted/wg0.conf ; done'
-    ssh {{HOST}} "cat /etc/wireguard/wg0.conf" | diff - secrets_decrypted/wg0.conf \
-        || (scp secrets_decrypted/wg0.conf {{HOST}}:/etc/wireguard/wg0.conf && ssh {{HOST}} systemctl restart wg-quick@wg0)
-    ssh {{HOST}} 'systemctl enable wg-quick@wg0'
 
 envoy:
     helm template eg-crds oci://docker.io/envoyproxy/gateway-crds-helm -f k8s/envoy-crds.yaml --version v1.9.1 | kubectl apply --server-side --force-conflicts -f -
