@@ -1,0 +1,52 @@
+{
+  "disks": [
+    {
+      "device": "/dev/nvme0n1",
+      "partitions": [
+        { "label": "uefi", "number": 1, "size": 536870912,     "useAllAvailableSpace": false },
+        { "label": "swap", "number": 2, "size": 4294967296,    "useAllAvailableSpace": false },
+        { "label": "boot", "number": 3, "size": 536870912,     "useAllAvailableSpace": false },
+        { "label": "root", "number": 4, "size": 214748364800,  "useAllAvailableSpace": false },
+        { "label": "zfs",  "number": 5, "size": 1828286627840, "useAllAvailableSpace": false }
+      ]
+    },
+    {
+      "device": "/dev/nvme1n1",
+      "partitions": [
+        { "label": "swap", "number": 1, "size": 4294967296,    "useAllAvailableSpace": false },
+        { "label": "boot", "number": 2, "size": 536870912,     "useAllAvailableSpace": false },
+        { "label": "root", "number": 3, "size": 214748364800,  "useAllAvailableSpace": false },
+        { "label": "zfs",  "number": 4, "size": 1828286627840, "useAllAvailableSpace": false }
+      ]
+    }
+  ],
+  "filesystems": [
+    { "device": "/dev/nvme0n1p1", "format": "fat32", "mountpoint": "/boot/efi" },
+    { "device": "/dev/md0",       "format": "ext4",  "mountpoint": "/boot" },
+    { "device": "/dev/md1",       "format": "ext4",  "mountpoint": "/" }
+  ],
+  "raids": [
+    {
+      "name": "/dev/md0",
+      "level": "raid_level_1",
+      "devices": [ "/dev/nvme0n1p3", "/dev/nvme1n1p2" ]
+    },
+    {
+      "name": "/dev/md1",
+      "level": "raid_level_1",
+      "devices": [ "/dev/nvme0n1p4", "/dev/nvme1n1p3" ]
+    }
+  ],
+  "zfs": {
+    "pools": [
+      {
+        "name": "zdata",
+        "type": "mirror",
+        "devices": [ "/dev/nvme0n1p5", "/dev/nvme1n1p4" ],
+        "options": [ "ashift=12" ],
+        "filesystem_options": []
+      }
+    ]
+  }
+}
+

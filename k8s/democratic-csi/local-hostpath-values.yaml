@@ -1,4 +1,5 @@
-# democratic-csi, second instance: plain directories on scw's local NVMe RAID1.
+# democratic-csi, second instance: plain directories on scw's ZFS mirror
+# `zdata` (nvme0n1p4 + nvme1n1p5), mounted at /mnt/zdata.
 #
 # This exists so the write-heavy observability volumes (Prometheus TSDB, Loki
 # chunks) stay on the node instead of crossing WireGuard to iSCSI on
@@ -6,6 +7,15 @@
 # (nodes/k3s/k3s/config.yaml) and cannot simply be re-enabled: k3s marks its
 # local-path class as default and nfs-nvme already holds that role, which would
 # leave two defaults and make karakeep's unqualified PVCs ambiguous.
+#
+# These volumes used to sit on /var/lib/csi-local-hostpath, i.e. scw's 200G
+# ext4 root on md1. The reason to move them is checksums, not space: ZFS
+# checksums every block and a mirror can rebuild a bad one from the other leg,
+# where md1 can only notice that its two legs disagree and cannot say which
+# one is right. Do not expect much from compression=on - Prometheus already
+# packs its TSDB blocks and Loki gzips its chunks, so lz4 mostly early-aborts
+# on both; it earns its keep on Grafana's sqlite and costs nothing on the rest.
+# Still node-local, still not replicated anywhere off scw.
 
 csiDriver:
   # Must be unique per cluster - the zfs-iscsi release owns
@@ -38,12 +48,21 @@ csiDriver:
   fsGroupPolicy: File
 
 storageClasses:
-  - name: local-hostpath-scw
+    # Named for the pool, not the node: which nodes this class can serve is
+    # decided by node.nodeSelector below, and the driver pins each volume to its
+    # own node through topology - so a node name in the class name would be a
+    # claim the class does not make. Renaming it again is not free, a PVC's
+    # storageClassName being immutable, so every claim would have to be
+    # recreated; free this once only because the move to /mnt/zdata already
+    # requires exactly that.
+  - name: local-hostpath-zdata
     defaultClass: false
     reclaimPolicy: Delete
     # The volume is a directory on one specific machine, so binding has to wait
-    # until the scheduler has placed the pod. Immediate would bind the PV before
-    # anything knows which node the workload lands on.
+    # until the scheduler has placed the pod: WaitForFirstConsumer is what puts
+    # the node in volume.kubernetes.io/selected-node, which is the annotation
+    # the node-deployment provisioners use to decide whose PVC this is.
+    # Immediate would bind the PV before anything knows where the pod lands.
     volumeBindingMode: WaitForFirstConsumer
     # Directories have no size to grow.
     allowVolumeExpansion: false
@@ -62,8 +81,21 @@ driver:
     local-hostpath:
       # These two must be identical, and the path has to be hostPath-mounted
       # into the driver container - see node.extraVolumes below.
-      shareBasePath: "/var/lib/csi-local-hostpath"
-      controllerBasePath: "/var/lib/csi-local-hostpath"
+      #
+      # This is the zdata mountpoint itself, not a subdirectory: the driver
+      # appends its own layout, volumes at <basePath>/v/<volume-id> and
+      # filecopy snapshots at <basePath>/s/<id>
+      # (getVolumeExtraPath/getSnapshotExtraPath,
+      # src/driver/controller-client-common/index.js:237).
+      #
+      # Changing this does not move volumes that already exist: CreateVolume
+      # writes the absolute path into the PV's volumeAttributes.path
+      # (controller-local-hostpath/index.js:51) and the node plugin bind-mounts
+      # that stored value, so old PVs keep pointing at
+      # /var/lib/csi-local-hostpath/v/<id>. Their directories have to be moved
+      # under /mnt/zdata/v/ and the PVs recreated, or the data is stranded.
+      shareBasePath: "/mnt/zdata"
+      controllerBasePath: "/mnt/zdata"
       dirPermissionsMode: "0770"
       dirPermissionsUser: 0
       dirPermissionsGroup: 0
@@ -74,11 +106,70 @@ driver:
 
 # For a local driver the component that creates the directory must run on the
 # machine that owns it, so the controller sidecars ride along on the node
-# DaemonSet rather than sitting in their own Deployment. With the DaemonSet
-# pinned to scw below, provisioning can only ever happen on scw.
+# DaemonSet rather than sitting in their own Deployment.
 controller:
   enabled: true
   strategy: node
+
+  externalProvisioner:
+    # Distributed provisioning. This is what makes the release safe to run on
+    # more than one node, and it is not the chart's default.
+    #
+    # The chart's default args carry `--leader-election`, which is actively
+    # wrong for a node-local driver: with N DaemonSet pods, exactly one
+    # provisioner wins the lease, every CreateVolume in the cluster lands on
+    # that pod, and the driver both mkdirs on its *own* disk and stamps the PV
+    # with its own node -
+    #
+    #   async getAccessibleTopology() {
+    #     const response = await super.NodeGetInfo(...arguments);
+    #     return [{ segments: { [NODE_TOPOLOGY_KEY_NAME]: response.node_id } }];
+    #   }
+    #
+    # (controller-local-hostpath/index.js, NODE_TOPOLOGY_KEY_NAME is
+    # "org.democratic-csi.topology/node"). So the volume would be created on
+    # the lease holder while the scheduler had already picked somewhere else,
+    # and the PV's nodeAffinity would drag the pod to the lease holder or leave
+    # it unschedulable. Worse, it moves: new volumes follow the lease after any
+    # restart. With a single-node DaemonSet the lease holder is the only node
+    # and none of this is visible, which is exactly why it would go unnoticed
+    # until the day the selector below is widened.
+    #
+    # --node-deployment drops leader election and has each provisioner handle
+    # only the PVCs whose selected node is its own, read from the
+    # volume.kubernetes.io/selected-node annotation. It requires the node name
+    # in NODE_NAME or it refuses to start:
+    #   F csi-provisioner.go:147] The NODE_NAME environment variable must be
+    #   set when using --enable-node-deployment
+    # The chart's provisioner container already supplies it from
+    # spec.nodeName via the downward API, so there is nothing to add here.
+    #
+    # --strict-topology passes only the selected node's topology to
+    # CreateVolume instead of every node's, and --immediate-topology=false
+    # stops it advertising an aggregate cluster topology that no single
+    # directory can satisfy.
+    #
+    # --node-deployment-immediate-binding=false is not strictly required (the
+    # class below is WaitForFirstConsumer, so binding is always late) but it
+    # closes the door on the one mode that cannot work here: with immediate
+    # binding, every node's provisioner races on a 20s-1m random delay to claim
+    # the PVC, and the winner decides which machine the data lives on with no
+    # relation to where the pod will run. A Pending PVC is the better failure.
+    #
+    # Everything else is the chart's default list, restated because `args`
+    # replaces it wholesale - `extraArgs` only appends, and appending cannot
+    # remove --leader-election.
+    args:
+      - --v={{ .Values.controller.externalProvisioner.verbosityLevel }}
+      - --node-deployment
+      - --strict-topology
+      - --immediate-topology=false
+      - --node-deployment-immediate-binding=false
+      - --timeout=90s
+      - --worker-threads=10
+      - --extra-create-metadata
+      - --csi-address={{ .csiSocketAddress }}
+
   # Nothing to attach - see csiDriver.attachRequired.
   externalAttacher:
     enabled: false
@@ -97,8 +188,43 @@ controller:
     enabled: false
 
 node:
-  # scw only. This is that node's local disk; there is nothing for this driver
-  # to do anywhere else, and the taint has to be tolerated explicitly.
+  # All three are chart defaults, and all three exist for the *other* release.
+  # node.yaml annotates them `Required by iSCSI` (hostNetwork) and
+  # `Required by multipath detach` (hostIPC): iscsid and multipathd live on the
+  # host and are reached through its network and IPC namespaces. This driver
+  # bind-mounts a local directory and talks to nothing, so inheriting them put a
+  # storage DaemonSet on scw's host network and in its host IPC namespace for no
+  # reason at all.
+  #
+  # Nothing here needs either: the CSI socket, the kubelet registration socket
+  # and the volume paths are all hostPath mounts, mounting works through
+  # Bidirectional propagation rather than nsenter (hence hostPID stays false),
+  # and the external-provisioner sidecar reaches the API server over the pod
+  # network like every other pod - by KUBERNETES_SERVICE_HOST, so it does not
+  # even need DNS.
+  #
+  # dnsPolicy follows: ClusterFirstWithHostNet is only meaningful with
+  # hostNetwork, and leaving it behind would be a claim about this pod that is
+  # no longer true.
+  hostNetwork: false
+  hostIPC: false
+  dnsPolicy: ClusterFirst
+
+  # scw only, for now - and with distributed provisioning above, this is now a
+  # policy choice rather than a correctness requirement. It is the single gate
+  # on which nodes offer local storage.
+  #
+  # To add a node, three things have to line up, and the third is the one that
+  # bites: the selector has to match it, its taint has to be tolerated (every
+  # node in this cluster carries kubernetes.io/hostname=<name>:NoSchedule), and
+  # it has to have something mounted at the base path below. That path is a
+  # single value shared by every pod in the DaemonSet, so it is a promise each
+  # node has to keep. `type: Directory` is what turns a node that cannot keep it
+  # into a FailedMount instead of a directory quietly created on its root disk.
+  #
+  # Deliberately not `tolerations: [{operator: Exists}]`, tempting as it is for
+  # a DaemonSet: a storage driver that provisions host directories should land
+  # on nodes someone chose, not on whatever the cluster grows next.
   nodeSelector:
     kubernetes.io/hostname: scw
   tolerations:
@@ -110,10 +236,23 @@ node:
   driver:
     extraVolumeMounts:
       - name: local-hostpath
-        mountPath: /var/lib/csi-local-hostpath
+        mountPath: /mnt/zdata
 
   extraVolumes:
     - name: local-hostpath
       hostPath:
-        path: /var/lib/csi-local-hostpath
-        type: DirectoryOrCreate
+        path: /mnt/zdata
+        # Directory, not DirectoryOrCreate: /mnt/zdata is a ZFS mountpoint, and
+        # DirectoryOrCreate lets kubelet mkdir it on the root fs when the pool
+        # is not imported. The driver then provisions happily into md1 - no
+        # mirror, no checksums, no compression - and nothing reports an error
+        # until the pool comes back and hides the stale files under the
+        # mountpoint. Directory makes kubelet refuse the mount instead, so the
+        # DaemonSet pod sits in ContainerCreating with a FailedMount event:
+        #   hostPath type check failed: /mnt/zdata is not a directory
+        #
+        # This only catches a missing /mnt/zdata. If the pool is exported but the
+        # mountpoint directory it left behind is still there, kubelet cannot
+        # tell the difference and neither can this field - `zfs mount zdata`
+        # before trusting the volumes.
+        type: Directory

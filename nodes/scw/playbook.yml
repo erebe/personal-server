@@ -5,6 +5,10 @@
   vars:
     node_dir: "{{ inventory_dir }}/scw"
     network_unit: wan.network
+    # zdata is the only pool on this host, a 1.66T mirror that had never been
+    # scrubbed. Weekly rather than the monthly timer because nothing else reads
+    # these disks end to end, and a mirror only repairs the rot it notices.
+    zfs_scrub_pools: [zdata]
     # scw_dns_name / scw_ipv4 / scw_ipv6 come from group_vars/all.yml: public
     # addresses are never hardcoded, they are resolved from the scw.erebe.eu
     # A / AAAA records on the control node.
@@ -13,6 +17,10 @@
     - name: Base packages
       tags: [package, never]
       ansible.builtin.import_tasks: ../common/tasks/package.yml
+
+    - name: ZFS module and tools
+      tags: [zfs, never]
+      ansible.builtin.import_tasks: ../common/tasks/zfs.yml
 
     - name: networkd config
       tags: [network, never]

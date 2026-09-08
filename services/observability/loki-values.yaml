@@ -82,7 +82,7 @@ singleBinary:
     enabled: true
     # scw's own NVMe RAID1 - see the note in prometheus-values.yaml. Chunk
     # flushes and the WAL stay on the node.
-    storageClass: local-hostpath-scw
+    storageClass: local-hostpath-zdata
     size: 50Gi
     # Keep the volume if the StatefulSet is ever scaled down or deleted;
     # the chart otherwise garbage-collects the PVC along with it.

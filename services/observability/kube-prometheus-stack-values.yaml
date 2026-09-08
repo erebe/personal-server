@@ -136,7 +136,7 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: local-hostpath-scw
+          storageClassName: local-hostpath-zdata
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
@@ -186,7 +186,7 @@ grafana:
   persistence:
     enabled: true
     type: pvc
-    storageClassName: local-hostpath-scw
+    storageClassName: local-hostpath-zdata
     size: 10Gi
 
   nodeSelector:
