@@ -21,7 +21,7 @@ spec:
             name: karakeep-secrets
         - configMapRef:
             name: karakeep-configuration
-        image: getmeili/meilisearch:v1.11.1
+        image: getmeili/meilisearch:v1.53.2
         imagePullPolicy: IfNotPresent
         name: meilisearch
         volumeMounts:
