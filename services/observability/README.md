@@ -1,15 +1,16 @@
 # observability
 
 Loki, kube-prometheus-stack (prometheus-operator + Prometheus + Grafana +
-kube-state-metrics + node-exporter) and Alloy, as three Helm releases in the
-`observability` namespace.
+kube-state-metrics) and Alloy, as three Helm releases in the `observability`
+namespace. Alloy is the node agent: container logs to Loki, host metrics to
+Prometheus. There is no separate node-exporter DaemonSet.
 
 ```
 just observability            # deploy / upgrade everything
 just observability_password   # print the Grafana admin password
 ```
 
-Grafana is at <https://grafana.erebe.eu> (the `*.erebe.eu` wildcard already
+Grafana is at <https://obs.erebe.eu> (the `*.erebe.eu` wildcard already
 points at the envoy Gateway, so there is no DNS record to add). Prometheus and
 Loki are deliberately **not** routed from outside - neither has authentication
 of its own. Reach them with a port-forward:
@@ -24,8 +25,8 @@ kubectl -n observability port-forward svc/loki 3100:3100
 | Release | Chart | Provides |
 | --- | --- | --- |
 | `loki` | `grafana/loki` 7.3.0 | StatefulSet, 1 pod, 50Gi |
-| `kube-prometheus-stack` | `prometheus-community/kube-prometheus-stack` 90.0.0 | Prometheus (1, 50Gi), Grafana (1, 10Gi), operator, kube-state-metrics, node-exporter |
-| `alloy` | `grafana/alloy` 1.12.1 | DaemonSet, all nodes - pod logs |
+| `kube-prometheus-stack` | `prometheus-community/kube-prometheus-stack` 90.0.0 | Prometheus (1, 50Gi), Grafana (1, 10Gi), operator, kube-state-metrics |
+| `alloy` | `grafana/alloy` 1.12.1 | DaemonSet, all nodes - pod logs + host metrics |
 | `alloy-events` | `grafana/alloy` 1.12.1 | Deployment, 1 pod - Kubernetes events |
 | `grafana-mcp` | `grafana-community/grafana-mcp` 0.22.0 | MCP server over Grafana, ClusterIP only |
 
@@ -163,14 +164,100 @@ components that are deliberately absent. `kubelet`, `kubeApiServer` and
 
 ### Why Alloy is not a single instance
 
-Alloy tails container log files from `/var/log/pods` on the node it runs on, so
-one pod would only ever collect the logs of pods sharing its node. It is a
-DaemonSet with `tolerations: [{operator: Exists}]` so it lands on every node,
-including the tainted ones - every node in this cluster carries a taint. That is
-coverage, not HA: no clustering, no leader election, no replication.
+Alloy tails container log files from `/var/log/pods` on the node it runs on and
+reads that node's own `/proc` and `/sys`, so one pod would only ever see one
+machine. It is a DaemonSet with `tolerations: [{operator: Exists}]` so it lands
+on every node, including the tainted ones - every node in this cluster carries a
+taint. That is coverage, not HA: no clustering, no leader election, no
+replication.
 
-`node-exporter` is a DaemonSet for the same reason. `kube-state-metrics` is a
-single instance next to Prometheus.
+`kube-state-metrics` is a single instance next to Prometheus.
+
+### Host metrics: Alloy instead of node-exporter
+
+`nodeExporter.enabled: false`. `prometheus.exporter.unix` in
+`alloy-values.yaml` **is** node_exporter - the upstream collectors vendored into
+the Alloy binary - so the DaemonSet that already exists for logs collects the
+host metrics too, and there is one agent per node instead of two. Same metric
+names, same default collector set, same `--path.*` layout and the same two
+`filesystem` excludes prometheus-node-exporter passed on its command line.
+
+The pipeline is exporter → `prometheus.scrape` → `prometheus.remote_write`, and
+Prometheus takes the push through `enableRemoteWriteReceiver: true`. It is a
+push and not a scrape because the only HTTP surface the exporter's metrics
+appear on is Alloy's `/api/v0/component/prometheus.exporter.unix.node/metrics`,
+which is a debug endpoint on a `v0` API - not somewhere to hang the host metrics
+off. The scrape itself never touches a socket: the target resolves to Alloy's
+in-memory address, so it is collected in-process.
+
+**Four labels are relabelled on by hand, and every one of them is load-bearing.**
+The exporter's targets carry none of what the kubernetes-mixin rules and the
+`nodes` / `node-rsrc-use` / 1860 dashboards select on:
+
+| Label | Why |
+| --- | --- |
+| `job` | The exporter presets `job="integrations/unix"`, and `prometheus.scrape`'s `job_name` only fills the label in when it is *unset* - so `job_name` is silently ignored and the relabel rule is the only thing that works. Everything upstream matches `job="node-exporter"` |
+| `instance` | The target's address is Alloy's in-memory address, identical on every node, so all five nodes would otherwise collapse into one `instance="alloy.internal:12345"` series and fight over it |
+| `namespace`, `pod` | `node.rules` joins `node_cpu_seconds_total` to `kube_pod_info` `on (namespace, pod)` to recover the node - that is where `node:node_num_cpu:sum` gets its `node` label from. They describe the agent pod, not the host, exactly as they did when the ServiceMonitor attached them to node-exporter |
+
+`instance` is now the **node name** rather than the `<node-ip>:9100` it used to
+be. That is what kube-prometheus's own jsonnet relabels it to, it survives pod
+restarts, and it makes the instance picker on those dashboards readable. Series
+older than the switch keep their old `instance`, so both spellings show up in
+the dropdown until the 90-day retention window rolls past.
+
+`up{job="node-exporter"}` and the `scrape_*` series still exist -
+`prometheus.scrape` synthesises them and pushes them along, so a collector that
+starts failing is still visible. What is gone is the operator's own view of the
+target: if the pod is down there is nothing left to report `up == 0`, and
+`TargetDown` fires for `job="alloy"` instead - the chart's ServiceMonitor,
+scraped by Prometheus, and down for the same reason.
+
+The `defaultRules` groups are not gated on `nodeExporter.enabled`, so
+`node-exporter`, `node-exporter.rules`, `node.rules`, `node-network` and
+`kube-prometheus-node-recording.rules` all stay. The three node *dashboards* are
+gated on it, which is why `forceDeployDashboards: true` is set - without it
+`nodes`, `node-rsrc-use` and `node-cluster-rsrc-use` would vanish while the
+metrics they plot kept arriving.
+
+#### hostNetwork is not optional
+
+The DaemonSet runs `hostNetwork: true`, as prometheus-node-exporter did, and for
+the same reason. node_exporter's netdev collector reads `<procfs>/net/dev`, and
+`/proc/net` is a symlink to `self/net` - which resolves in the *reading
+process's* network namespace no matter which `/proc` it is read through. From a
+pod netns that yields the pod's own `eth0` and `lo`, so every
+`node_network_receive_bytes_total` in the cluster would have been measuring this
+DaemonSet's own traffic.
+
+Measured against `grafana/alloy:v1.19.2` with `/proc`, `/sys` and `/` bind
+mounted from the host:
+
+| | netdev devices | netclass devices |
+| --- | --- | --- |
+| own netns | 2 (`eth0`, `lo`) | 8 (all host interfaces) |
+| `hostNetwork: true` | 8 | 8 |
+
+That mismatch is the trap: netclass (`node_network_up`, mtu, duplex, ...) comes
+from sysfs and reports the host's interfaces either way, so half the network
+metrics would have looked perfectly correct while the traffic counters - the
+half `instance:node_network_*:rate5m` and every dashboard traffic panel are
+built on - quietly described a log shipper.
+
+The cost is Alloy's HTTP server landing on the node's `:12345`, exactly as
+node-exporter held `:9100`. `nodes/{scw,server}/config/nftables.rules` already
+accepts pod-sourced traffic to host services, so no firewall change was needed;
+`dnsPolicy: ClusterFirstWithHostNet` is, because a hostNetwork pod otherwise
+gets the node's resolver and `loki.write` needs cluster DNS for
+`loki.observability.svc.cluster.local`.
+
+No `hostPID`, unlike prometheus-node-exporter: the mount table is read from
+`/host/proc/1/mounts` by path, and a bind mount of the host's `/proc` is the
+host's procfs instance whatever PID namespace the reader is in, so PID 1 there
+is already the host's init. The root mount needs
+`mountPropagation: HostToContainer` or the container keeps the mount table it
+started with and filesystem metrics go stale for anything mounted later - every
+PVC, for one.
 
 ### Why Kubernetes events are a second Alloy release
 
@@ -318,6 +405,15 @@ scw.
   of `<namespace>/<container>`. Lines are parsed with `stage.cri {}`, the format
   containerd writes under k3s - the real timestamp and the stdout/stderr stream
   come from there, not from the message text.
+
+- **The remote_write WAL sits on the container filesystem.** Alloy's
+  `--storage.path` is the chart default `/tmp/alloy`, which no volume backs, so
+  the write-ahead log for the host metrics lands in the pod's writable layer on
+  each node - and grows there for as long as Prometheus is not accepting the
+  push. ~1600 series per node makes that slow, and it is discarded when the pod
+  is replaced, but it is the one thing that gets bigger when Prometheus is down.
+  A `controller.volumes.extra` emptyDir mounted at `/tmp/alloy` would at least
+  keep it off the overlay.
 
 - **Deleting a `zfs-nvme` PVC used to be impossible** while sanoid was
   snapshotting it. democratic-csi tags each zvol

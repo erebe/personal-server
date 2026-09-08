@@ -89,6 +89,12 @@ prometheus:
     externalLabels:
       cluster: erebe
 
+    # --web.enable-remote-write-receiver, for the host metrics Alloy pushes in
+    # place of the node-exporter DaemonSet. Nothing else writes here. It is as
+    # unauthenticated as the Prometheus UI on the same port and reachable only
+    # in-cluster, which is the same posture as Loki's push endpoint.
+    enableRemoteWriteReceiver: true
+
     # Pick up Monitors and Rules from every namespace, whatever their labels.
     # Left at the chart default these selectors only match objects carrying this
     # release's labels, so a PodMonitor written next to some other service would
@@ -148,13 +154,22 @@ kube-state-metrics:
       value: scw
       effect: NoSchedule
 
-# Host metrics need an agent on every node, so this one is a DaemonSet that has
-# to tolerate every taint in the cluster - every node here carries one.
+# Host metrics come from Alloy now. `prometheus.exporter.unix` in
+# observability/alloy-values.yaml *is* node_exporter, vendored into the Alloy
+# binary, and Alloy already has a DaemonSet on every node for logs - so this
+# would have been a second agent per node collecting the same metrics.
+#
+# It keeps job="node-exporter", the metric names and the collector defaults, so
+# every bundled rule and dashboard still resolves; the `defaultRules` groups
+# (nodeExporterAlerting, nodeExporterRecording, node, network) are not gated on
+# this switch and stay on.
 nodeExporter:
-  enabled: true
-prometheus-node-exporter:
-  tolerations:
-    - operator: Exists
+  enabled: false
+  # The three node dashboards - nodes, node-rsrc-use, node-cluster-rsrc-use -
+  # are gated on `nodeExporter.enabled` and would otherwise vanish along with
+  # the DaemonSet, which is the one thing that must not happen when the metrics
+  # themselves are still arriving.
+  forceDeployDashboards: true
 
 # --- Grafana -----------------------------------------------------------------
 # Values for the bundled grafana subchart, which is the same

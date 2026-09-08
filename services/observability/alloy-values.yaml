@@ -1,16 +1,54 @@
-# Alloy - the log shipper (promtail's replacement).
+# Alloy - the node agent: container logs to Loki, host metrics to Prometheus.
 #
 # This is the one component that is NOT a single instance, and it cannot be: it
-# tails container log files off each node's own filesystem, so a single pod
-# would only ever see the logs of the pods sharing its node. A DaemonSet is one
-# pod per node by design - that is coverage, not high availability, and there is
-# no leader election or replication involved.
+# tails container log files off each node's own filesystem and reads that node's
+# own /proc and /sys, so a single pod would only ever see one machine. A
+# DaemonSet is one pod per node by design - that is coverage, not high
+# availability, and there is no leader election or replication involved.
+#
+# The host metrics half replaces the stack's prometheus-node-exporter
+# DaemonSet - `prometheus.exporter.unix` below *is* node_exporter, vendored into
+# the Alloy binary - so there is one agent per node instead of two. See
+# `nodeExporter.enabled` in kube-prometheus-stack-values.yaml.
 controller:
   type: daemonset
   # Every node, whatever it is tainted with - including scw. Without this the
   # tainted nodes silently ship no logs.
   tolerations:
     - operator: Exists
+
+  # node_exporter's netdev collector reads <procfs>/net/dev, and /proc/net is a
+  # symlink to self/net - which resolves in the *reading process's* network
+  # namespace, whatever /proc it is read through. In a pod netns that yields the
+  # pod's own eth0 and lo, so every node_network_receive_bytes_total in the
+  # cluster would be measuring this DaemonSet's own traffic. Verified against
+  # grafana/alloy:v1.19.2: 2 devices without hostNetwork, all 8 host interfaces
+  # with it.
+  #
+  # This is the same reason prometheus-node-exporter sets hostNetwork: true, and
+  # it lands Alloy's HTTP server on the node's :12345 exactly as node-exporter
+  # held :9100 - the pod-to-host rules in nodes/{scw,server}/config/nftables.rules
+  # already cover it.
+  #
+  # Note that only netdev is affected: netclass (node_network_up, mtu, ...) comes
+  # from sysfs and reports the host's interfaces either way, which is the trap -
+  # half the network metrics would have looked right.
+  hostNetwork: true
+  # hostNetwork pods get the node's resolver by default, and loki.write needs
+  # cluster DNS to resolve loki.observability.svc.cluster.local.
+  dnsPolicy: ClusterFirstWithHostNet
+
+  volumes:
+    extra:
+      - name: proc
+        hostPath:
+          path: /proc
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: root
+        hostPath:
+          path: /
 
 # Alloy exposes its own metrics on :12345. With the operator's CRDs in place
 # that is a ServiceMonitor rather than a scrape annotation.
@@ -29,6 +67,28 @@ alloy:
     # /var/log/pods/... - where the containerd CRI writes container logs.
     varlog: true
 
+    # The host filesystem that node_exporter reads, at the paths its own chart
+    # uses (--path.procfs / --path.sysfs / --path.rootfs), so the collectors and
+    # the mount-point excludes below behave identically.
+    #
+    # No hostPID, unlike prometheus-node-exporter: the mount table comes from
+    # /host/proc/1/mounts by path, and a bind mount of the host's /proc is the
+    # host's procfs instance whatever PID namespace the reader is in, so PID 1
+    # there is already the host's init.
+    extra:
+      - name: proc
+        mountPath: /host/proc
+        readOnly: true
+      - name: sys
+        mountPath: /host/sys
+        readOnly: true
+      - name: root
+        mountPath: /host/root
+        readOnly: true
+        # Or the container keeps the mount table it started with and filesystem
+        # metrics go stale for anything mounted afterwards - every PVC, for one.
+        mountPropagation: HostToContainer
+
   # Those log files are root-owned with no world read bit.
   securityContext:
     runAsUser: 0
@@ -40,11 +100,24 @@ alloy:
       valueFrom:
         fieldRef:
           fieldPath: spec.nodeName
+    # Both only exist to be relabelled onto the host metrics - see the
+    # discovery.relabel block.
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
 
+  # Up from 128Mi: node_exporter's ~1600 series per node and the remote_write
+  # WAL are new here. node-exporter's own chart requested nothing at all, so
+  # this is the whole of what replacing it costs.
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
+      cpu: 100m
+      memory: 192Mi
     limits:
       memory: 512Mi
 
@@ -132,5 +205,94 @@ alloy:
       loki.write "default" {
         endpoint {
           url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+        }
+      }
+
+      // ---- host metrics ------------------------------------------------------
+      //
+      // This is node_exporter, vendored into the Alloy binary: same collectors,
+      // same metric names, same default set. The paths and the two excludes are
+      // exactly what prometheus-node-exporter passed on its command line, so
+      // node_filesystem_* covers the same mounts it did before.
+      prometheus.exporter.unix "node" {
+        procfs_path    = "/host/proc"
+        sysfs_path     = "/host/sys"
+        rootfs_path    = "/host/root"
+        udev_data_path = "/host/root/run/udev/data"
+
+        filesystem {
+          mount_points_exclude = "^/(dev|proc|sys|run/containerd/.+|var/lib/docker/.+|var/lib/kubelet/.+)($|/)"
+          fs_types_exclude     = "^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs|erofs)$"
+        }
+      }
+
+      // Every label here is load-bearing, because the exporter's own targets
+      // carry none of what the kubernetes-mixin rules and the 1860/nodes/
+      // node-rsrc-use dashboards select on:
+      //
+      //  - job: the exporter presets job = "integrations/unix", and
+      //    prometheus.scrape's job_name only fills the label in when it is
+      //    *unset*, so job_name is silently ignored and this rule is the only
+      //    thing that works. Every mixin rule and dashboard matches
+      //    job="node-exporter".
+      //  - instance: the exported target's address is Alloy's in-memory
+      //    address, identical on every node, so without this all five nodes
+      //    would collapse into one instance="alloy.internal:12345" series and
+      //    fight over it. The node name is what kube-prometheus's own jsonnet
+      //    relabels instance to; it also survives pod restarts, which the
+      //    <node-ip>:9100 it used to be did not.
+      //  - namespace / pod: node.rules joins node_cpu_seconds_total to
+      //    kube_pod_info on (namespace, pod) to recover the node - that is how
+      //    node:node_num_cpu:sum gets its node label. They describe the agent
+      //    pod, not the host, exactly as they did when the ServiceMonitor
+      //    attached them to node-exporter.
+      discovery.relabel "node_exporter" {
+        targets = prometheus.exporter.unix.node.targets
+
+        rule {
+          target_label = "job"
+          replacement  = "node-exporter"
+        }
+
+        rule {
+          target_label = "instance"
+          replacement  = sys.env("NODE_NAME")
+        }
+
+        rule {
+          target_label = "namespace"
+          replacement  = sys.env("POD_NAMESPACE")
+        }
+
+        rule {
+          target_label = "pod"
+          replacement  = sys.env("POD_NAME")
+        }
+      }
+
+      // In-process: the target resolves to Alloy's in-memory address, so this
+      // never touches a socket. The interval matches
+      // prometheusSpec.scrapeInterval - Alloy's own default is 60s, which would
+      // have quietly coarsened every host metric by 6x.
+      prometheus.scrape "node_exporter" {
+        targets         = discovery.relabel.node_exporter.output
+        scrape_interval = "10s"
+        forward_to      = [prometheus.remote_write.default.receiver]
+      }
+
+      // Push, because Prometheus cannot pull this: the exporter's metrics are
+      // only served on Alloy's /api/v0/component/... API, which is a debug
+      // surface and not something to hang the host metrics off. Needs
+      // prometheusSpec.enableRemoteWriteReceiver, which the stack's values set.
+      //
+      // prometheus.scrape still synthesises up{job="node-exporter"} and the
+      // scrape_* series and pushes them along, so a collector that starts
+      // failing is still visible. What is gone is the operator's own view of the
+      // target: if the pod is down there is nothing left to report up == 0, and
+      // TargetDown then fires for job="alloy" instead - which is the ServiceMonitor
+      // above, scraped by Prometheus, and down for the same reason.
+      prometheus.remote_write "default" {
+        endpoint {
+          url = "http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090/api/v1/write"
         }
       }

@@ -26,17 +26,18 @@ table inet SERVER_FIREWALL {
               iifname != "eth0" ip6 daddr fd01::/48 accept comment "Allow incoming kube traffic"
 
               # The rules above only cover traffic addressed to a *pod*. Anything
-              # a pod sends to the node itself - node-exporter on :9100 and the
-              # kubelet on :10250, both hostNetwork - is addressed to the node IP
-              # instead, arrives on the CNI bridge rather than wg0, and so falls
-              # through to `policy drop`. Not currently reachable here, because
-              # Prometheus runs on scw and its scrapes of this node arrive over
-              # wg0; this only bites for a pod on server scraping server. Kept in
-              # step with scw's rules so it does not become a puzzle later.
+              # a pod sends to the node itself - the Alloy DaemonSet on :12345
+              # and the kubelet on :10250, both hostNetwork - is addressed to the
+              # node IP instead, arrives on the CNI bridge rather than wg0, and
+              # so falls through to `policy drop`. Not currently reachable here,
+              # because Prometheus runs on scw and its scrapes of this node
+              # arrive over wg0; this only bites for a pod on server scraping
+              # server. Kept in step with scw's rules so it does not become a
+              # puzzle later.
               # Matching on the pod source range, with the WAN excluded, so the
               # internet cannot spoof its way in.
-              iifname != "eth0" ip saddr 10.42.0.0/16 accept comment "Allow pods to reach host services (node-exporter, kubelet)"
-              iifname != "eth0" ip6 saddr fd01::/48 accept comment "Allow pods to reach host services (node-exporter, kubelet)"
+              iifname != "eth0" ip saddr 10.42.0.0/16 accept comment "Allow pods to reach host services (alloy, kubelet)"
+              iifname != "eth0" ip6 saddr fd01::/48 accept comment "Allow pods to reach host services (alloy, kubelet)"
 
               meta l4proto icmp accept comment "Accept ICMP"
               meta l4proto ipv6-icmp accept comment "accept all ICMP types"

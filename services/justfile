@@ -3,14 +3,6 @@ set dotenv-load := false
 _default:
     @just --list
 
-email:
-	sops -d --output secrets_decrypted/dovecot.yml secrets/dovecot.yml
-	sops -d --output secrets_decrypted/fetchmail.yml secrets/fetchmail.yml
-	kubectl delete -f secrets_decrypted/dovecot.yml
-	kubectl delete -f secrets_decrypted/fetchmail.yml
-	kubectl delete -f email/deployment.yml
-  
-
 nextcloud:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone nextcloud/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/nextcloud-applyset --namespace=default
 
