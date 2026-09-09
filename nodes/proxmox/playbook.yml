@@ -89,8 +89,16 @@
           # to find.
           when: not ansible_check_mode
 
-    - name: Restic offsite backup of the nextcloud photos PVC
+    - name: Restic offsite backups
       tags: [restic, never]
+      vars:
+        # Instance name -> what it backs up. The name is the systemd instance,
+        # the env file basename, the restic tag, and the secrets key prefix.
+        restic_jobs:
+          - name: nextcloud
+            source: /backup/data/default-nextcloud-hdd-pv-claim-pvc-12f99576-32ac-4ea8-b690-8b4b99c3c03a
+          - name: nvme-backup
+            source: /backup/nvme-backup
       block:
         - name: Load the restic credentials from sops
           # Own name, not ansible_facts: that name is reserved here for the
@@ -108,20 +116,25 @@
             group: root
             mode: '0700'
 
-        - name: Install the restic environment file
-          # RESTIC_PASSWORD is the repository's encryption key and sops holds
-          # the only other copy - lose both and the bucket is unreadable.
+        - name: Install the per-instance restic environment files
+          # One repository per job, each with its own password: a leaked key for
+          # one repository does not open the other. sops holds the only other
+          # copy of both - lose it and that repository is unreadable forever.
           ansible.builtin.copy:
             content: |
-              RESTIC_REPOSITORY={{ restic_secrets.RESTIC_REPOSITORY }}
-              RESTIC_PASSWORD={{ restic_secrets.RESTIC_PASSWORD }}
+              RESTIC_REPOSITORY={{ restic_secrets['RESTIC_' ~ (item.name | upper | replace('-', '_')) ~ '_REPOSITORY'] }}
+              RESTIC_PASSWORD={{ restic_secrets['RESTIC_' ~ (item.name | upper | replace('-', '_')) ~ '_PASSWORD'] }}
+              RESTIC_SOURCE={{ item.source }}
               AWS_ACCESS_KEY_ID={{ restic_secrets.AWS_ACCESS_KEY_ID }}
               AWS_SECRET_ACCESS_KEY={{ restic_secrets.AWS_SECRET_ACCESS_KEY }}
               AWS_DEFAULT_REGION={{ restic_secrets.AWS_DEFAULT_REGION }}
-            dest: /etc/restic/nextcloud.env
+            dest: "/etc/restic/{{ item.name }}.env"
             owner: root
             group: root
             mode: '0600'
+          loop: "{{ restic_jobs }}"
+          loop_control:
+            label: "{{ item.name }}"
           no_log: true
 
         - name: Upload the restic units
@@ -132,18 +145,22 @@
             group: root
             mode: '0644'
           loop:
-            - restic-nextcloud.service
-            - restic-nextcloud.timer
+            - restic@.service
+            - restic@nextcloud.timer
+            - restic@nvme-backup.timer
           notify: daemon-reload
 
-        - name: Enable the restic timer
+        - name: Enable the restic timers
           # daemon_reload here, not via the handler: that runs at the end of the
           # play, and systemd must read the units before it can enable them.
           ansible.builtin.systemd:
-            name: restic-nextcloud.timer
+            name: "restic@{{ item.name }}.timer"
             enabled: true
             state: started
             daemon_reload: true
+          loop: "{{ restic_jobs }}"
+          loop_control:
+            label: "{{ item.name }}"
           # Under --check the units were never written, so there is no timer
           # to find.
           when: not ansible_check_mode

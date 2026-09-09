@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily restic backup of the nextcloud photos PVC
+
+[Timer]
+# 05:00: clear of sanoid's hourly, syncoid-backup at 00:01, syncoid-scw at
+# 03:00 and the nvme-backup restic job at 02:00. Two restic instances must not
+# overlap - each peaks around 4G RSS at these settings.
+OnCalendar=*-*-* 05:00:00
+Persistent=true
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=Daily restic backup of the nvme replica dataset
+
+[Timer]
+# 02:00: after syncoid-backup has finished writing this dataset at 00:01, and
+# before syncoid-scw at 03:00. The source is a `zfs recv` target, so reading it
+# mid-receive would capture a half-applied stream; 2h of clearance makes that
+# overlap implausible for a 67G incremental.
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=timers.target
