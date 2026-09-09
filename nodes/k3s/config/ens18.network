@@ -6,12 +6,6 @@ DHCP=ipv4
 IPv6AcceptRA=yes
 IPv6PrivacyExtensions=yes
 
-# In [Network] this key is unknown and ignored ("Unknown key 'MTUBytes'" on
-# every start); the link reached 9000 anyway via the RA, which is why it went
-# unnoticed. Not related to the LAN route loss - that was the networkd restart.
-[Link]
-MTUBytes=9000
-
 [IPv6AcceptRA]
 # Use Router Advertisement for routing
 UseAutonomousPrefix=yes

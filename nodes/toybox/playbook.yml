@@ -11,8 +11,6 @@
       tags: [package, never]
       ansible.builtin.import_tasks: ../common/tasks/package.yml
 
-    # Untagged until now: `--tags network` skipped it, while a bare
-    # `just toybox` would have run it - a network rewrite on this node.
     - name: networkd config
       tags: [network, never]
       ansible.builtin.import_tasks: ../common/tasks/networkd.yml

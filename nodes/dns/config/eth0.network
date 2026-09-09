@@ -6,9 +6,6 @@ DHCP=ipv4
 IPv6AcceptRA=yes
 IPv6PrivacyExtensions=yes
 
-[Link]
-MTUBytes=9000
-
 [IPv6AcceptRA]
 # Use Router Advertisement for routing
 UseAutonomousPrefix=yes
