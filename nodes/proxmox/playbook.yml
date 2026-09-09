@@ -89,6 +89,65 @@
           # to find.
           when: not ansible_check_mode
 
+    - name: Restic offsite backup of the nextcloud photos PVC
+      tags: [restic, never]
+      block:
+        - name: Load the restic credentials from sops
+          # Own name, not ansible_facts: that name is reserved here for the
+          # wireguard templates, and reusing it shadows every gathered fact.
+          community.sops.load_vars:
+            file: "{{ inventory_dir }}/../secrets/restic.yml"
+            name: restic_secrets
+            expressions: ignore
+
+        - name: Ensure /etc/restic exists
+          ansible.builtin.file:
+            path: /etc/restic
+            state: directory
+            owner: root
+            group: root
+            mode: '0700'
+
+        - name: Install the restic environment file
+          # RESTIC_PASSWORD is the repository's encryption key and sops holds
+          # the only other copy - lose both and the bucket is unreadable.
+          ansible.builtin.copy:
+            content: |
+              RESTIC_REPOSITORY={{ restic_secrets.RESTIC_REPOSITORY }}
+              RESTIC_PASSWORD={{ restic_secrets.RESTIC_PASSWORD }}
+              AWS_ACCESS_KEY_ID={{ restic_secrets.AWS_ACCESS_KEY_ID }}
+              AWS_SECRET_ACCESS_KEY={{ restic_secrets.AWS_SECRET_ACCESS_KEY }}
+              AWS_DEFAULT_REGION={{ restic_secrets.AWS_DEFAULT_REGION }}
+            dest: /etc/restic/nextcloud.env
+            owner: root
+            group: root
+            mode: '0600'
+          no_log: true
+
+        - name: Upload the restic units
+          ansible.builtin.copy:
+            src: "{{ node_dir }}/restic/{{ item }}"
+            dest: "/etc/systemd/system/{{ item }}"
+            owner: root
+            group: root
+            mode: '0644'
+          loop:
+            - restic-nextcloud.service
+            - restic-nextcloud.timer
+          notify: daemon-reload
+
+        - name: Enable the restic timer
+          # daemon_reload here, not via the handler: that runs at the end of the
+          # play, and systemd must read the units before it can enable them.
+          ansible.builtin.systemd:
+            name: restic-nextcloud.timer
+            enabled: true
+            state: started
+            daemon_reload: true
+          # Under --check the units were never written, so there is no timer
+          # to find.
+          when: not ansible_check_mode
+
   handlers:
     - name: daemon-reload
       ansible.builtin.systemd:

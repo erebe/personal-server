@@ -1,0 +1,72 @@
+[Unit]
+Description=Restic backup of the nextcloud photos PVC to s3.fr1.next.ink
+Documentation=man:restic(1)
+# The source is a ZFS dataset, and Persistent=true fires a missed run at boot -
+# before the pool is necessarily imported.
+Requires=zfs.target
+After=zfs.target
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Type=oneshot has no start timeout by default, so a stalled upload would stay
+# "activating" forever and every later trigger would be skipped. The first run
+# ships ~885G over the WAN, hence the size of this.
+TimeoutStartSec=24h
+# Without HOME the cache is disabled outright - "unable to open cache: unable
+# to locate cache directory: neither $XDG_CACHE_HOME nor $HOME are defined" -
+# and every run re-fetches the index from S3 instead of reading /root/.cache.
+Environment=HOME=/root
+# restic prints a progress bar only on a TTY, so a service logs nothing at all
+# without this. Frames per *second*, so 0.0167 is one journal line a minute -
+# ~900 for the 15h first run, a handful for an incremental one. Undocumented in
+# --help and the man page, but honoured: verified 0 lines without it, periodic
+# lines with it. `kill -USR1 $MAINPID` prints one on demand at any time.
+Environment=RESTIC_PROGRESS_FPS=0.0167
+# Credentials and the repository password, written by ansible from
+# secrets/restic.yml. Root-only: RESTIC_PASSWORD is the only thing standing
+# between this bucket's contents and anyone who reads the file.
+EnvironmentFile=/etc/restic/nextcloud.env
+
+# Idempotent init - `restic init` errors on an existing repository, so only run
+# it when the config object is genuinely absent.
+ExecStartPre=/bin/sh -c '/usr/bin/restic cat config >/dev/null 2>&1 || /usr/bin/restic init'
+
+# --one-file-system: the PVC is its own dataset, so this stops a stray mount
+#   underneath it being pulled in silently.
+# No --exclude: the directory holds only nextcloud's photos tree.
+# -o s3.connections=32 on every restic invocation, not just the backup: the
+# default of 5 is the single biggest throughput limit here. Measured on this
+# host against this bucket - 5: 16 MB/s, 20: 64 MB/s, 32: 90 MB/s, which turns
+# the 885G first run from ~15h into ~3h. --pack-size was tested too and is not
+# worth it: 64MiB packs bought no extra speed at 32 connections and tripled
+# peak RSS (1.5G -> 3.9G) on a host where RAM is the binding constraint.
+ExecStart=/usr/bin/restic backup \
+  -o s3.connections=40 \
+  --pack-size 64 \
+  --one-file-system \
+  --tag nextcloud-photos \
+  /backup/data/default-nextcloud-hdd-pv-claim-pvc-12f99576-32ac-4ea8-b690-8b4b99c3c03a
+
+# Retention, matching template_archive on this pool (nodes/proxmox/sanoid/sanoid.conf)
+# so the offsite copy does not outlive the local one by accident.
+# --prune only does real work on the days forget actually drops a snapshot, so
+# this is cheap most nights and expensive occasionally.
+ExecStart=/usr/bin/restic forget --prune \
+  -o s3.connections=40 \
+  --pack-size 64 \
+  --tag nextcloud-photos \
+  --keep-daily 30 --keep-weekly 8 --keep-monthly 12
+
+# Weekly consistency check. This unit fires daily, so the weekday guard is what
+# makes it weekly - %%u is escaped because systemd would otherwise expand a bare
+# %u to the user name. Last on purpose: prune is the only operation that
+# rewrites the repository, so the check runs against its result.
+# Structure and metadata only - `--read-data` would pull all 885G back out of
+# S3 every week. `--read-data-subset=1/52` would verify the contents too,
+# spread over a year, at ~17G of egress a week.
+ExecStart=/bin/sh -c '[ "$(date +%%u)" -ne 7 ] || /usr/bin/restic check -o s3.connections=32'
+
+[Install]
+WantedBy=multi-user.target

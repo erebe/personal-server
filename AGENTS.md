@@ -137,7 +137,8 @@ just <node> --tags <tag> --check    # dry run — do this first
 ```
 
 Tags in use: `package`, `network`, `migrate-networkd`, `firewall`, `ssh`,
-`sudo`, `wireguard`, `k3s-agent`, `k3s-master`, `cilium`, `sanoid`. Not every
+`sudo`, `wireguard`, `k3s-agent`, `k3s-master`, `cilium`, `sanoid`, `restic`.
+Not every
 node has every tag — read its `playbook.yml`.
 
 Other Ansible facts worth knowing:
@@ -289,7 +290,23 @@ both are applied with `--tags sanoid`.
 | --- | --- | --- | --- |
 | `nvme` -> `backup/nvme-backup` | local, on proxmox | `syncoid-backup.timer`, 00:01 | 36 hourly + 7 daily on source, 90 daily on target |
 | scw `zdata` -> `backup/scw-backup` | **pull** over wg0, proxmox -> `erebe@10.200.1.2` | `syncoid-scw.timer`, 03:00 | same |
-| `backup/data` | not replicated | — | `template_archive`: 30 daily, 8 weekly, 12 monthly |
+| `backup/data` | no ZFS replication | — | `template_archive`: 30 daily, 8 weekly, 12 monthly |
+| `backup/data/…nextcloud-hdd…` | **restic**, offsite to `s3://lisez-next/nextcloud` (s3.fr1.next.ink) | `restic-nextcloud.timer`, 05:00 | 30 daily, 8 weekly, 12 monthly |
+
+`backup/data` is the one pool with no ZFS replication, so the nextcloud photos
+tree under it is the exception: `nodes/proxmox/restic/`, applied with
+`--tags restic`, pushes it to a third-party S3 bucket instead. Two things about
+it. The unit has three `ExecStart` lines - backup, then `forget --prune`, then
+a `restic check` guarded by `[ "$(date +%u)" -ne 7 ]` so it only runs on
+Sundays; `%u` is written `%%u` in the unit or systemd expands it to the user
+name. The check is structure-and-metadata only, takes an exclusive repository
+lock, and deliberately runs after prune, the one operation that rewrites the
+repository. `RESTIC_PASSWORD` in `secrets/restic.yml` is the repository's
+encryption key and sops holds the only copy — without it the bucket is unreadable, so it
+is not rotatable in the way the S3 keys beside it are. And it reads the live
+directory rather than a `.zfs/snapshot/` path, so a file written mid-run is
+captured as restic found it; that is fine for a photos tree and would not be
+for a database.
 
 Things to know before touching it: pulls, not pushes, so the credential lives
 on the host holding the backups (`/etc/syncoid/id_scw`, from
