@@ -2,8 +2,8 @@
 
 Loki, kube-prometheus-stack (prometheus-operator + Prometheus + Grafana +
 kube-state-metrics) and Alloy, as three Helm releases in the `observability`
-namespace. Alloy is the node agent: container logs to Loki, host metrics to
-Prometheus. There is no separate node-exporter DaemonSet.
+namespace. Alloy is the node agent: container logs and host journals to Loki,
+host metrics to Prometheus. There is no separate node-exporter DaemonSet.
 
 ```
 just observability            # deploy / upgrade everything
@@ -172,6 +172,40 @@ taint. That is coverage, not HA: no clustering, no leader election, no
 replication.
 
 `kube-state-metrics` is a single instance next to Prometheus.
+
+### Host journals
+
+`loki.source.journal` ships each node's systemd journal, labelled
+`job="systemd-journal"` plus `node`, `unit`, `level` and `transport`. All of
+those come from relabel rules: the component's own `labels` argument is ignored
+and would leave `job="loki.source.journal.host"`.
+
+There are two components, one per journal location, because a node has one or
+the other: `/var/log/journal` everywhere except dns, which is a Raspberry Pi and
+keeps its journal volatile under `/run/log/journal` to spare the SD card. Both
+paths are mounted (the volatile one as `DirectoryOrCreate`, so the four nodes
+without it mount an empty directory rather than failing the component).
+
+`path` must be set on each. Leaving it unset to let the reader use journald's own
+defaults ignores `max_age` and replays the whole journal, which Loki rejects
+with `400 'entry too far behind'`. With a path it seeks correctly, and
+`max_age = "1h"` bounds the backfill on a first read.
+
+`--storage.path` is a `/run/alloy` hostPath rather than the chart's default
+`/tmp/alloy`, so the journal cursors *and* `loki.source.file`'s `positions.yml`
+survive a pod restart. Without it every restart re-read every container log file
+from the beginning and Loki rejected the old part. `/run` because it is tmpfs on
+every node and positions are rewritten every 10s - the same SD-card wear dns
+avoids by keeping its journal volatile. All of it is 800K, and a node reboot
+still costs one replay.
+
+Kernel messages (`dmesg`) arrive over `_TRANSPORT=kernel` with no unit, so a
+rule stamps `unit="kernel"` on them - otherwise they are only reachable through
+an empty unit label.
+
+The `systemd journal` dashboard (uid `systemd-journal`, provisioned from
+`dashboards/`) is the front end: node and unit pickers, the unit one accepting a
+regex, and a link into Explore where live tailing lives.
 
 ### Host metrics: Alloy instead of node-exporter
 
@@ -409,14 +443,12 @@ scw.
   containerd writes under k3s - the real timestamp and the stdout/stderr stream
   come from there, not from the message text.
 
-- **The remote_write WAL sits on the container filesystem.** Alloy's
-  `--storage.path` is the chart default `/tmp/alloy`, which no volume backs, so
-  the write-ahead log for the host metrics lands in the pod's writable layer on
-  each node - and grows there for as long as Prometheus is not accepting the
-  push. ~1600 series per node makes that slow, and it is discarded when the pod
-  is replaced, but it is the one thing that gets bigger when Prometheus is down.
-  A `controller.volumes.extra` emptyDir mounted at `/tmp/alloy` would at least
-  keep it off the overlay.
+- **Alloy's state is on a `/run/alloy` hostPath**, not the chart's default
+  `/tmp/alloy`, so the remote_write WAL, the journal cursors and
+  `loki.source.file`'s positions survive a pod restart instead of being
+  discarded with the container layer. The WAL is still the one thing that grows
+  while Prometheus refuses the push (~1600 series per node), and `/run` is
+  tmpfs, so that growth is node RAM - 800K in normal operation.
 
 - **Deleting a `zfs-nvme` PVC used to be impossible** while sanoid was
   snapshotting it. democratic-csi tags each zvol

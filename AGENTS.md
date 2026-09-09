@@ -400,7 +400,11 @@ Let's Encrypt via the Cloudflare DNS-01 token (`k8s/lets-encrypt-issuer.yml`,
 before touching that stack. Highlights: everything single-replica on scw's local
 disk, Alertmanager off (alerts fire nowhere), 30-day retention, **nothing is
 backed up**, and the four k3s-absent control-plane scrape targets are
-deliberately disabled. Grafana is at `obs.erebe.eu`. `grafana-mcp` is
+deliberately disabled. Alloy also ships each node's systemd journal (including
+kernel messages) to Loki; the `systemd journal` dashboard is provisioned from
+`services/observability/dashboards/` via a `grafana_dashboard=1` ConfigMap,
+which is how dashboards get into Grafana here — its API is not the source of
+truth. Grafana is at `obs.erebe.eu`. `grafana-mcp` is
 reachable over the mesh at
 `http://10.200.1.2:8000/sse` with a bearer token from
 `just observability_mcp_token`.

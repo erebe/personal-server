@@ -49,6 +49,31 @@ controller:
       - name: root
         hostPath:
           path: /
+      # dns is a Raspberry Pi: journald stays volatile there on purpose, to keep
+      # the SD card from wearing out, so its journal is only under
+      # /run/log/journal. DirectoryOrCreate so the four nodes that flushed their
+      # runtime journal mount an empty dir instead of failing - a journal
+      # component whose path does not exist logs
+      # "sd_journal_open_directory failed: no such file or directory".
+      - name: runlog
+        hostPath:
+          path: /run/log/journal
+          type: DirectoryOrCreate
+
+      # --storage.path, which the chart otherwise leaves on the container's own
+      # layer: every restart then loses loki.source.file's positions.yml and
+      # re-reads every container log file from the start, which Loki answers
+      # with 400 'entry too far behind' for anything older than an hour.
+      #
+      # /run and not /var/lib: it is tmpfs on every node, and dns is the
+      # Raspberry Pi whose journal is already kept off the SD card - positions
+      # are rewritten every 10s and would be the same wear pattern. The whole
+      # state is 800K (756K of it the remote_write WAL). The cost is that a node
+      # *reboot* still replays once, unlike a pod restart.
+      - name: alloydata
+        hostPath:
+          path: /run/alloy
+          type: DirectoryOrCreate
 
 # Alloy exposes its own metrics on :12345. With the operator's CRDs in place
 # that is a ServiceMonitor rather than a scrape annotation.
@@ -56,6 +81,9 @@ serviceMonitor:
   enabled: true
 
 alloy:
+  # Matches the alloydata hostPath below; the chart's default is /tmp/alloy.
+  storagePath: /run/alloy
+
   # Clustering exists to shard scrape targets between Alloy peers. Each pod here
   # only ever reads its own node's files, so there is nothing to shard.
   clustering:
@@ -82,6 +110,12 @@ alloy:
       - name: sys
         mountPath: /host/sys
         readOnly: true
+      - name: runlog
+        mountPath: /run/log/journal
+        readOnly: true
+      # Writable, unlike every other mount here.
+      - name: alloydata
+        mountPath: /run/alloy
       - name: root
         mountPath: /host/root
         readOnly: true
@@ -236,21 +270,50 @@ alloy:
           source_labels = ["__journal_priority_keyword"]
           target_label  = "level"
         }
+
+        rule {
+          source_labels = ["__journal__transport"]
+          target_label  = "transport"
+        }
+
+        // dmesg: kernel messages reach journald over _TRANSPORT=kernel and
+        // carry no unit, so without this they are only findable by their empty
+        // unit label. A non-matching regex leaves `unit` alone.
+        rule {
+          source_labels = ["__journal__transport"]
+          regex         = "kernel"
+          replacement   = "kernel"
+          target_label  = "unit"
+        }
       }
 
-      // Only those four become labels. The other __journal_* fields are
+      // Only those five become labels. The other __journal_* fields are
       // per-message (PID, command line, message id) and would multiply streams;
       // they stay in the line.
-      loki.source.journal "host" {
-        // Read through the varlog mount. Every node here keeps a persistent
-        // journal; the volatile /run/log/journal is not mounted.
+      // One component per journal location, and `path` always explicit. Leaving
+      // it unset to let the reader use journald's own defaults does not work:
+      // max_age is then ignored and the pod replays the entire journal, which
+      // Loki answers with
+      //   400 'entry too far behind, entry timestamp is: ...'
+      // dropping the lot on every restart. With a path it seeks correctly.
+      //
+      // A node has one or the other: persistent under /var/log/journal
+      // everywhere except dns, volatile under /run/log/journal on dns. The
+      // component that finds an empty directory just yields nothing.
+      loki.source.journal "persistent" {
         path = "/var/log/journal"
 
-        // The read cursor lives under --storage.path=/tmp/alloy, which is the
-        // container's own layer - so a restarted pod re-reads this much history
-        // and Loki takes duplicates for that window.
+        // Only matters when there is no saved cursor - see the alloydata
+        // hostPath - so this is the backfill after a node reboot.
         max_age = "1h"
 
+        relabel_rules = discovery.relabel.journal.rules
+        forward_to    = [loki.write.default.receiver]
+      }
+
+      loki.source.journal "volatile" {
+        path          = "/run/log/journal"
+        max_age       = "1h"
         relabel_rules = discovery.relabel.journal.rules
         forward_to    = [loki.write.default.receiver]
       }
