@@ -1,5 +1,20 @@
 # AGENT.md — working notes for AI agents
 
+## Things that will bite you if you skip
+
+- **Ansible tasks are all `never`-tagged.** `just <node>` runs nothing; you must
+  pass `--tags`.
+- **`kubectl apply --prune --applyset`** is used for every service, so deleting
+  a resource from a kustomization deletes it from the live cluster.
+- **Every node is tainted** `kubernetes.io/hostname=<name>:NoSchedule`; a
+  workload needs affinity *and* toleration.
+- **`README.md` is a 2020-2023 blog post**, not current documentation.
+- **No tests, no validating CI** — production is the only feedback loop. Dry-run
+  first, and say clearly when something can't be verified without applying.
+- **Comments explain the failure they prevent** — terse, a line or two. A bare
+  value with no rationale is a regression here; so is a paragraph where a
+  sentence does.
+
 ## What this repository is
 
 Infrastructure-as-code for one person's personal server estate (`erebe.eu`).
@@ -31,16 +46,18 @@ the inline comments in the config files themselves, plus
 ## House style — read this before writing anything
 
 This repo has one very distinctive convention: **comments explain the failure
-they prevent, not what the line does.** Nearly every non-obvious setting
-carries a paragraph on why it is that value, what broke when it wasn't, and
-what would silently break if someone "simplified" it. Examples worth reading to
-calibrate: `nodes/group_vars/all.yml` (MTU derivation),
+they prevent, not what the line does.** Non-obvious settings carry the reason
+they are that value, and what breaks if someone "simplifies" them. Examples
+worth reading to calibrate: `nodes/group_vars/all.yml` (MTU derivation),
 `nodes/common/tasks/networkd.yml` (why dhcpcd is masked but not stopped),
 `k8s/gateway.yaml` (why :80 is namespace-restricted),
 `k8s/democratic-csi/local-hostpath-values.yaml` (four load-bearing settings).
 
-When you change something here, match that density. A bare value with no
-rationale is a regression in this codebase's terms.
+**Keep them terse — one or two lines.** State the fact that is not obvious from
+the code: the error text, the flag's default, why the value is load-bearing.
+Then stop. No line-by-line narration, no retelling how it was found, no
+repeating context from the file header. A bare value with no rationale is a
+regression here; so is a paragraph where a sentence does.
 
 Other conventions:
 
@@ -415,7 +432,8 @@ just nextcloud_resync_file   # occ files:scan --all
 - `kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone <dir>/`
   renders cleanly, and you have read the diff for accidental prunes.
 - Ansible changes were tried with `--check` where the module supports it.
-- Any non-obvious value carries a comment saying why it is that value.
+- Any non-obvious value carries a comment saying why it is that value, in a
+  line or two.
 - Nothing decrypted or plaintext-secret is staged for commit
   (`git status`, and confirm `secrets_decrypted/` is still ignored).
 - Version bumps are separate from behaviour changes.

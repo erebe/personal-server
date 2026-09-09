@@ -105,22 +105,16 @@
 
 - name: Apply the unit to the links it matches
   # NOT `systemctl restart systemd-networkd`, which is what this task used to
-  # do on its own. A restart re-adds the default route and the link route to
-  # the gateway, but *not* the DHCPv4 subnet route - so the host is left with
-  # no on-link route for its own LAN. Every neighbour then resolves via the
-  # default gateway and the frames leave addressed to the router's MAC, which
-  # will not hairpin them back onto the segment they came from.
+  # be. A restart re-adds the default route and the link route to the gateway
+  # but *not* the DHCPv4 subnet route, leaving the host with no on-link route
+  # for its own LAN: every neighbour then resolves via the gateway and the
+  # frames go out addressed to the router's MAC, which will not hairpin them
+  # back. That is how k3s lost every WireGuard peer on 192.168.1.0/24 while the
+  # router and both WAN peers - reached through the gateway anyway - stayed up.
   #
-  # That is how k3s lost every WireGuard peer on 192.168.1.0/24 at once while
-  # the router and both WAN peers stayed up: those are reached *through* the
-  # gateway anyway, so they never needed the missing route. Reproduced on the
-  # host, both directions:
-  #   systemctl restart systemd-networkd -> 192.168.1.0/24 gone, ping .11 fails
-  #   networkctl reconfigure ens18       -> route back, ping .11 OK
-  #
-  # The link name cannot be derived from the unit name - scw's wan.network
-  # matches `en*` and lands on two interfaces - so ask networkd which links it
-  # actually applied this file to.
+  # The link name cannot come from the unit name (scw's wan.network matches
+  # `en*` and lands on two interfaces), so ask networkd which links it applied
+  # this file to.
   ansible.builtin.shell:
     cmd: |
       set -eu

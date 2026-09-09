@@ -1,28 +1,20 @@
 ---
-# sanoid: scheduled ZFS snapshots, taken and pruned by policy.
+# sanoid: scheduled ZFS snapshots, plus the login proxmox pulls them with.
+# Requires play var: node_dir
+# Optional play var: sanoid_pulled_remotely (default true) - false on a host
+# nothing fetches snapshots from over ssh.
 #
-# Requires play var: node_dir - the directory holding this node's
-# sanoid/sanoid.conf.
-#
-# Only the snapshot half lives here. syncoid replication is a property of a
-# *pair* of hosts, not of a host, so those units stay in the playbook that owns
-# the pair (nodes/proxmox, which pulls from both nvme and scw).
-#
-# The config itself is per node and deliberately not templated: retention is a
-# decision about a specific pool, and sanoid.conf has no include mechanism -
-# sanoid reads /etc/sanoid/sanoid.conf and nothing else. The two files that
-# exist today (nodes/proxmox, nodes/scw) therefore repeat the template blocks
-# they share. Change one, change the other, or write down why they differ.
+# The syncoid units themselves belong to a *pair* of hosts, so they live in
+# nodes/proxmox/, which pulls from both nvme and scw.
 
 - name: Install sanoid
-  # From Debian main, unlike zfs itself: sanoid is Perl, so there is no contrib
-  # component to enable and nothing for DKMS to build. It shells out to the zfs
-  # userland, which every node importing this already has - see zfs.yml.
+  # lzop and mbuffer are syncoid's default compressor and buffer; it probes for
+  # them on each end and silently drops whichever is missing.
   ansible.builtin.apt:
-    name: 
-    - sanoid
-    - lzop
-    - mbuffer
+    name:
+      - sanoid
+      - lzop
+      - mbuffer
     update_cache: true
   environment:
     DEBIAN_FRONTEND: noninteractive
@@ -36,12 +28,12 @@
     mode: '0755'
 
 - name: Upload sanoid.conf
-  # Must land before the timer is enabled below: the packaged sanoid.service
-  # carries ConditionFileNotEmpty=/etc/sanoid/sanoid.conf, so a run with no
-  # config is skipped rather than failed - a green unit that snapshots nothing.
+  # Per node, not templated: sanoid.conf cannot include another file, so the
+  # shared template_* blocks are repeated in each node's copy.
   #
-  # No handler to restart anything. sanoid.service is a oneshot fired by the
-  # timer; the next run reads the new file.
+  # Must land before the timer below - sanoid.service has
+  # ConditionFileNotEmpty=/etc/sanoid/sanoid.conf, so a run with no config is
+  # skipped rather than failed.
   ansible.builtin.copy:
     src: "{{ node_dir }}/sanoid/sanoid.conf"
     dest: /etc/sanoid/sanoid.conf
@@ -50,110 +42,49 @@
     mode: '0644'
 
 - name: Enable sanoid.timer
-  # The packaged timer is OnCalendar=*:0/15 with Persistent=true, and that
-  # quarter-hourly cadence is not about hourly snapshots: it is how sanoid
-  # catches every period boundary (and, via Wants=sanoid-prune.service, how
-  # pruning gets to run) on a host that may have been asleep.
-  #
-  # `state: started` and not just `enabled`: enabling only drops the symlink
-  # into timers.target.wants/, which systemd reads when timers.target comes up -
-  # so the timer would sit unarmed until the next reboot.
+  # The packaged timer is *:0/15 - that is how sanoid catches every period
+  # boundary, not an hourly cadence. `state: started` arms it now; `enabled`
+  # alone would wait for the next boot.
   ansible.builtin.systemd:
     name: sanoid.timer
     enabled: true
     state: started
     daemon_reload: true
-  # Under `--check` the install above did not happen, so on a host that does
-  # not have sanoid yet there is no sanoid.timer for systemd to find and the
-  # dry run fails reporting a state it was never asked to reach. Same reason
-  # zfs.yml skips modprobe.
+  # Under --check the install above did not happen, so on a fresh host there is
+  # no timer to find. Same reason zfs.yml skips modprobe.
   when: not ansible_check_mode
 
-# --- the replication login -----------------------------------------------
-#
-# Snapshots are only half of a backup; something has to come and fetch them.
-# proxmox is the only puller in this estate (the syncoid units all live in
-# nodes/proxmox/), so a host that snapshots normally also has to accept its
-# key - which makes this the same job as the two tasks above rather than a
-# per-node decision.
-#
-# Optional play var: sanoid_pulled_remotely - false on a host nothing reaches
-# over ssh to fetch snapshots from. Defaults to true; proxmox sets it false,
-# being the puller rather than a source.
-#
-# Both halves are loaded either way: the sources need the public key for the
-# task below, the puller needs the private one for /etc/syncoid.
-
 - name: Load the syncoid keypair from sops
-  # `name: syncoid_secrets`, NOT `name: ansible_facts` as wireguard.yml uses.
-  # That name is not a convention to copy, it is a workaround for one specific
-  # need: with inject_facts_as_vars = False, a *.j2 template can only reach a
-  # variable through `ansible_facts.X`, so the wireguard configs need the sops
-  # payload to live under exactly that name. Nothing here is templated.
-  #
-  # The cost of copying it is that the payload *shadows* the real magic
-  # variable for the rest of the play, so every fact disappears - and it
-  # disappears for tasks that have nothing to do with sanoid. This task runs
-  # third in scw's play, which is how it broke networkd.yml six tasks later:
-  #   'when' expression failed: object of type 'dict' has no attribute
-  #   'services'
-  # on `when: "'dhcpcd.service' in ansible_facts.services"`, with
-  # service_facts having succeeded immediately before it. Reproducible with
-  # `just scw --tags sanoid,network`; invisible to either tag on its own.
+  # NOT `name: ansible_facts` as wireguard.yml uses - that name exists there
+  # only so the wg *.j2 templates can reach the payload (inject_facts_as_vars
+  # is off). Copying it here shadowed the real facts for the rest of the play
+  # and broke networkd.yml's `ansible_facts.services` six tasks later.
   community.sops.load_vars:
     file: "{{ inventory_dir }}/../secrets/syncoid.yml"
     name: syncoid_secrets
     expressions: ignore
 
 - name: Authorize proxmox's syncoid key for the ansible ssh user
-  # `ansible_user` rather than a name or a dedicated account, deliberately: it
-  # is the one login this playbook has just proved works and proved can reach
-  # the zfs command - as root outright, or through sudo. A second account would
-  # be a second set of credentials, sudo rules and delegations to keep correct,
-  # to protect a stream that this one can already read.
+  # ansible_user is the one login already proven to work and to reach zfs (as
+  # root, or through sudo), so no second account or zfs delegation is needed.
+  # The cost: on scw that is erebe's NOPASSWD sudo, making this key
+  # admin-equivalent there.
   #
-  # The bill for that: the key inherits whatever the ansible user can do. On
-  # scw that is erebe's NOPASSWD sudo, so the key is administrator-equivalent
-  # there; syncoid relies on exactly that, since it detects a non-root remote
-  # user and prefixes every remote command with `sudo` on its own (getssh() in
-  # syncoid), which is why no zfs delegation is set up anywhere.
-  #
-  # `restrict` drops everything a replication pull cannot need - ptys, agent,
-  # X11 and port forwarding - and leaves command execution and the multiplexed
-  # session channels syncoid opens over its ControlMaster. Note that scw's
-  # sudoers carries `Defaults use_pty` while this entry says no-pty: verified
-  # compatible, because sudo only allocates a pty for the command's terminal
-  # side and a `zfs send` whose stdout is a pipe stays in pipe mode.
-  # Byte-identical md5 with and without sudo, locally and piped over ssh.
-  #
-  # `from=` pins the key to proxmox's wireguard address, which is the source
-  # address it will connect from - the route to any node in the overlay leaves
-  # proxmox by wg0, whose local address is 10.200.0.7. It is a real restriction
-  # and not decoration: only a peer holding proxmox's wireguard private key can
-  # present that source address on wg0. It also makes this entry inert on
-  # proxmox itself, where ansible_user is root and the only thing the key could
-  # then do is log the host into itself.
+  # `restrict` drops ptys, agent, X11 and port forwarding; command execution and
+  # syncoid's multiplexed sessions still work. `from=` pins the key to proxmox's
+  # wg address, which nothing else can present on wg0.
   ansible.posix.authorized_key:
     user: "{{ ansible_user }}"
     key: "{{ syncoid_secrets.SYNCOID_PUBLIC_KEY }}"
     key_options: 'restrict,from="10.200.0.7"'
     state: present
-    # The module's default is follow: false, which *replaces* the path - and on
-    # proxmox, where ansible_user is root, that path is a symlink into pmxcfs:
-    #   /root/.ssh/authorized_keys -> /etc/pve/priv/authorized_keys
-    # Replacing it leaves a plain file that sshd reads and PVE does not write,
-    # so every key PVE later adds to its own file silently stops taking effect.
-    # A no-op on a node whose authorized_keys is an ordinary file.
+    # Default is follow: false, which would *replace* the path - and on proxmox
+    # that path is a symlink into pmxcfs, so sshd would read a plain file PVE
+    # never writes again.
     follow: true
-    # NOT exclusive. The default appends; exclusive: true would replace every
-    # key cloud-init, `just install` and - on proxmox - PVE itself put here,
-    # and lock the admin out of the host this playbook runs against.
+    # exclusive: true would drop every key cloud-init, `just install` and PVE
+    # put here.
     exclusive: false
-  # Nothing pulls from the puller. On proxmox this is also the only way the
-  # task can run at all: with follow: true the write lands in pmxcfs, which
-  # forces root:www-data and fixed modes on everything it holds, so the module
-  # appends the key and then dies setting ownership -
-  #   [Errno 1] Operation not permitted: '/etc/pve/priv/authorized_keys'
-  # taking the rest of the play with it. Measured against a scratch path on
-  # that filesystem; the same module on an ordinary path succeeds.
+  # Nothing pulls from the puller - and on proxmox the write would land in
+  # pmxcfs, which forces root:www-data and then fails the play on chown.
   when: sanoid_pulled_remotely | default(true)

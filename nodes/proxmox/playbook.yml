@@ -5,10 +5,8 @@
   become: false
   vars:
     node_dir: "{{ inventory_dir }}/proxmox"
-    # This host is the puller, not a source: nothing reaches it over ssh to
-    # fetch snapshots, so the shared sanoid task must not authorize the syncoid
-    # key here. See the note on that task - on this host in particular the key
-    # would land in pmxcfs and then fail the play.
+    # The puller, not a source: no inbound syncoid key here. On this host it
+    # would also land in pmxcfs and fail the play.
     sanoid_pulled_remotely: false
 
   tasks:
@@ -38,17 +36,10 @@
             group: root
             mode: '0755'
 
-        # The private half of the pair. Kept in sops rather than generated on
-        # the box with openssh_keypair so that every source node's playbook can
-        # authorize the public half without proxmox being reachable, and so a
-        # rebuilt proxmox comes back with the key those nodes already trust.
-        # Same posture the wireguard private keys already have.
-        #
-        # Already loaded into syncoid_secrets by the shared task above, which
-        # needs the public half for its own authorized_key entry.
+        # The private half. In sops rather than generated here so each source
+        # node can authorize the public half without proxmox being reachable.
+        # Loaded into syncoid_secrets by the shared task above.
         - name: Ensure /etc/syncoid exists
-          # 0700: it holds a private key, and ssh refuses one that is readable
-          # by anyone else.
           ansible.builtin.file:
             path: /etc/syncoid
             state: directory
@@ -57,9 +48,8 @@
             mode: '0700'
 
         - name: Install the key proxmox authenticates to scw with
-          # The block scalar plus `trim` is not decoration: openssh rejects a
-          # private key without a trailing newline, and rejects one with a
-          # blank line at the end just as flatly.
+          # Block scalar + trim: openssh rejects a key with no trailing
+          # newline, or with a blank line at the end.
           ansible.builtin.copy:
             content: |
               {{ syncoid_secrets.SYNCOID_PRIVATE_KEY | trim }}
@@ -67,12 +57,10 @@
             owner: root
             group: root
             mode: '0600'
-          # Or the key ends up in the play output, and in whatever collects it.
           no_log: true
 
         - name: Upload the syncoid units
-          # One pair per replication job: syncoid-backup pulls nvme -> backup
-          # locally, syncoid-scw pulls scw:zdata -> backup over wireguard.
+          # One pair per job: nvme -> backup locally, scw:zdata -> backup over wg.
           ansible.builtin.copy:
             src: "{{ node_dir }}/sanoid/{{ item }}"
             dest: "/etc/systemd/system/{{ item }}"
@@ -87,10 +75,8 @@
           notify: daemon-reload
 
         - name: Enable the syncoid timers
-          # `state: started` arms them now; `enabled` alone would leave them
-          # waiting for the next boot. daemon_reload here rather than relying
-          # on the handler, which only runs at the end of the play - systemd
-          # has to have read the unit files before it can enable them.
+          # daemon_reload here, not via the handler: that runs at the end of the
+          # play, and systemd must read the units before it can enable them.
           ansible.builtin.systemd:
             name: "{{ item }}"
             enabled: true
@@ -99,9 +85,8 @@
           loop:
             - syncoid-backup.timer
             - syncoid-scw.timer
-          # Under `--check` the unit files above were not written, so systemd
-          # cannot find a timer that does not exist yet and the dry run fails
-          # on the one thing it could not have verified anyway.
+          # Under --check the units were never written, so there is no timer
+          # to find.
           when: not ansible_check_mode
 
   handlers:

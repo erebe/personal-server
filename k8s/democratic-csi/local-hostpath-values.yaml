@@ -15,13 +15,11 @@
 # one is right. Do not expect much from compression=on - Prometheus already
 # packs its TSDB blocks and Loki gzips its chunks, so lz4 mostly early-aborts
 # on both; it earns its keep on Grafana's sqlite and costs nothing on the rest.
-# Still node-local in the sense that matters for scheduling: these are one
-# machine's directories, served by that machine, and a pod that cannot land on
-# scw cannot use them. What is no longer true is that nothing leaves the node -
-# sanoid snapshots zdata hourly and proxmox pulls those snapshots into
-# backup/scw-backup every night (nodes/scw/sanoid/sanoid.conf,
-# nodes/proxmox/sanoid/syncoid-scw.*). Losing scw now costs availability and up
-# to a day of writes, not the data.
+# Still node-local for scheduling - a pod that cannot land on scw cannot use
+# these. But they do leave the node now: sanoid snapshots zdata hourly and
+# proxmox pulls them into backup/scw-backup nightly
+# (nodes/scw/sanoid/sanoid.conf, nodes/proxmox/sanoid/syncoid-scw.*), so losing
+# scw costs availability and up to a day of writes, not the data.
 
 csiDriver:
   # Must be unique per cluster - the zfs-iscsi release owns
@@ -106,10 +104,9 @@ driver:
       dirPermissionsUser: 0
       dirPermissionsGroup: 0
       snapshots:
-        # rsync/cp into a sibling directory on the same pool. Enough for a
-        # clone and nothing beyond it: a copy that shares the disks it protects
-        # is not a backup. The thing that does leave the machine is the ZFS
-        # snapshot stream proxmox pulls out of zdata - see the header.
+        # rsync/cp into a sibling directory on the same pool: fine for a
+        # clone, not a backup. What leaves the machine is the ZFS stream
+        # proxmox pulls - see the header.
         default_driver: filecopy
 
 # For a local driver the component that creates the directory must run on the

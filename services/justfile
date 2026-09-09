@@ -72,6 +72,10 @@ observability:
 	helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack --version 90.0.0 --namespace observability -f observability/kube-prometheus-stack-values.yaml
 	helm upgrade --install alloy grafana/alloy --version 1.12.1 --namespace observability -f observability/alloy-values.yaml
 	helm upgrade --install alloy-events grafana/alloy --version 1.12.1 --namespace observability -f observability/alloy-events-values.yaml
+	# Dashboards the repo owns. The kube-prometheus-stack sidecar watches for
+	# grafana_dashboard=1 in every namespace, so a labelled ConfigMap is the whole
+	# provisioning mechanism - Grafana's own API is not the source of truth here.
+	kubectl create configmap grafana-dashboards-repo --namespace observability --from-file=observability/dashboards/ --dry-run=client -o yaml | kubectl label --local -f - grafana_dashboard=1 -o yaml --dry-run=client | kubectl apply -f -
 	helm upgrade --install grafana-mcp grafana-community/grafana-mcp --version 0.22.0 --namespace observability -f observability/grafana-mcp-values.yaml --post-renderer observability/grafana-mcp-patch/postrender.sh
 
 # Print the provisioned Grafana admin password

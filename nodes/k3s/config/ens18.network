@@ -6,12 +6,9 @@ DHCP=ipv4
 IPv6AcceptRA=yes
 IPv6PrivacyExtensions=yes
 
-# MTUBytes belongs in [Link]. In [Network] networkd does not know the key and
-# says so on every start - "Unknown key 'MTUBytes' in section [Network],
-# ignoring" - so the value was never applied. The link reached 9000 anyway
-# because the RA carries it and UseMTU is set below, which is why this went
-# unnoticed for a year. It is *not* what broke the LAN routes on k3s; that was
-# the networkd restart, see nodes/common/tasks/networkd.yml.
+# In [Network] this key is unknown and ignored ("Unknown key 'MTUBytes'" on
+# every start); the link reached 9000 anyway via the RA, which is why it went
+# unnoticed. Not related to the LAN route loss - that was the networkd restart.
 [Link]
 MTUBytes=9000
 

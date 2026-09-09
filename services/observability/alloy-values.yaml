@@ -208,6 +208,53 @@ alloy:
         }
       }
 
+      // ---- host journal ------------------------------------------------------
+      //
+      // job and node come from relabel rules, not from the component's own
+      // `labels` argument - that argument is ignored here and entries come out
+      // labelled job="loki.source.journal.host" (checked against v1.19.2).
+      // Same trap as prometheus.scrape's job_name below.
+      discovery.relabel "journal" {
+        targets = []
+
+        rule {
+          target_label = "job"
+          replacement  = "systemd-journal"
+        }
+
+        rule {
+          target_label = "node"
+          replacement  = sys.env("NODE_NAME")
+        }
+
+        rule {
+          source_labels = ["__journal__systemd_unit"]
+          target_label  = "unit"
+        }
+
+        rule {
+          source_labels = ["__journal_priority_keyword"]
+          target_label  = "level"
+        }
+      }
+
+      // Only those four become labels. The other __journal_* fields are
+      // per-message (PID, command line, message id) and would multiply streams;
+      // they stay in the line.
+      loki.source.journal "host" {
+        // Read through the varlog mount. Every node here keeps a persistent
+        // journal; the volatile /run/log/journal is not mounted.
+        path = "/var/log/journal"
+
+        // The read cursor lives under --storage.path=/tmp/alloy, which is the
+        // container's own layer - so a restarted pod re-reads this much history
+        // and Loki takes duplicates for that window.
+        max_age = "1h"
+
+        relabel_rules = discovery.relabel.journal.rules
+        forward_to    = [loki.write.default.receiver]
+      }
+
       // ---- host metrics ------------------------------------------------------
       //
       // This is node_exporter, vendored into the Alloy binary: same collectors,

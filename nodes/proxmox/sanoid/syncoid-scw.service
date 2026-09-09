@@ -1,50 +1,27 @@
 [Unit]
 Description=Syncoid replication scw:zdata -> backup/scw-backup
 Documentation=man:syncoid(8)
-# The receiving pool has to be imported.
 Requires=zfs.target
 After=zfs.target
-# And unlike the nvme job, the *source* is on the other side of a tunnel:
-# 10.200.1.2 does not exist until wg0 is up. This matters because the timer is
-# Persistent=true, so a run missed while the host was down fires shortly after
-# boot - precisely when neither of these is ready yet.
+# The source is across the tunnel, and Persistent=true fires a missed run at
+# boot - before wg0 is up.
 Wants=network-online.target
 After=network-online.target wg-quick@wg0.service
 
 [Service]
 Type=oneshot
-# Type=oneshot disables the start timeout by default. Without a limit a stalled
-# ssh - dead tunnel, black-holed WAN, a source that accepts the connection and
-# then says nothing - leaves this unit "activating" forever, and systemd skips
-# every later timer trigger while it still is. One hang would silently end the
-# replication with no failed unit to show for it.
+# Type=oneshot has no start timeout by default, so a stalled ssh would stay
+# "activating" forever and every later timer trigger would be skipped.
 TimeoutStartSec=6h
-# syncoid pipes through mbuffer, which warns "HOME environment variable not
-# set - unable to find defaults file" on every run without this (visible in
-# syncoid-backup.service's journal, which does not set it). ssh does not need
-# it here - the key and the known_hosts file are both given explicitly below.
+# mbuffer warns on every run without HOME.
 Environment=HOME=/root
-#
-# --no-sync-snap: replicate only the snapshots sanoid already took on scw.
-#   Without it syncoid creates and then destroys its own snapshot on the source
-#   for every run, which is both unnecessary noise in a pool that is already on
-#   a snapshot schedule and a second thing that can fail there.
-#
-# --recursive: nothing to recurse into today - zdata is a single dataset, since
-#   democratic-csi's local-hostpath driver provisions directories rather than
-#   datasets - so this is here for the day that changes.
-#
-# erebe@, not root@: scw has PermitRootLogin no. syncoid notices the remote user
-# is not root and prefixes every remote command with `sudo` on its own
-# (getssh()); erebe's NOPASSWD sudoers entry is what makes that work, and it is
-# why no zfs delegation is set up on scw. The flip side is that this key is
-# administrator-equivalent there - see the note in nodes/scw/playbook.yml.
-#
-# StrictHostKeyChecking=accept-new rather than a pinned host key: the address is
-# reachable only through wg0, and WireGuard already answers the question host
-# key verification exists to answer - a peer cannot present itself as
-# 10.200.1.2 on that interface without scw's private key. known_hosts still
-# gets written, so a *change* after first contact is refused.
+# --no-sync-snap: replicate only what sanoid took, so the source login needs no
+#   snapshot or destroy rights.
+# erebe@, not root@: scw has PermitRootLogin no. syncoid prefixes `sudo` itself
+#   for a non-root remote user, which is why no zfs delegation exists - the cost
+#   is that this key is admin-equivalent on scw.
+# accept-new: the path is wg0, where nothing can present itself as 10.200.1.2
+#   without scw's key.
 ExecStart=/usr/sbin/syncoid --recursive --no-sync-snap \
   --sshkey=/etc/syncoid/id_scw \
   --sshoption=StrictHostKeyChecking=accept-new \

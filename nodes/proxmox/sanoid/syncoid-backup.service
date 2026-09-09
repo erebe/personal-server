@@ -5,4 +5,9 @@ Requires=zfs.target
 
 [Service]
 Type=oneshot
+# mbuffer warns on every run without HOME (it looks for ~/.mbuffer.rc).
+Environment=HOME=/root
+# Type=oneshot has no start timeout by default, so a stalled send would stay
+# "activating" forever and every later timer trigger would be skipped.
+TimeoutStartSec=6h
 ExecStart=/usr/sbin/syncoid --recursive --no-sync-snap nvme backup/nvme-backup
