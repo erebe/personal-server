@@ -36,7 +36,7 @@ what they carry:
 | --- | --- |
 | `adguard` | raspberry plus `unreachable`, `not-ready` and `node.cilium.io/agent-not-ready` |
 | `dashy` | toybox with `effect: NoSchedule`, plus `unreachable` on `NoExecute` |
-| `minio` | same as dashy |
+| `versitygw` | pinned to scw, and there is no `toleration-scw` component |
 | `postgres` | its own kustomization patch, with `effect: NoSchedule` |
 
 If a fifth service wants that shape, add a component for it rather than widening

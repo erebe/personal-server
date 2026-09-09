@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: versitygw-pv-claim
+spec:
+  # Node-local directory on scw's zdata mirror. WaitForFirstConsumer, so the
+  # deployment's nodeAffinity is what places the volume - a mismatch leaves the
+  # PVC Pending rather than putting the data on the wrong machine.
+  storageClassName: local-hostpath-zdata
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      # Nominal: a bind-mounted directory has no quota, and the class sets
+      # allowVolumeExpansion: false, so this can never be edited afterwards.
+      # The real ceiling is zdata's free space.
+      storage: 300Gi

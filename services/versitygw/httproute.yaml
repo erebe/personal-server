@@ -1,0 +1,24 @@
+# The WebUI only. The S3 API deliberately does not come through the Gateway:
+# it answers on scw's own addresses via the versitygw-s3 Service's externalIPs,
+# because virtual-host addressing needs <bucket>.s3.erebe.eu and its wildcard
+# cert, neither of which this route carries.
+#
+# No DNS record needed - `*` already points at server, and erebe-eu-tls already
+# covers *.erebe.eu, so envoy terminates TLS for this name with the cert it has.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: versitygw-webui
+spec:
+  parentRefs:
+    - name: envoy
+  hostnames:
+    - s3-ui.erebe.eu
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: versitygw
+          port: 8080

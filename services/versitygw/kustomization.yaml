@@ -4,9 +4,12 @@ namespace: default
 labels:
   - includeSelectors: true
     pairs:
-      app: minio
+      app: versitygw
 resources:
   - deployment.yaml
   - pvc.yaml
+  - service.yaml
+  - httproute.yaml
+  - certificate.yaml
 generators:
   - secret-generator.yaml

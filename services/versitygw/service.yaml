@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: versitygw
+spec:
+  type: ClusterIP
+  # The service CIDR is IPv6-first (fd02::/112 before 10.43/16), so without this
+  # the Service gets IPv6-only endpoints - the trap grafana-mcp hit.
+  ipFamilyPolicy: PreferDualStack
+  ports:
+    - protocol: TCP
+      port: 7070
+      name: s3
+    - protocol: TCP
+      port: 8080
+      name: webui
+---
+# Separate from the Service above because externalIPs is Service-scoped, not
+# per-port: folding :443 into that one would publish the WebUI on :8080 to the
+# internet as well. This exposes the S3 API only.
+apiVersion: v1
+kind: Service
+metadata:
+  name: versitygw-s3
+spec:
+  type: ClusterIP
+  ipFamilyPolicy: PreferDualStack
+  # Local, not Cluster: the only backend is pinned to scw anyway, and this keeps
+  # the client's source address instead of SNATing every S3 request to the node.
+  externalTrafficPolicy: Local
+  # scw's own WAN addresses, matching the s3/*.s3 records in
+  # dns/erebe.eu.zones. Cilium's kube-proxy replacement programs these, so no
+  # hostNetwork and no hostPort is needed to answer on them.
+  externalIPs:
+    - 151.115.97.109
+    - 2001:bc8:1f90:b:7ec2:55ff:fe9e:880c
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: s3
+      name: https
+  selector:
+    app: versitygw

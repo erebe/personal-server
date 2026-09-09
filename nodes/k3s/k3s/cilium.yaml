@@ -1,4 +1,10 @@
-#devices: "eth0,wg0"
+# Explicitly empty, not absent: the cilium CLI reuses the previous release's
+# values, so deleting this key leaves the old `eth0,wg0` in cilium-config. That
+# value was a fossil - only server and dns have an eth0, so master, toybox and
+# scw ended up managing wg0 alone and NodePort/externalIP traffic arriving on
+# their real WAN device (ens18, enp65s0f0) was never load-balanced. Empty means
+# auto-detect: each node's default-route device plus the one holding its node IP.
+devices: ""
 ipv6:
   enabled: true
 bpf:

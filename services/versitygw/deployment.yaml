@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: versitygw
+spec:
+  replicas: 1
+  # Recreate, not RollingUpdate: one RWO directory on one node, so a second pod
+  # could never bind the volume and the rollout would deadlock.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {}
+  template:
+    metadata: {}
+    spec:
+      # The local-hostpath driver provisions root:root 0770; its
+      # fsGroupPolicy: File is what lets kubelet chown to fsGroup at all
+      # (a bind-mounted directory has no fsType). Same path Prometheus takes.
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        fsGroupChangePolicy: "OnRootMismatch"
+      containers:
+      - name: versitygw
+        image: ghcr.io/versity/versitygw:v1.8.0
+        imagePullPolicy: IfNotPresent
+        # Global flags precede `posix`; its flags and the root dir follow it.
+        # --port omitted: upstream default is :7070.
+        args:
+          - --iam-dir=/mnt/iam
+          - --webui=:8080
+          - --webui-gateways=https://s3.erebe.eu
+          - --webui-admin-gateways=https://s3.erebe.eu
+          # Plain HTTP on the WebUI: --cert would otherwise apply to it too, and
+          # envoy speaks HTTP to backendRefs - it would hand a plaintext request
+          # to a TLS listener. envoy terminates TLS for s3-gw.erebe.eu instead,
+          # and the hop to this pod rides the WireGuard overlay.
+          - --webui-no-tls
+          - --health=/health
+          # Bucket comes from the hostname's first label, so <bucket>.s3.erebe.eu
+          # is required - and that second label is why erebe-eu-tls could not be
+          # reused (a DNS wildcard covers one label only).
+          - --virtual-domain=s3.erebe.eu
+          - --cert=/etc/versitygw/tls/tls.crt
+          - --key=/etc/versitygw/tls/tls.key
+          - posix
+          - /mnt/data
+        env:
+        # An identifier, not a secret - the password half comes from sops.
+        - name: ROOT_ACCESS_KEY_ID
+          value: "erebe"
+        - name: ROOT_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: versitygw
+              key: ROOT_SECRET_ACCESS_KEY
+        ports:
+          - containerPort: 7070
+            name: s3
+            protocol: TCP
+          - containerPort: 8080
+            name: webui
+            protocol: TCP
+        # Unauthenticated 200 "OK", and served only because --health names a path.
+        # scheme: HTTPS is load-bearing - --cert turns the S3 listener into
+        # TLS, and an HTTP probe against it never goes Ready. kubelet does not
+        # verify the certificate, so the name mismatch on the pod IP is fine.
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: s3
+            scheme: HTTPS
+          initialDelaySeconds: 5
+          periodSeconds: 15
+        volumeMounts:
+        # Every top-level directory under the posix root is a bucket, so the IAM
+        # store has to be a sibling subPath instead of living inside it.
+        - name: data
+          mountPath: "/mnt/data"
+          subPath: data
+        - name: data
+          mountPath: "/mnt/iam"
+          subPath: iam
+        - name: tls
+          mountPath: "/etc/versitygw/tls"
+          readOnly: true
+      # Just the node taint - no unreachable/NoExecute entry: the volume is a
+      # directory on scw, so outliving the node's readiness buys nothing.
+      tolerations:
+      - key: "kubernetes.io/hostname"
+        operator: "Equal"
+        value: "scw"
+        effect: "NoSchedule"
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: versitygw-pv-claim
+      # Written by cert-manager from certificate.yaml alongside this file. Same
+      # namespace as this pod, which is the only place that Secret appears.
+      - name: tls
+        secret:
+          secretName: s3-erebe-eu-tls

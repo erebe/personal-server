@@ -15,7 +15,6 @@ backup:
 	sops -d --output secrets_decrypted/backup_credentials.yml secrets/backup_credentials.yml
 	kubectl apply -f secrets_decrypted/backup_credentials.yml
 	kubectl apply -f backup/backup-cron.yml
-	kubectl apply -f backup/backup-minio.yml
 
 webhook:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone webhook/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/webhook-applyset --namespace=default
@@ -47,8 +46,8 @@ adguard:
 vaultwarden:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone vaultwarden/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/vaultwarden-applyset --namespace=default --force-conflicts
 
-minio:
-	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone minio/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/minio-applyset --namespace=default
+versitygw:
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone versitygw/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/versitygw-applyset --namespace=default
 
 postgres:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone postgres/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/postgres-applyset --namespace=postgres

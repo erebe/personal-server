@@ -211,8 +211,16 @@ k3s, single control-plane node, dual-stack **IPv6-first**. Config in
   and CNI traffic rides the tunnels. Agents join at `https://[fd00:cafe::3]:6443`.
 - Disabled: `servicelb`, `traefik`, `local-storage`, `kube-proxy`,
   `network-policy`, `helm-controller`, flannel.
-- CNI is **Cilium** (`kubeProxyReplacement: true`, hubble off, envoy off),
-  installed by `nodes/k3s/k3s/cilium-install.sh` via `just k3s --tags cilium`.
+- CNI is **Cilium** (`kubeProxyReplacement: true`, hubble off, envoy off,
+  `devices: ""`), installed by `nodes/k3s/k3s/cilium-install.sh` via
+  `just k3s --tags cilium`. `devices` is explicitly empty, not absent: the
+  cilium CLI reuses the previous release's values, so a removed key keeps its
+  old value. It read `eth0,wg0` for a long time - which only server and dns
+  have - so master, toybox and scw managed `wg0` alone and NodePort/externalIP
+  traffic arriving on their real WAN device was silently never load-balanced.
+  Also note a `cilium upgrade` only rewrites the ConfigMap; the agents read
+  `devices` at startup, so the change needs `kubectl rollout restart ds/cilium`
+  to take effect.
 
 ### Every node is tainted
 
@@ -228,7 +236,7 @@ components:
 
 Read `services/_components/README.md` before touching this: a kustomize
 Component *replaces* the whole `tolerations` list, so the four services with
-bespoke lists (`adguard`, `dashy`, `minio`, `postgres`) deliberately don't use
+bespoke lists (`adguard`, `dashy`, `versitygw`, `postgres`) deliberately don't use
 these.
 
 ### Ingress: Envoy Gateway
@@ -258,7 +266,7 @@ for mail.
 | `nfs-nvme` | proxmox `fd00:cafe::7:/nvme` over NFSv4 | **cluster default** |
 | `nfs-hdd` | proxmox `fd00:cafe::7:/backup/data` | bulk / backup |
 | `zfs-nvme` | democratic-csi zfs-generic-iscsi to proxmox | block; see snapshot caveat below |
-| `local-hostpath-zdata` | plain directories on scw's `zdata` ZFS mirror (`/mnt/zdata`) | observability only, `WaitForFirstConsumer`, node-deployment provisioning |
+| `local-hostpath-zdata` | plain directories on scw's `zdata` ZFS mirror (`/mnt/zdata`) | observability + versitygw, `WaitForFirstConsumer`, node-deployment provisioning |
 
 Installed by root `just k8s` (NFS provisioners) and `just csi` (democratic-csi).
 `benchmarks/storage-benchmark.csv` has fio numbers across all four.
@@ -320,7 +328,7 @@ kustomization deletes it from the cluster** on the next apply. Run
 | `coub` | coub.erebe.eu | toybox | |
 | `dashy` | board.erebe.eu | toybox (bespoke tolerations) | dashboard |
 | `adguard` | — (hostNetwork :53) | dns (Raspberry Pi) | LAN DNS + adblock, privileged |
-| `minio` | — | toybox (bespoke) | S3 |
+| `versitygw` | **s3.erebe.eu** + `*.s3.erebe.eu`; WebUI **s3-gw.erebe.eu** | **scw** (bespoke) | S3 on a POSIX tree. Two paths in on purpose: the API terminates its own TLS on `:443` through the `versitygw-s3` Service's `externalIPs` (scw's WAN addresses), because virtual-host addressing needs `<bucket>.s3.erebe.eu` and its own wildcard cert; the WebUI goes through the envoy Gateway on an `HTTPRoute`, so it runs `--webui-no-tls` and envoy terminates instead |
 | `postgres` | — | toybox (bespoke) | CloudNativePG operator |
 | `wstunnel` | — (**no HTTPRoute**) | **server** | erebe's own tunnel server; reached on `:8084`, opened in `nodes/server/config/nftables.rules`, not via the Gateway |
 | `webhook` | hooks.erebe.eu | toybox | the deployment trigger, see CI/CD |
@@ -389,10 +397,21 @@ posts an empty body for a missing `--form file=@...` and `jq .success` prints a
 lone `null` between the other zones' `true`s. A good run prints exactly two
 `true`s.
 
+`s3` and `*.s3` are the one set of records that does *not* point at server -
+they name scw directly, and they have to be explicit because `*` would
+otherwise answer for `s3.erebe.eu` (and `*` never matches the two labels of
+`<bucket>.s3.erebe.eu`).
+
 Records carry SPF/DKIM/DMARC for the mail server, a `*` wildcard at server's
 IPs, an HTTPS/ALPN record, and `scw`. Certificates come from cert-manager +
 Let's Encrypt via the Cloudflare DNS-01 token (`k8s/lets-encrypt-issuer.yml`,
 `k8s/wildward-erebe-eu.yaml`), applied by root `just k8s`.
+
+There is a second Certificate, `services/versitygw/certificate.yaml`, applied by
+`just versitygw` rather than `just k8s` because only that service uses it - so
+its lifecycle, and the Secret cert-manager writes, follow the service's
+applyset. It exists at all because a DNS wildcard covers exactly one label:
+`*.erebe.eu` cannot serve `<bucket>.s3.erebe.eu`.
 
 ## Observability
 

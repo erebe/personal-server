@@ -1,0 +1,32 @@
+# Separate from erebe-eu-tls because `*.erebe.eu` does not cover
+# `*.s3.erebe.eu` - a DNS wildcard matches exactly one label. versitygw's
+# virtual-host addressing puts the bucket in that second label, so it needs
+# its own wildcard.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: s3-erebe-eu-tls
+  # No namespace here - the kustomization's `namespace: default` sets it, which
+  # matters because cert-manager only writes the Secret into its Certificate's
+  # own namespace and the pod mounts it.
+spec:
+  secretName: s3-erebe-eu-tls
+  duration: 2160h # 90d
+  renewBefore: 720h # 30d
+  subject:
+    organizations:
+    - erebe
+  isCA: false
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    encoding: PKCS1
+  usages:
+    - server auth
+    - client auth
+  dnsNames:
+  - "*.s3.erebe.eu"
+  - s3.erebe.eu
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

@@ -70,12 +70,6 @@ sections:
         url: https://proxmox.lan:8006
         target: sametab
         id: 2_664_proxmox
-      - title: Minio
-        icon: >-
-          https://media.trustradius.com/vendor-logos/Mo/K1/MUSXMMWE0L5C-180x180.PNG
-        url: http://s3.lan
-        target: sametab
-        id: 3_664_minio
       - title: NextCloud
         description: ''
         icon: >-
