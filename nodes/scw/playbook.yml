@@ -22,6 +22,25 @@
       tags: [zfs, never]
       ansible.builtin.import_tasks: ../common/tasks/zfs.yml
 
+    - name: ZFS datasets and properties
+      tags: [zfs, never]
+      vars:
+        # Only what is set locally on the host today, so the first run is a
+        # no-op. See the header of the imported file, and the longer notes in
+        # proxmox/playbook.yml, for why the pool itself is not declared and why
+        # 'off'/'on' have to stay quoted.
+        zfs_datasets:
+          - name: zdata
+            properties:
+              # local-hostpath-values.yaml provisions under /mnt/zdata; the pool
+              # would otherwise mount at /zdata.
+              mountpoint: /mnt/zdata
+              atime: 'off'
+              # Already the ZFS default, but set locally on the pool - listed
+              # so the declaration matches the host and the first run is green.
+              xattr: 'on'
+      ansible.builtin.import_tasks: ../common/tasks/zfs-datasets.yml
+
     # Snapshots, and the login proxmox pulls them with - the shared task does
     # both, keyed on this play's ansible_user (erebe here).
     - name: Sanoid snapshots

@@ -132,13 +132,15 @@ just server --tags wireguard        # render + reload wg0.conf
 just server --tags firewall         # push nftables.rules
 just scw    --tags k3s-agent        # install/upgrade k3s
 just k3s    --tags k3s-master,cilium
+just proxmox --tags zfs             # datasets + their properties (not the pools)
 just proxmox --tags sanoid          # sanoid.conf + the syncoid timers
 just scw    --tags sanoid           # sanoid.conf + the key proxmox pulls with
 just <node> --tags <tag> --check    # dry run — do this first
 ```
 
 Tags in use: `package`, `network`, `migrate-networkd`, `firewall`, `ssh`,
-`sudo`, `wireguard`, `k3s-agent`, `k3s-master`, `cilium`, `sanoid`, `restic`.
+`sudo`, `wireguard`, `k3s-agent`, `k3s-master`, `cilium`, `zfs`, `sanoid`,
+`restic`.
 Not every
 node has every tag — read its `playbook.yml`.
 
@@ -294,7 +296,9 @@ Caveats that have already cost time, all three of which cost time *here*:
   both pool roots still carry the retired provisioner's `sharenfs=rw=*`, so
   without it the volume stays exported and the destroy fails forever with
   `pool or dataset is busy`. Unsharing after the fact does not free it -
-  `exportfs -f` and `umount -l` both leave the superblock referenced.
+  `exportfs -f` and `umount -l` both leave the superblock referenced. Both
+  parents are declared in `zfs_datasets` in `nodes/proxmox/playbook.yml`, so
+  `just proxmox --tags zfs` restores them on a rebuild.
 - IPv6-first service CIDR means a Service without `ipFamilyPolicy:
   PreferDualStack` gets IPv6-only endpoints, which is why `grafana-mcp` needs a
   Helm post-renderer.

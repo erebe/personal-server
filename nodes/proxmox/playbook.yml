@@ -18,6 +18,57 @@
       environment:
         DEBIAN_FRONTEND: noninteractive
 
+    - name: ZFS datasets and properties
+      tags: [zfs, never]
+      vars:
+        # Only what is set *locally* on the host today, so the first run is a
+        # no-op. A property left out is left inherited - this never runs
+        # `zfs inherit`, so deleting a line here does not unset anything.
+        #
+        # Numeric values must be byte counts, not `200G`: the module compares
+        # against `zfs get -p`, so a human-readable size never matches and the
+        # task is reported changed on every run.
+        #
+        # `off` and `on` must stay quoted - YAML reads them as booleans, and the
+        # module would run `zfs set sharenfs=False`.
+        #
+        # The syncoid targets (backup/nvme-backup, backup/scw-backup) are
+        # deliberately absent: syncoid creates them on the first send, and a
+        # pre-created empty dataset is not a receivable one.
+        zfs_datasets:
+          - name: nvme
+            properties:
+              atime: 'off'
+              # Lets a dnode grow past the 512b `legacy` default so sa xattrs
+              # and long filenames fit inline. Applies only to newly written
+              # files, so it has to be set before the data lands.
+              dnodesize: auto
+              sharenfs: 'rw=*,no_root_squash,no_subtree_check'
+          # PREREQUISITE for services/csi/zfs-nfs-nvme-values.yaml, not tidiness.
+          # DeleteVolume unshares with `zfs inherit sharenfs`, so without a local
+          # `off` here the volume keeps the pool root's `rw=*` export and the
+          # destroy fails forever with `pool or dataset is busy`.
+          - name: nvme/k8s
+            properties:
+              sharenfs: 'off'
+          # datasetParentName. democratic-csi creates the volumes beneath it but
+          # not the parent itself.
+          - name: nvme/k8s/v
+
+          - name: backup
+            properties:
+              atime: 'off'
+              compression: 'on'
+          - name: backup/data
+            properties:
+              sharenfs: 'rw=*,no_root_squash,no_subtree_check'
+          # Same prerequisite as nvme/k8s, for the hdd driver.
+          - name: backup/data/k8s
+            properties:
+              sharenfs: 'off'
+          - name: backup/data/k8s/v
+      ansible.builtin.import_tasks: ../common/tasks/zfs-datasets.yml
+
     - name: Wireguard
       tags: [wireguard, never]
       ansible.builtin.import_tasks: ../common/tasks/wireguard.yml

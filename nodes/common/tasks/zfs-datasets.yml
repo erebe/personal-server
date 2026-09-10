@@ -1,0 +1,26 @@
+---
+# Declarative ZFS datasets and their properties.
+#
+# Requires play var: zfs_datasets - a list of {name, properties} entries,
+# parents before children.
+#
+# The pools themselves are deliberately NOT managed here. community.general.zpool
+# reconciles a vdev layout by calling `zpool add`/`zpool remove`, and it reads the
+# current layout with `zpool status -P -L` and then strips the partition suffix -
+# so both pools here, built from /dev/disk/by-id/...-part1, read back as bare
+# /dev/nvme0n1. Declaring what the pool actually holds makes the module try to
+# `zpool add` those same disks as a second mirror vdev (only `zpool add`'s in-use
+# check refuses it, and `force: true` suppresses that check); declaring what it
+# wants to read instead names scw's whole boot disks, which is not where zdata is.
+
+- name: Create the datasets and set their properties
+  # state is always present. The module's `absent` is `zfs destroy -R`, which
+  # takes clones and dependent snapshots with it and asks nothing - not a thing
+  # to have one deleted list entry away.
+  community.general.zfs:
+    name: "{{ item.name }}"
+    state: present
+    extra_zfs_properties: "{{ item.properties | default({}) }}"
+  loop: "{{ zfs_datasets }}"
+  loop_control:
+    label: "{{ item.name }}"
