@@ -9,6 +9,23 @@
 #
 # Loki and Alloy stay as their own releases; the stack has no equivalent.
 
+# Every object name in this release derives from this, but the one that matters
+# is the prometheus PVC. The operator builds it <volumeClaimTemplate>-<sts>-<n>,
+# with both halves derived from the CR name, which the chart otherwise sets to
+# the helm fullname plus "-prometheus": 92 chars, and
+# observability-<pvc>-pvc-<uuid> then overruns the 128-byte volume_id cap that
+# the idTemplate in services/csi lives under. This gets it to
+# prometheus-prometheus-db-prometheus-prometheus-0, 48.
+#
+# cleanPrometheusOperatorObjectNames is what drops that "-prometheus" suffix
+# (the chart's _helpers.tpl:38). Grafana keeps its old names either way - the
+# subchart derives its fullname from the release name, not from this.
+#
+# Renaming is not free: ~70 objects change name, and volumeClaimTemplates being
+# immutable, the operator recreates the StatefulSet onto a new, empty PVC.
+fullnameOverride: prometheus
+cleanPrometheusOperatorObjectNames: true
+
 # CRDs are applied out of band, by `just observability`, from the separate
 # prometheus-operator-crds chart with `kubectl apply --server-side`. Helm does
 # not upgrade CRDs on `helm upgrade`, and these are ~4.4MB - the `prometheuses`

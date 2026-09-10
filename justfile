@@ -140,21 +140,8 @@ k8s:
     kubectl delete secret cloudflare-credentials --namespace cert-manager || exit 0
     kubectl create secret generic cloudflare-credentials --namespace cert-manager \
         --from-literal=api-token="$(sops -d --extract '["apirest"]["key"]' secrets/cloudflare.yml)"
-    helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
-    helm upgrade --install nfs-nvme nfs-subdir-external-provisioner/nfs-subdir-external-provisioner -f k8s/nfs-provisioner-nvme-values.yaml
-    helm upgrade --install nfs-hdd  nfs-subdir-external-provisioner/nfs-subdir-external-provisioner -f k8s/nfs-provisioner-hdd-values.yaml
 
 envoy:
     helm template eg-crds oci://docker.io/envoyproxy/gateway-crds-helm -f k8s/envoy-crds.yaml --version v1.9.1 | kubectl apply --server-side --force-conflicts -f -
     helm upgrade envoy oci://docker.io/envoyproxy/gateway-helm --version v1.9.1 -n default --create-namespace -f k8s/envoy.yaml --skip-crds
     kubectl apply -f k8s/gateway.yaml
-
-csi:
-    helm repo add democratic-csi https://democratic-csi.github.io/charts/
-    helm repo update
-    helm upgrade --install zfs-iscsi democratic-csi/democratic-csi \
-        --namespace democratic-csi \
-        --values k8s/democratic-csi/zfs-iscsi-values.yaml --create-namespace
-    helm upgrade --install local-hostpath democratic-csi/democratic-csi \
-        --namespace democratic-csi \
-        --values k8s/democratic-csi/local-hostpath-values.yaml --create-namespace

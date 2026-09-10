@@ -3,6 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: data-pvc
 spec:
+  storageClassName: zfs-nfs-nvme
   accessModes:
   - ReadWriteOnce
   resources:

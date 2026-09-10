@@ -4,7 +4,7 @@ _default:
     @just --list
 
 nextcloud:
-	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone nextcloud/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/nextcloud-applyset --namespace=default
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone nextcloud/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/nextcloud-applyset --namespace=default --force-conflicts
 
 
 nextcloud_resync_file:
@@ -41,7 +41,7 @@ dashy:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone dashy/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/dashy-applyset --namespace=default
 
 adguard:
-	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone adguard/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/adguard-applyset --namespace=default
+	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone adguard/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/adguard-applyset --namespace=default --force-conflicts
 
 vaultwarden:
 	kustomize build --enable-alpha-plugins --enable-exec --load-restrictor LoadRestrictionsNone vaultwarden/ | KUBECTL_APPLYSET=true kubectl apply -f - --server-side --prune --applyset=configmaps/vaultwarden-applyset --namespace=default --force-conflicts
@@ -84,3 +84,33 @@ observability_password:
 # Print the bearer token callers need to reach the grafana-mcp server
 observability_mcp_token:
 	sops -d --extract '["stringData"]["server-auth-token"]' secrets/grafana-mcp.yml
+
+# Helm rather than kustomize, like observability above, so there is no applyset
+# here - helm owns these releases. One release per driver instance: the driver
+# config carries a single dataset parent, so nvme and backup/data cannot share
+# one.
+
+# democratic-csi: zfs-iscsi, local-hostpath, and the two zfs-generic-nfs pools
+csi:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	helm repo add democratic-csi https://democratic-csi.github.io/charts/
+	helm repo update democratic-csi
+	helm upgrade --install zfs-iscsi democratic-csi/democratic-csi \
+	    --namespace democratic-csi --create-namespace \
+	    --values csi/zfs-iscsi-values.yaml
+	helm upgrade --install local-hostpath democratic-csi/democratic-csi \
+	    --namespace democratic-csi --create-namespace \
+	    --values csi/local-hostpath-values.yaml
+	# The two NFS releases share proxmox's root ssh login. Kept out of the values
+	# files because those are tracked, and read once rather than per release
+	# because the sops key lives on a smartcard. ../secrets is the repo-root one;
+	# services/secrets holds Secret manifests for ksops instead. --set-string,
+	# not --set: helm splits an unquoted --set value on commas.
+	PROXMOX_ROOT_PASSWORD="$(sops -d --extract '["ROOT_PASSWORD"]' ../secrets/proxmox.yml)"
+	for pool in nvme hdd; do
+	    helm upgrade --install "zfs-nfs-${pool}" democratic-csi/democratic-csi \
+	        --namespace democratic-csi --create-namespace \
+	        --values "csi/zfs-nfs-${pool}-values.yaml" \
+	        --set-string "driver.config.sshConnection.password=${PROXMOX_ROOT_PASSWORD}"
+	done

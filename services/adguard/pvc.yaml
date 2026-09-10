@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: adguard-pv-claim
 spec:
-  storageClassName: nfs-nvme
+  storageClassName: zfs-nfs-nvme
   accessModes:
     - ReadWriteOnce
   resources:

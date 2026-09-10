@@ -1,0 +1,265 @@
+# democratic-csi / zfs-generic-nfs against proxmox's `nvme` pool. Replaced the
+# nfs-subdir-external-provisioner release `nfs-nvme`, which was uninstalled
+# once its volumes were migrated; the pool root still carries that release's
+# `sharenfs=rw=*`, which matters below.
+#
+# Same server, same pool, same mount options as it had. What changed is that a
+# volume is a ZFS dataset instead of a subdirectory of one: the PVC's size is
+# an enforced refquota, and each volume has its own snapshots, its own row in
+# `zfs list` and its own syncoid stream.
+#
+# One release per pool. `zfs.datasetParentName` is a single value per driver
+# instance, so nvme and backup/data cannot share one - see
+# zfs-nfs-hdd-values.yaml, which is this file with three things changed.
+
+csiDriver:
+  # Unique per cluster: zfs-iscsi owns org.democratic-csi.iscsi and
+  # local-hostpath owns org.democratic-csi.local-hostpath.
+  name: "org.democratic-csi.nfs-nvme"
+
+  # `None`, not the upstream example's `File`. With `File`, kubelet applies the
+  # pod's fsGroup to the volume on every mount, and fsGroupChangePolicy defaults
+  # to Always - a recursive chown of the whole share, over NFS, at each pod
+  # start. The in-tree NFS plugin these volumes come from never applied fsGroup
+  # at all; datasetPermissionsMode below is what makes them writable.
+  fsGroupPolicy: None
+
+  # The driver does not advertise PUBLISH_UNPUBLISH_VOLUME (commented out in
+  # src/driver/controller-zfs/index.js:94) - a dataset is mounted by the node
+  # plugin, never attached by a controller. externalAttacher is off below to
+  # match; see local-hostpath-values.yaml for what leaving both at the chart's
+  # defaults costs.
+  attachRequired: false
+
+storageClasses:
+    # Not `nfs-nvme`: a StorageClass's `provisioner` is immutable, so the old
+    # class cannot be converted in place and both cannot hold the name at once.
+    # A PVC's storageClassName is immutable too, so renaming this later means
+    # recreating every claim again - treat the name as permanent.
+  - name: zfs-nfs-nvme
+    # The cluster default, inherited from nfs-nvme when that class went away.
+    # Exactly one class may carry it: two defaults leave an unqualified PVC
+    # ambiguous, which is why k8s/ no longer installs the old provisioners.
+    defaultClass: true
+    # Behaviour change worth knowing: nfs-subdir renamed a deleted volume's
+    # directory to archived-* (its archiveOnDelete default, which is where
+    # /nvme/archived-postgres-* came from). This runs `zfs destroy -r`, so the
+    # volume's own sanoid snapshots go with it - a snapshot cannot outlive its
+    # dataset, and the hourlies live on the volume, not on `nvme`. The one copy
+    # left is the syncoid replica under backup/nvme-backup: syncoid never
+    # deletes a dataset that vanished upstream and sanoid prunes that section
+    # by snapshot, never by dataset. It is at most a day old, and does not
+    # exist at all for a volume created and deleted between two 00:01 runs.
+    # Retain instead if that is not enough.
+    reclaimPolicy: Delete
+    volumeBindingMode: Immediate
+    # The refquota set by datasetEnableQuotas below is what can grow.
+    allowVolumeExpansion: true
+    parameters:
+      # `fsType` is the legacy spelling and makes external-provisioner log a
+      # deprecation warning on every provision. Parameters are immutable, so
+      # changing this key means deleting the class first - see
+      # zfs-iscsi-values.yaml.
+      csi.storage.k8s.io/fstype: nfs
+    # Copied verbatim from the old class so a migrated volume mounts exactly as
+    # it does today.
+    mountOptions:
+      - hard
+      - rsize=65536
+      - wsize=65536
+      - retrans=2
+      - timeo=600
+      - nfsvers=4
+
+driver:
+  config:
+    driver: zfs-generic-nfs
+
+    # Name the dataset the way nfs-subdir named its directories -
+    # <namespace>-<claim>-pvc-<uuid> - rather than a bare pvc-<uuid>. This
+    # value *is* the volume_id, so it is also the PV's volumeHandle: set it
+    # before the first volume exists and never change it afterwards, or
+    # DeleteVolume goes looking for a dataset name that was never created.
+    #
+    # Undocumented (`_private`), and the only lever there is: CreateVolume
+    # builds `datasetParentName + "/" + volume_id` under a source comment
+    # telling you not to templatize. It means it - two hard limits in
+    # getVolumeIdFromCall (driver/index.js:507,527), each an INVALID_ARGUMENT
+    # that leaves the PVC Pending, and neither avoidable because the driver
+    # registers no truncate helper:
+    #   128 bytes. pvc-<uuid> eats 41, leaving 87 for <namespace>-<claim>. The
+    #     longest here is default-nextcloud-hdd-pv-claim, at 30. observability
+    #     is the one to watch: its prometheus claim alone was 92 and rendered
+    #     147 until fullnameOverride shortened it to 48 (103 with the
+    #     namespace). Measure before moving another namespace onto CSI.
+    #   [a-z0-9_-] only, so a PVC name carrying a dot is rejected even though
+    #     kubernetes accepts one - PVC names are DNS-1123 subdomains.
+    #
+    # `{{ name }}` is the CSI name rather than the pvc/pv parameters, so the
+    # uuid survives even if --extra-create-metadata is ever dropped. It is also
+    # what stops a deleted-and-recreated claim from adopting a dataset whose
+    # DeleteVolume failed.
+    _private:
+      csi:
+        volume:
+          idTemplate: "{{ parameters.[csi.storage.k8s.io/pvc/namespace] }}-{{ parameters.[csi.storage.k8s.io/pvc/name] }}-{{ name }}"
+
+    sshConnection:
+      host: 10.200.0.7
+      port: 22
+      username: root
+      # `password` is injected by `just csi` from ../secrets/proxmox.yml (the
+      # repo-root one). Do not write it here - this file is tracked.
+
+    zfs:
+      # Siblings, neither nested in the other: CreateVolume refuses the pair
+      # otherwise (controller-zfs/index.js:575). Both are created on first use
+      # with `zfs create -p`.
+      #
+      # PREREQUISITE, and it is not optional:
+      #     zfs set sharenfs=off nvme/k8s
+      # The pool root carries sharenfs=rw=* for the old nfs-subdir provisioner,
+      # and DeleteVolume unshares a volume with `zfs inherit sharenfs`, not
+      # `set off` (controller-zfs-generic/index.js:641). Inherited from the
+      # pool root that resolves back to rw=*, so the volume stays exported,
+      # nfsd keeps a reference to the filesystem, and the destroy fails with
+      #     cannot unmount '...': pool or dataset is busy
+      # for every volume, forever. Setting it locally on the parent makes the
+      # inherit resolve to `off` instead; the driver still shares each volume
+      # explicitly via shareStrategySetDatasetProperties below.
+      #
+      # Recovering a volume already wedged this way is worse than preventing
+      # it: unshare, `exportfs -f` and `umount -l` all leave the superblock
+      # referenced, and only a restart of nfs-server on proxmox reliably
+      # clears it - which stalls every other NFS volume in the cluster.
+      datasetParentName: nvme/k8s/v
+      detachedSnapshotsDatasetParentName: nvme/k8s/s
+
+      # A refquota per volume, so a claim's size finally means something. Check
+      # real usage before migrating: /nvme/default-nextcloud-pv-claim-* is 38G
+      # against a 20Gi claim and would be full the moment it moved.
+      datasetEnableQuotas: true
+      # refreservation would take the whole claim out of the pool up front,
+      # whether or not it is written to.
+      datasetEnableReservation: false
+
+      # What nfs-subdir created its directories as. Nothing chowns the volume
+      # afterwards (fsGroupPolicy: None above), so this mode is the only thing
+      # letting a non-root container write to a fresh volume.
+      datasetPermissionsMode: "0777"
+      datasetPermissionsUser: 0
+      datasetPermissionsGroup: 0
+
+    nfs:
+      shareStrategy: "setDatasetProperties"
+      shareStrategySetDatasetProperties:
+        properties:
+          # Exactly what `nvme` carries today. Set on each volume rather than
+          # left to inherit: otherwise editing the pool's sharenfs silently
+          # rewrites the export options of every volume under it.
+          # review(claude): is there a better set of properties ?
+          sharenfs: "rw=*,no_root_squash,no_subtree_check"
+      # Bracketed on purpose. The driver builds the mount source as
+      # `${server}:${share}` verbatim (src/driver/index.js:852); the in-tree NFS
+      # plugin that serves the old PVs brackets an IPv6 literal for you, this
+      # does not. Unbracketed, mount.nfs reads `fd00:cafe::7:/nvme/...` as a
+      # hostname and the mount fails.
+      shareHost: "[fd00:cafe::7]"
+
+controller:
+  # Both sidecars default to --v=5, where client-go logs `successfully renewed
+  # lease` every 5s and the resizer logs a no-op pass per PVC on top: measured
+  # at 24 of 25 provisioner lines and 48 of 52 resizer lines, all of it shipped
+  # to Loki on scw's local disk. 2 keeps provisioning and error events.
+  #
+  # Leader election stays on despite replicaCount being 1. The chart sets no
+  # Deployment strategy, so maxSurge 25% rounds *up* to 1 while maxUnavailable
+  # rounds down to 0 - every `just csi` that changes the pod template runs two
+  # provisioners against this driver until the old pod exits.
+  externalProvisioner:
+    verbosityLevel: 2
+  externalResizer:
+    verbosityLevel: 2
+
+  # Nothing to attach - see csiDriver.attachRequired.
+  externalAttacher:
+    enabled: false
+
+  # No VolumeSnapshot CRDs and no snapshot-controller in this cluster, so the
+  # sidecar can only log a watch failure in a loop. Snapshots come from sanoid
+  # on proxmox instead. Same as the other two releases.
+  externalSnapshotter:
+    enabled: false
+
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node.kubernetes.io/unreachable"
+      operator: "Exists"
+    - key: "node.kubernetes.io/not-ready"
+      operator: "Exists"
+    - key: "node.cilium.io/agent-not-ready"
+      operator: "Exists"
+
+node:
+  # Both are the chart's defaults; both are restated because the sibling
+  # local-hostpath release turns them off and the reason does not carry over.
+  #
+  # hostNetwork stays on, and is not really removable: an NFS mount's kernel
+  # client belongs to the netns it was mounted from, so mounting from the pod's
+  # netns wedges every volume on the node the next time this DaemonSet pod is
+  # replaced - a driver upgrade would take the mounts with it.
+  #
+  # Reachability is *not* the reason: cilium masquerades pod egress to the node
+  # IP, which is why the controller Deployment below reaches 10.200.0.7 over
+  # ssh with hostNetwork false.
+  hostNetwork: true
+  # ...but hostIPC is only there for iscsid/multipathd, which this driver never
+  # talks to.
+  hostIPC: false
+
+  # The node plugin is ~146 MiB per node (107 of it the node.js driver), so it
+  # runs only where a zfs-nfs-nvme volume is actually mounted rather than
+  # fleet-wide: toybox (coub, nextcloud, stalwart, vaultwarden, karakeep x2)
+  # and dns (adguard).
+  #
+  # The cost of pinning: a pod that lands anywhere else stays in
+  # ContainerCreating with
+  #   driver name org.democratic-csi.nfs-nvme not found in the list of
+  #   registered CSI drivers
+  # Loud, but it is a tripwire - and it arms itself the day this class becomes
+  # the cluster default, because then an unqualified PVC anywhere hits it. Add
+  # the node here first, then move the workload.
+  #
+  # affinity rather than nodeSelector only because a nodeSelector is an AND of
+  # labels and cannot say "toybox or dns".
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - toybox
+                  - dns
+  # Mind the asymmetry: dns's *label* is `dns` but its taint *value* is
+  # `raspberry` (nodes/dns/k3s/config.yaml sets a node-name of dns and a taint
+  # of kubernetes.io/hostname=raspberry). The affinity above matches the label,
+  # this matches the taint; they cannot be kept in sync by copy-paste.
+  tolerations:
+    - key: "kubernetes.io/hostname"
+      operator: "Equal"
+      value: "toybox"
+      effect: "NoSchedule"
+    - key: "kubernetes.io/hostname"
+      operator: "Equal"
+      value: "raspberry"
+      effect: "NoSchedule"
+    # Transient taints, so the plugin starts before cilium reports ready
+    # instead of waiting behind it.
+    - key: "node.kubernetes.io/not-ready"
+      operator: "Exists"
+    - key: "node.cilium.io/agent-not-ready"
+      operator: "Exists"

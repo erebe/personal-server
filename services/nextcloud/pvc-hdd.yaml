@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: nextcloud-hdd-pv-claim
 spec:
-  storageClassName: nfs-hdd
+  storageClassName: zfs-nfs-hdd
   accessModes:
     - ReadWriteOnce
   resources:

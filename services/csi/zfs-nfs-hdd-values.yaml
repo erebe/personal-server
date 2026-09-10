@@ -1,0 +1,125 @@
+# democratic-csi / zfs-generic-nfs against proxmox's `backup/data`. Replaced
+# the nfs-subdir-external-provisioner release `nfs-hdd`, now uninstalled.
+#
+# zfs-nfs-nvme-values.yaml carries the rationale for everything the two share;
+# only what differs is commented here.
+
+csiDriver:
+  name: "org.democratic-csi.nfs-hdd"
+  fsGroupPolicy: None
+  attachRequired: false
+
+storageClasses:
+  - name: zfs-nfs-hdd
+    defaultClass: false
+    # The nvme side has the syncoid replica on backup/nvme-backup behind a
+    # delete. This pool has no ZFS replication at all - restic covers only the
+    # nextcloud photos tree - so a `Delete` here is the last copy going away,
+    # where nfs-subdir used to rename the directory to archived-*. The one
+    # volume here is nextcloud's 884G photo tree; Retain is worth considering.
+    reclaimPolicy: Delete
+    volumeBindingMode: Immediate
+    allowVolumeExpansion: true
+    parameters:
+      csi.storage.k8s.io/fstype: nfs
+    mountOptions:
+      - hard
+      - rsize=65536
+      - wsize=65536
+      - retrans=2
+      - timeo=600
+      - nfsvers=4
+
+driver:
+  config:
+    driver: zfs-generic-nfs
+
+    # <namespace>-<claim>-pvc-<uuid> as the dataset name, as on the nvme side -
+    # see that file for why this is `_private`, what its two length and charset
+    # limits are, and why it can never change once a volume exists.
+    _private:
+      csi:
+        volume:
+          idTemplate: "{{ parameters.[csi.storage.k8s.io/pvc/namespace] }}-{{ parameters.[csi.storage.k8s.io/pvc/name] }}-{{ name }}"
+
+    sshConnection:
+      host: 10.200.0.7
+      port: 22
+      username: root
+      # Injected by `just csi` from ../secrets/proxmox.yml.
+
+    zfs:
+      # Under backup/data rather than beside it, so the volumes stay inside the
+      # tree the class already exports and inside the sanoid section that
+      # covers it (nodes/proxmox/sanoid/sanoid.conf - which needed
+      # `recursive = yes` added for exactly this: a child dataset is not
+      # covered by its parent's snapshots).
+      # Needs `zfs set sharenfs=off backup/data/k8s` before the first volume,
+      # for the reason spelled out in the nvme file - backup/data carries
+      # sharenfs=rw=* just like the nvme pool root does, so without it no
+      # volume on this class can ever be deleted. Not done yet: the parent
+      # does not exist until the first volume is provisioned.
+      datasetParentName: backup/data/k8s/v
+      detachedSnapshotsDatasetParentName: backup/data/k8s/s
+
+      datasetEnableQuotas: true
+      # nextcloud-hdd claims 2Ti against 5.4T free on this pool. As a
+      # reservation that would be most of the pool taken for 885G of data.
+      datasetEnableReservation: false
+
+      datasetPermissionsMode: "0777"
+      datasetPermissionsUser: 0
+      datasetPermissionsGroup: 0
+
+    nfs:
+      shareStrategy: "setDatasetProperties"
+      shareStrategySetDatasetProperties:
+        properties:
+          # What backup/data carries today.
+          sharenfs: "rw=*,no_root_squash,no_subtree_check"
+      shareHost: "[fd00:cafe::7]"
+
+controller:
+  # --v=2, not the chart's 5, which is almost entirely lease-renewal noise.
+  # Leader election stays on - see the nvme file for why one replica is not the
+  # same as one instance.
+  externalProvisioner:
+    verbosityLevel: 2
+  externalResizer:
+    verbosityLevel: 2
+
+  externalAttacher:
+    enabled: false
+  externalSnapshotter:
+    enabled: false
+
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node.kubernetes.io/unreachable"
+      operator: "Exists"
+    - key: "node.kubernetes.io/not-ready"
+      operator: "Exists"
+    - key: "node.cilium.io/agent-not-ready"
+      operator: "Exists"
+
+node:
+  hostNetwork: true
+  hostIPC: false
+
+  # nextcloud-hdd is the only volume on this class and it lives on toybox, so
+  # one pod for the whole fleet. See the nvme file for what pinning costs when
+  # a workload moves before this list does. A plain nodeSelector is enough
+  # here; the nvme side needs an affinity only because it spans two nodes.
+  nodeSelector:
+    kubernetes.io/hostname: toybox
+  tolerations:
+    - key: "kubernetes.io/hostname"
+      operator: "Equal"
+      value: "toybox"
+      effect: "NoSchedule"
+    - key: "node.kubernetes.io/not-ready"
+      operator: "Exists"
+    - key: "node.cilium.io/agent-not-ready"
+      operator: "Exists"

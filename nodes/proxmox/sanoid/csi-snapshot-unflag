@@ -1,10 +1,11 @@
 #!/bin/sh
 # sanoid post_snapshot_script for the democratic-csi datasets.
 #
-# democratic-csi sets democratic-csi:managed_resource=true on every zvol it
-# provisions, and ZFS snapshots inherit their dataset's user properties. So a
-# plain sanoid snapshot of nvme/k8s-test/pvc-* comes out looking exactly like a
-# CSI-managed snapshot, and DeleteVolume then refuses the whole volume with
+# democratic-csi sets democratic-csi:managed_resource=true on every zvol and
+# dataset it provisions, and ZFS snapshots inherit their dataset's user
+# properties. So a plain sanoid snapshot of one of the parents matched below
+# comes out looking exactly like a CSI-managed snapshot, and DeleteVolume then
+# refuses the whole volume with
 #     rpc error: code = FailedPrecondition desc = filesystem has dependent snapshots
 # leaving the PVC stuck in Terminating forever.
 #
@@ -18,6 +19,8 @@ set -u
 for target in ${SANOID_TARGETS:-}; do
     case "${target}" in
         nvme/k8s-test/*) ;;
+        nvme/k8s/v/*) ;;
+        backup/data/k8s/v/*) ;;
         *) continue ;;
     esac
     for snap in ${SANOID_SNAPNAMES:-}; do

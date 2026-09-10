@@ -3,6 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: meilisearch-pvc
 spec:
+  storageClassName: zfs-nfs-nvme
   accessModes:
   - ReadWriteOnce
   resources:

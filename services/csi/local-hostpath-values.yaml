@@ -5,7 +5,7 @@
 # chunks) stay on the node instead of crossing WireGuard to iSCSI on
 # 10.200.0.7. k3s's bundled local-storage is disabled cluster-wide
 # (nodes/k3s/k3s/config.yaml) and cannot simply be re-enabled: k3s marks its
-# local-path class as default and nfs-nvme already holds that role, which would
+# local-path class as default and zfs-nfs-nvme already holds that role, which would
 # leave two defaults and make karakeep's unqualified PVCs ambiguous.
 #
 # These volumes used to sit on /var/lib/csi-local-hostpath, i.e. scw's 200G

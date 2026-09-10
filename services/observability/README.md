@@ -324,7 +324,7 @@ events.
 ### Where the volumes live
 
 All three volumes are on scw's own 2TB NVMe RAID1, through a **second
-democratic-csi release** (`k8s/democratic-csi/local-hostpath-values.yaml`,
+democratic-csi release** (`services/csi/local-hostpath-values.yaml`,
 installed by `just csi` alongside the iSCSI one). Nothing in this stack touches
 iSCSI or crosses WireGuard for storage.
 
@@ -355,7 +355,7 @@ Four things about that release are load-bearing:
 
 ## Prerequisites
 
-`just csi` (repo root) must have run since the `local-hostpath` release was
+`just csi` (in this directory) must have run since the `local-hostpath` release was
 added, so the StorageClass and its node DaemonSet exist on scw. Without it every
 PVC sits `Pending` and the pods stay in `ContainerCreating`.
 

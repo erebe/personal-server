@@ -51,7 +51,7 @@ they are that value, and what breaks if someone "simplifies" them. Examples
 worth reading to calibrate: `nodes/group_vars/all.yml` (MTU derivation),
 `nodes/common/tasks/networkd.yml` (why dhcpcd is masked but not stopped),
 `k8s/gateway.yaml` (why :80 is namespace-restricted),
-`k8s/democratic-csi/local-hostpath-values.yaml` (four load-bearing settings).
+`services/csi/local-hostpath-values.yaml` (four load-bearing settings).
 
 **Keep them terse — one or two lines.** State the fact that is not obvious from
 the code: the error text, the flag's default, why the value is load-bearing.
@@ -88,7 +88,8 @@ services/             kustomize-based k8s workloads, one dir per service
   _components/        shared kustomize Components (node tolerations) — read its README
   secrets/            sops-encrypted k8s Secret manifests, consumed via ksops
   observability/      Helm values for Loki/Prometheus/Grafana/Alloy — read its README
-k8s/                  cluster-level: cert-manager, envoy gateway, CSI drivers, coredns
+  csi/                Helm values for the democratic-csi storage drivers
+k8s/                  cluster-level: cert-manager, envoy gateway, coredns
 dns/                  Cloudflare zone files for erebe.eu / erebe.dev
 secrets/              sops-encrypted infra secrets (wireguard, ssh, kubeconfig, cloudflare)
 secrets_decrypted/    gitignored scratch output of `sops -d` (all of them, everywhere)
@@ -264,19 +265,39 @@ for mail.
 
 | Class | Backing | Notes |
 | --- | --- | --- |
-| `nfs-nvme` | proxmox `fd00:cafe::7:/nvme` over NFSv4 | **cluster default** |
-| `nfs-hdd` | proxmox `fd00:cafe::7:/backup/data` | bulk / backup |
-| `zfs-nvme` | democratic-csi zfs-generic-iscsi to proxmox | block; see snapshot caveat below |
+| `zfs-nfs-nvme` | democratic-csi zfs-generic-nfs to proxmox, dataset per volume under `nvme/k8s/v` | **cluster default** |
+| `zfs-nfs-hdd` | democratic-csi zfs-generic-nfs to proxmox, dataset per volume under `backup/data/k8s/v` | bulk / backup; one volume, nextcloud's photo tree |
+| `zfs-nvme` | democratic-csi zfs-generic-iscsi to proxmox | block; unused, no PV references it |
 | `local-hostpath-zdata` | plain directories on scw's `zdata` ZFS mirror (`/mnt/zdata`) | observability + versitygw, `WaitForFirstConsumer`, node-deployment provisioning |
 
-Installed by root `just k8s` (NFS provisioners) and `just csi` (democratic-csi).
-`benchmarks/storage-benchmark.csv` has fio numbers across all four.
+All installed by `cd services && just csi`. Everything is democratic-csi now:
+the two nfs-subdir-external-provisioner releases were uninstalled once their
+volumes moved, and `just k8s` no longer installs anything storage-related -
+re-adding it would recreate `nfs-nvme` as a *second* default class.
+`benchmarks/storage-benchmark.csv` predates the move and measured the old
+nfs-subdir classes.
 
-Caveats that have already cost time: deleting a `zfs-nvme` PVC fails while
-sanoid snapshots exist (fixed by the `post_snapshot_script` in
-`nodes/proxmox/sanoid/`, applied with `just proxmox --tags sanoid`); IPv6-first
-service CIDR means a Service without `ipFamilyPolicy: PreferDualStack` gets
-IPv6-only endpoints, which is why `grafana-mcp` needs a Helm post-renderer.
+A volume is now a ZFS dataset rather than a subdirectory, so a PVC's size is an
+enforced refquota (claims were raised during the migration where the data
+already exceeded them), and a `Delete` reclaim destroys the dataset rather than
+renaming it to `archived-*`.
+
+Caveats that have already cost time, all three of which cost time *here*:
+
+- Deleting a PVC fails while sanoid snapshots carry an inherited
+  `democratic-csi:managed_resource=true` - `rpc error: ... filesystem has
+  dependent snapshots`. Fixed by the `post_snapshot_script` in
+  `nodes/proxmox/sanoid/`, applied with `just proxmox --tags sanoid`. It must
+  be in place *before* volumes exist; it only unflags snapshots it takes.
+- A CSI dataset parent must carry `sharenfs=off` locally (`nvme/k8s`,
+  `backup/data/k8s`). DeleteVolume unshares with `zfs inherit sharenfs`, and
+  both pool roots still carry the retired provisioner's `sharenfs=rw=*`, so
+  without it the volume stays exported and the destroy fails forever with
+  `pool or dataset is busy`. Unsharing after the fact does not free it -
+  `exportfs -f` and `umount -l` both leave the superblock referenced.
+- IPv6-first service CIDR means a Service without `ipFamilyPolicy:
+  PreferDualStack` gets IPv6-only endpoints, which is why `grafana-mcp` needs a
+  Helm post-renderer.
 
 ### ZFS snapshots and replication
 
@@ -350,6 +371,7 @@ kustomization deletes it from the cluster** on the next apply. Run
 | `wstunnel` | — (**no HTTPRoute**) | **server** | erebe's own tunnel server; reached on `:8084`, opened in `nodes/server/config/nftables.rules`, not via the Gateway |
 | `webhook` | hooks.erebe.eu | toybox | the deployment trigger, see CI/CD |
 | `observability` | obs.erebe.eu (Grafana) | **scw** | Helm, not kustomize — `just observability` |
+| `csi` | — | — | Helm, not kustomize — the democratic-csi storage drivers, `just csi` |
 | `backup` | — | server | nightly CronJob, `just backup` |
 | `app/warpgate.yml` | *.warp.erebe.eu | — | `just warpgate` |
 
@@ -450,9 +472,8 @@ reachable over the mesh at
 ```
 # root — cluster-level
 just install                 # bootstrap this machine: ssh key, ssh config, kubeconfig
-just k8s                     # cert-manager, issuers, wildcard cert, coredns, NFS provisioners
+just k8s                     # cert-manager, issuers, wildcard cert, coredns
 just envoy                   # Envoy Gateway CRDs (server-side) + chart + Gateway
-just csi                     # democratic-csi: zfs-iscsi + local-hostpath
 just dns                     # push zone files to Cloudflare
 just release <app>           # trigger the deploy webhook
 
@@ -462,6 +483,7 @@ just all --tags <tag>        # every node via site.yml
 
 # services/ — kubernetes workloads
 just <service>               # kustomize build | kubectl apply --server-side --prune
+just csi                     # democratic-csi: zfs-iscsi, local-hostpath, the two NFS pools
 just observability           # the Helm stack
 just observability_password  # Grafana admin password
 just nextcloud_resync_file   # occ files:scan --all

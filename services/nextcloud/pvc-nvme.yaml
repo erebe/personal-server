@@ -3,9 +3,9 @@ kind: PersistentVolumeClaim
 metadata:
   name: nextcloud-pv-claim
 spec:
-  storageClassName: nfs-nvme
+  storageClassName: zfs-nfs-nvme
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 20Gi
+      storage: 200Gi
