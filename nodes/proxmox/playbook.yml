@@ -153,7 +153,7 @@
         # the env file basename, the restic tag, and the secrets key prefix.
         restic_jobs:
           - name: nextcloud
-            source: /backup/data/default-nextcloud-hdd-pv-claim-pvc-12f99576-32ac-4ea8-b690-8b4b99c3c03a
+            source: /backup/data/k8s/v/default-nextcloud-hdd-pv-claim-pvc-5bbfb056-3055-4c94-8a05-13547cfd52d9/
           - name: nvme-backup
             source: /backup/nvme-backup
       block:
