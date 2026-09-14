@@ -58,8 +58,10 @@ table inet SERVER_FIREWALL {
         chain nat_prerouting {
               type nat hook prerouting priority dstnat; policy accept;
 
-              ip saddr != $whitelist tcp dport {22, 25, 587, 2222} ct state new, untracked limit rate over 5/minute add @denylist { ip saddr } comment "add to blacklist"
-              ip saddr @denylist drop comment "dont allow blacklisted ip"
+              # Internal SMTP connections otherwise blacklist Envoy itself and block mail on 25/587.
+              # Restrict both rules to WAN ingress so existing bans cannot drop pod traffic either.
+              iifname "eth0" ip saddr != $whitelist tcp dport {22, 25, 587, 2222} ct state new, untracked limit rate over 5/minute add @denylist { ip saddr } comment "add to blacklist"
+              iifname "eth0" ip saddr @denylist drop comment "dont allow blacklisted ip"
         }
 
         chain forward {

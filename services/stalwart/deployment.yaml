@@ -16,8 +16,6 @@ spec:
       labels:
         app: email
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
       securityContext:
         fsGroup: 65534
       containers:
