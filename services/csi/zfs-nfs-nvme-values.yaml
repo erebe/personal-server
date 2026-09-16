@@ -191,8 +191,9 @@ controller:
   externalSnapshotter:
     enabled: false
 
+  # The master node uses the same control-plane taint as k3s's bundled addons.
   tolerations:
-    - key: "node-role.kubernetes.io/master"
+    - key: "node-role.kubernetes.io/control-plane"
       operator: "Exists"
       effect: "NoSchedule"
     - key: "node.kubernetes.io/unreachable"

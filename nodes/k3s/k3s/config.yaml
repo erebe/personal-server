@@ -21,7 +21,9 @@ kubelet-arg: "node-ip=::"
 token: 12345
 flannel-backend: "none"
 node-label: []
+# Bundled CoreDNS and metrics-server only tolerate control-plane; the legacy
+# master taint leaves them Pending when k3s reapplies their manifests at startup.
 node-taint:
-  - node-role.kubernetes.io/master:NoSchedule
+  - node-role.kubernetes.io/control-plane:NoSchedule
   #  - kubernetes.io/hostname=master:NoSchedule
 

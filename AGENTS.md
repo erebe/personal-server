@@ -229,7 +229,7 @@ k3s, single control-plane node, dual-stack **IPv6-first**. Config in
 ### Every node is tainted
 
 Each node carries `kubernetes.io/hostname=<name>:NoSchedule` (the master
-carries `node-role.kubernetes.io/master:NoSchedule`). **A workload therefore
+carries `node-role.kubernetes.io/control-plane:NoSchedule`). **A workload therefore
 needs both a nodeAffinity and the matching toleration**, or it stays Pending
 forever. Use the shared Components:
 
@@ -237,6 +237,10 @@ forever. Use the shared Components:
 components:
   - ../_components/toleration-toybox     # or toleration-server
 ```
+
+The master's legacy `node-role.kubernetes.io/master` taint blocks bundled
+CoreDNS and metrics-server after a restart: k3s reapplies their manifests,
+which tolerate `control-plane`. Node role labels are separate from taints.
 
 Read `services/_components/README.md` before touching this: a kustomize
 Component *replaces* the whole `tolerations` list, so the four services with
