@@ -34,7 +34,7 @@ spec:
                 - dns
       containers:
       - name: adguard
-        image: adguard/adguardhome:v0.107.71
+        image: adguard/adguardhome:v0.107.79
         imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 80
