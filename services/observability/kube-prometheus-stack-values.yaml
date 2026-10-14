@@ -254,6 +254,10 @@ grafana:
     analytics:
       reporting_enabled: false
       check_for_updates: false
+    plugins:
+      # Auto-updates unload bundled datasources, then fail on the read-only
+      # image filesystem, leaving Loki and Prometheus unregistered.
+      preinstall_auto_update: false
     users:
       allow_sign_up: false
     auth.anonymous:
