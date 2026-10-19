@@ -403,6 +403,8 @@ alloy:
       // above, scraped by Prometheus, and down for the same reason.
       prometheus.remote_write "default" {
         endpoint {
-          url = "http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090/api/v1/write"
+          // fullnameOverride makes this Service prometheus-prometheus; the
+          // release-derived name does not resolve and host metrics never arrive.
+          url = "http://prometheus-prometheus.observability.svc.cluster.local:9090/api/v1/write"
         }
       }
