@@ -100,6 +100,7 @@ metadata:
   name: custom-proxy-config
   namespace: default
 spec:
+  mergeType: StrategicMerge
   ipFamily: DualStack
   provider:
     type: Kubernetes

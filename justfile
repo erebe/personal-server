@@ -142,6 +142,8 @@ k8s:
         --from-literal=api-token="$(sops -d --extract '["apirest"]["key"]' secrets/cloudflare.yml)"
 
 envoy:
-    helm template eg-crds oci://docker.io/envoyproxy/gateway-crds-helm -f k8s/envoy-crds.yaml --version v1.9.1 | kubectl apply --server-side --force-conflicts -f -
-    helm upgrade envoy oci://docker.io/envoyproxy/gateway-helm --version v1.9.1 -n default --create-namespace -f k8s/envoy.yaml --skip-crds
+    helm template eg-crds oci://docker.io/envoyproxy/gateway-crds-helm -f k8s/envoy-crds.yaml --version v1.9.2 | kubectl apply --server-side --force-conflicts -f -
+    helm upgrade envoy oci://docker.io/envoyproxy/gateway-helm \
+        --version v1.9.2  --set global.images.envoyProxy.image=docker.io/envoyproxy/envoy:distroless-v1.39.3 \
+        -n default --create-namespace -f k8s/envoy.yaml --skip-crds
     kubectl apply -f k8s/gateway.yaml
