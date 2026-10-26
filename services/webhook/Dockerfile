@@ -1,4 +1,4 @@
-FROM almir/webhook:2.8.0
+FROM almir/webhook:2.8.3
 LABEL org.opencontainers.image.source https://github.com/erebe/personal-server
 
 RUN adduser -D -u 1000 abc && \
