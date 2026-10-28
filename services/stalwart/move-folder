@@ -1,6 +1,14 @@
 require ["fileinto", "variables", "envelope", "regex", "mailbox"];
 
-if header :is "X-Envelope-Mismatch" "Yes" {
+# creche@erebe.eu legitimately gets mail whose envelope sender differs from
+# From; junking on X-Envelope-Mismatch would lose it.
+if allof (
+    header :is "X-Envelope-Mismatch" "Yes",
+    not anyof (
+        envelope :is :all "to" "creche@erebe.eu",
+        address :is :all ["to", "cc"] "creche@erebe.eu"
+    )
+) {
     fileinto "Junk Mail";
     stop;
 }
@@ -18,8 +26,7 @@ if anyof (
 if allof (
    anyof (
        envelope :is :all "to" "bouyguestelecom@erebe.eu",
-       address :is :all "to" "bouyguestelecom@erebe.eu",
-       address :is :all "cc" "bouyguestelecom@erebe.eu"
+       address :is :all ["to", "cc"] "bouyguestelecom@erebe.eu"
    ),
    not anyof (
        address :is :domain "from" "bouygues-telecom.fr",

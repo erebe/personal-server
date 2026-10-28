@@ -18,13 +18,18 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
       - name: nextcloud
-        image: linuxserver/nextcloud:31.0.8
+        # Bump one major at a time: the image's init sleeps forever instead of
+        # starting when the data is more than one major behind it.
+        image: linuxserver/nextcloud:35.0.2-ls460
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8083
         volumeMounts:
+        # Over the live file, not /defaults: the image copies its sample only
+        # when default.conf is missing, so edits there never reached nginx.
         - name: nginx-siteconfig
-          mountPath: /defaults/nginx/site-confs/
+          mountPath: /config/nginx/site-confs/default.conf
+          subPath: default.conf.sample
         - name: data-nvme
           subPath: config
           mountPath: /config

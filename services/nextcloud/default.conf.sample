@@ -52,6 +52,8 @@ server {
     add_header X-Permitted-Cross-Domain-Policies    "none"              always;
     add_header X-Robots-Tag                         "noindex, nofollow" always;
     add_header X-XSS-Protection                     "1; mode=block"     always;
+    # Nextcloud's setup check flags HSTS below 180 days (15552000s).
+    add_header Strict-Transport-Security            "max-age=15552000"  always;
 
     # Remove X-Powered-By, which is an information leak
     fastcgi_hide_header X-Powered-By;
