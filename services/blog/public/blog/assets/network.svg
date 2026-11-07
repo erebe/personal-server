@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 440" fill="none">
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#d7d4c8"/></pattern>
+    <linearGradient id="paper" x1="80" y1="40" x2="500" y2="400" gradientUnits="userSpaceOnUse"><stop stop-color="#f3f1e9"/><stop offset="1" stop-color="#eaece2"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#373f30" flood-opacity=".07"/></filter>
+  </defs>
+  <rect x="12" y="12" width="556" height="416" rx="5" fill="url(#paper)"/>
+  <rect x="12" y="12" width="556" height="416" rx="5" fill="url(#grid)"/>
+  <path d="M36 57V36h21M523 36h21v21M36 383v21h21M523 404h21v-21" stroke="#a9ae9e"/>
+  <g font-family="monospace" font-size="10" letter-spacing="1.4" fill="#6c7263"><text x="49" y="70">A SMALL CORNER OF THE INTERNET</text><text x="49" y="385">FIG. 01</text><text x="372" y="385">YOUR NETWORK, YOUR RULES</text></g>
+  <rect x="305" y="93" width="228" height="252" rx="13" stroke="#99a18a" stroke-dasharray="4 5"/>
+  <rect x="328" y="84" width="179" height="18" fill="#eeeee4"/>
+  <text x="337" y="97" font-family="monospace" font-size="10" letter-spacing="1.2" fill="#657256">YOUR PRIVATE NETWORK</text>
+  <path d="M104 216H186M245 216H382M425 237v43M425 161v34" stroke="#a4aa99" stroke-width="1.5"/>
+  <path d="M246 210H365M246 222H365" stroke="#7a895e" stroke-width="1" stroke-dasharray="4 4"/>
+  <path d="m354 211 7 5-7 5" stroke="#708459" stroke-width="1.5"/>
+  <circle cx="139" cy="216" r="3" fill="#b66945"/>
+  <circle cx="282" cy="216" r="3" fill="#7a895e"/>
+  <g filter="url(#shadow)">
+    <rect x="52" y="190" width="69" height="53" rx="12" fill="#faf9f3" stroke="#bbbfb1"/>
+    <rect x="179" y="177" width="74" height="78" rx="12" fill="#faf9f3" stroke="#b66945" stroke-width="1.4"/>
+    <rect x="380" y="185" width="88" height="62" rx="12" fill="#f9faf3" stroke="#8a9876"/>
+    <rect x="392" y="126" width="66" height="35" rx="7" fill="#f9faf3" stroke="#b7bdab"/>
+    <rect x="392" y="280" width="66" height="35" rx="7" fill="#f9faf3" stroke="#b7bdab"/>
+  </g>
+  <g stroke="#69725f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="86.5" cy="216.5" r="15"/><ellipse cx="86.5" cy="216.5" rx="6" ry="15"/><path d="M72 216.5h29M75 207h23M75 226h23"/>
+    <rect x="199" y="195" width="34" height="15" rx="3" stroke="#b66945"/><rect x="199" y="217" width="34" height="15" rx="3" stroke="#b66945"/>
+    <path d="M205 202h12M205 224h12" stroke="#b66945"/><circle cx="226" cy="202" r="1" fill="#b66945"/><circle cx="226" cy="224" r="1" fill="#b66945"/>
+    <rect x="407" y="201" width="34" height="25" rx="2"/><path d="M413 232h22M420 226v6M428 226v6m-9-23-5 5 5 5m10-10 5 5-5 5"/>
+    <path d="M407 139h12m-12 7h21m-21 146h12m-12 7h21"/><circle cx="442" cy="143" r="3" fill="#809464" stroke="none"/><circle cx="442" cy="297" r="3" fill="#809464" stroke="none"/>
+  </g>
+  <g font-family="sans-serif" font-size="12" font-weight="600" text-anchor="middle" fill="#444c3c"><text x="86" y="266">Internet</text><text x="216" y="276">Your VPS</text><text x="425" y="267">Your home server</text></g>
+  <g font-family="monospace" font-size="9" text-anchor="middle" fill="#7a7f70"><text x="216" y="293">PUBLIC IP</text><text x="309" y="198">WIREGUARD</text><text x="309" y="240">ENCRYPTED TUNNEL</text></g>
+  <rect x="188" y="121" width="57" height="24" rx="12" fill="#e9d7c6"/><text x="216.5" y="137" text-anchor="middle" font-family="monospace" font-size="10" fill="#9b5333">:995</text>
+  <path d="M216 148v21" stroke="#b66945" stroke-dasharray="2 3"/>
+</svg>

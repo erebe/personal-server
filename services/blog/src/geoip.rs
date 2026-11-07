@@ -7,6 +7,8 @@ use std::path::Path;
 pub struct IpInfo<'a> {
     pub country: Option<&'a str>,
     pub city: Option<&'a str>,
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
     pub asn: Option<u32>,
     pub org: Option<&'a str>,
 }
@@ -46,6 +48,8 @@ impl GeoIp {
         IpInfo {
             country: location.as_ref().and_then(|l| l.country.iso_code),
             city: location.as_ref().and_then(|l| l.city.names.english),
+            latitude: location.as_ref().and_then(|l| l.location.latitude),
+            longitude: location.as_ref().and_then(|l| l.location.longitude),
             asn: owner.as_ref().and_then(|o| o.autonomous_system_number),
             org: owner.as_ref().and_then(|o| o.autonomous_system_organization),
         }

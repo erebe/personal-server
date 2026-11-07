@@ -5,10 +5,17 @@ metadata:
 spec:
   parentRefs:
     - name: envoy
-  # One hostname per directory inside public/, the first label selecting the directory to serve
+  # One hostname per directory inside public/, the first label selecting the directory to serve,
+  # plus fork.*, whose short links the server answers with a redirect
   hostnames:
     - wstunnel.erebe.eu
     - wstunnel.erebe.dev
+    - cv.erebe.eu
+    - cv.erebe.dev
+    - blog.erebe.eu
+    - blog.erebe.dev
+    - fork.erebe.eu
+    - fork.erebe.dev
   rules:
     - matches:
         - path:

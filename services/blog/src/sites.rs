@@ -1,4 +1,5 @@
 use crate::geoip::GeoIp;
+use crate::redirect;
 use axum::body::Body;
 use axum::extract::State;
 use axum::http::{Request, StatusCode, header};
@@ -75,12 +76,17 @@ impl Sites {
 
 /// Serve the file of the request path, looked up in the directory of the site matching the request hostname.
 /// i.e: https://wstunnel.erebe.eu/index.html serves the file <root_dir>/wstunnel/index.html
+/// The redirect site is the exception, see [redirect::redirect_to_target]
 pub async fn serve_static_file(State(sites): State<Arc<Sites>>, request: Request<Body>) -> Response {
     let Some(hostname) = request_hostname(&request) else {
         return (StatusCode::BAD_REQUEST, "Missing Host header\n").into_response();
     };
 
     let site_name = site_name_of(hostname);
+    if site_name == redirect::SITE_NAME {
+        return redirect::redirect_to_target(request.uri());
+    }
+
     let Some(static_files) = sites.get(&site_name) else {
         debug!("No site {:?} to serve request {:?}", site_name, request.uri());
         return (StatusCode::NOT_FOUND, "Unknown host\n").into_response();
@@ -153,24 +159,34 @@ impl<B> MakeSpan<B> for RequestSpan {
         let info = ip.map(|ip| self.0.lookup(ip)).unwrap_or_default();
         let referer = referer_of(request).unwrap_or("-");
 
-        span!(
+        let span = span!(
             Level::INFO,
             "request",
             method = %request.method(),
             uri = %request.uri(),
             version = ?request.version(),
-            // Debug rather than Display for every free-form value: it quotes and escapes them, so a
-            // space in a city or an org name does not end the field halfway through for a logfmt parser
-            site = ?site,
-            user = ?user,
-            country = ?info.country.unwrap_or("-"),
-            city = ?info.city.unwrap_or("-"),
+            site = %site,
+            user = %user,
+            country = %info.country.unwrap_or("-"),
+            city = %info.city.unwrap_or("-"),
+            latitude = tracing::field::Empty,
+            longitude = tracing::field::Empty,
             // AS0 is reserved and never routed, so it reads as "unknown" the way "-" does for the others
             asn = %info.asn.unwrap_or(0),
-            org = ?info.org.unwrap_or("-"),
+            org = %info.org.unwrap_or("-"),
             // last, as it is the only field with no bound on its length
-            referer = ?referer,
-        )
+            referer = %referer,
+        );
+
+        // A lookup miss has no coordinates; omitting the fields avoids logging a false 0,0.
+        if let Some(latitude) = info.latitude {
+            span.record("latitude", latitude);
+        }
+        if let Some(longitude) = info.longitude {
+            span.record("longitude", longitude);
+        }
+
+        span
     }
 }
 

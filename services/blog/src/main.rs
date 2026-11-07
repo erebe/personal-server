@@ -18,6 +18,7 @@ use tracing::{Level, info};
 use tracing_subscriber::EnvFilter;
 
 mod geoip;
+mod redirect;
 mod sites;
 
 #[global_allocator]
@@ -31,6 +32,9 @@ async fn health() -> (StatusCode, Cow<'static, str>) {
 ///
 /// The first label of the requested hostname selects the directory to serve the files from.
 /// i.e: https://wstunnel.erebe.eu/index.html serves the file <root-dir>/wstunnel/index.html
+///
+/// Except for the `fork` hostname, which temporarily redirects its short links.
+/// i.e: https://fork.erebe.eu/gh redirects to https://github.com/erebe
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
@@ -55,7 +59,7 @@ struct Cli {
 
 fn cli_init<T: clap::Parser>() -> T {
     tracing_subscriber::fmt()
-        .with_ansi(true)
+        .json()
         .with_env_filter(
             EnvFilter::builder()
                 .with_default_directive(LevelFilter::INFO.into())
@@ -80,6 +84,9 @@ async fn main() -> Result<(), anyhow::Error> {
     }
     for (host, dir) in sites.iter() {
         info!("Serving http://{}.* from {:?}", host, dir);
+    }
+    for (id, target) in redirect::REDIRECTS.iter() {
+        info!("Redirecting http://{}.*/{} to {}", redirect::SITE_NAME, id, target);
     }
 
     let geoip = GeoIp::load(cli.geoip_city_db.as_deref(), cli.geoip_asn_db.as_deref())
@@ -134,6 +141,7 @@ mod tests {
     use super::*;
     use axum::body::Body;
     use axum::http::{Request, header};
+    use axum::response::Response;
     use tower::ServiceExt;
 
     fn router() -> Router {
@@ -141,14 +149,18 @@ mod tests {
         get_router(Sites::load(&root_dir).unwrap(), GeoIp::load(None, None).unwrap())
     }
 
-    async fn get(host: &str, path: &str) -> StatusCode {
+    async fn request(host: &str, path: &str) -> Response {
         let request = Request::builder()
             .uri(path)
             .header(header::HOST, host)
             .body(Body::empty())
             .unwrap();
 
-        router().oneshot(request).await.unwrap().status()
+        router().oneshot(request).await.unwrap()
+    }
+
+    async fn get(host: &str, path: &str) -> StatusCode {
+        request(host, path).await.status()
     }
 
     #[tokio::test]
@@ -164,6 +176,24 @@ mod tests {
     #[tokio::test]
     async fn test_serve_unknown_site() {
         assert_eq!(get("unknown.erebe.eu", "/index.html").await, StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_redirect() {
+        let response = request("fork.erebe.eu", "/gh").await;
+        assert_eq!(response.status(), StatusCode::TEMPORARY_REDIRECT);
+        assert_eq!(response.headers()[header::LOCATION], "https://github.com/erebe");
+
+        let response = request("Fork.erebe.dev", "/gh?foo=bar").await;
+        assert_eq!(response.status(), StatusCode::TEMPORARY_REDIRECT);
+        assert_eq!(response.headers()[header::LOCATION], "https://github.com/erebe");
+
+        assert_eq!(get("fork.erebe.eu", "/").await, StatusCode::NOT_FOUND);
+        assert_eq!(get("fork.erebe.eu", "/unknown").await, StatusCode::NOT_FOUND);
+        assert_eq!(
+            get("fork.erebe.eu", "/https://example.com").await,
+            StatusCode::NOT_FOUND
+        );
     }
 
     #[tokio::test]

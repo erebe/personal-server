@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f7f2">
+  <title>Build your own cloud network — erebe.</title>
+  <meta name="description" content="Carve out your own little corner of the Internet. A hands-on guide to public IPs, private networks, WireGuard tunnels, and routing with nftables.">
+  <meta name="author" content="Romain Gérard">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Build your own cloud network">
+  <meta property="og:description" content="From a public IP to a private network. Build your own corner of the Internet with Linux, WireGuard, and a little curiosity.">
+  <meta property="og:site_name" content="erebe. — Notes on software & systems">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23f8f7f2'/%3E%3Ctext x='15' y='47' font-family='Georgia' font-size='50' fill='%23a65332'%3Ee%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script src="article.js" defer></script>
+</head>
+<body id="top">
+  <a class="skip-link" href="#introduction">Skip to article</a>
+  <div class="reading-progress" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="erebe — back to top"><span class="wordmark">erebe<span>.</span></span><span class="brand-caption">Notes on software &amp; systems</span></a>
+    <nav class="header-nav" aria-label="Main navigation">
+      <a class="nav-guide" href="#introduction">The guide <span aria-hidden="true">↓</span></a>
+      <a href="https://cv.erebe.eu">About me <span aria-hidden="true">↗</span></a>
+      <a class="nav-github" href="https://github.com/erebe">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
+
+  <main>
+    <header class="hero">
+      <div class="eyebrow">Field notes <span aria-hidden="true">/</span> Infrastructure</div>
+      <div class="hero-grid">
+        <div>
+          <h1>Build your own<br><em>cloud network.</em></h1>
+          <p class="dek">A public IP, a private network, and a little curiosity.<br>Let’s carve out your own corner of the Internet.</p>
+          <div class="byline">
+            <span class="avatar" aria-hidden="true">RG</span>
+            <div><a class="author" href="https://cv.erebe.eu">Romain Gérard</a><span class="author-subtitle">Software engineer · @erebe</span></div>
+            <span class="byline-divider" aria-hidden="true"></span>
+            <div class="read-time"><time datetime="2023-12">December 2023</time><br><span id="reading-time">25 min read</span></div>
+          </div>
+        </div>
+        <img class="hero-art" src="assets/network.svg" width="580" height="440" alt="The Internet connects to your public VPS, then through an encrypted WireGuard tunnel to your home server and applications.">
+      </div>
+      <div class="hero-bottom">
+        <div class="tags"><span>Networking</span><span>WireGuard</span><span>Self-hosting</span></div>
+        <a class="start-reading" href="#introduction">Let’s build something <span aria-hidden="true">↓</span></a>
+      </div>
+    </header>
+
+    <div class="article-layout">
+      <aside class="sidebar" aria-label="Article navigation">
+        <h2 class="toc-title">ON THIS PAGE</h2>
+        <nav class="toc" aria-label="Table of contents">
+          <ol>
+            <li><a href="#introduction" aria-current="location"><span>00</span> A little context</a></li>
+            <li><a href="#network-plane"><span>01</span> The network plane</a></li>
+            <li><a href="#practical-network"><span>02</span> A more practical path</a></li>
+            <li><a href="#your-vps"><span>03</span> Your gateway to the Internet</a></li>
+            <li><a href="#wireguard"><span>04</span> A network with WireGuard</a></li>
+            <li><a href="#connect-your-host"><span>05</span> Connect your host</a></li>
+            <li><a href="#routing"><span>06</span> Let the traffic in</a></li>
+            <li><a href="#growing"><span>07</span> Room to grow</a></li>
+            <li><a href="#conclusion"><span>08</span> Just the beginning</a></li>
+          </ol>
+        </nav>
+        <p class="sidebar-note"><strong>A little hands-on learning.</strong><br>One VPS. One Linux host.<br>Your very own network.</p>
+        <button class="print-button" type="button" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 9V3h12v6M6 18H3V9h18v9h-3M6 14h12v7H6z"/></svg> Print / save as PDF</button>
+      </aside>
+
+      <div class="article-main">
+        <details class="mobile-toc">
+          <summary>On this page <span aria-hidden="true">↓</span></summary>
+          <nav class="toc" aria-label="Mobile table of contents">
+            <ol>
+              <li><a href="#introduction"><span>00</span> A little context</a></li>
+              <li><a href="#network-plane"><span>01</span> The network plane</a></li>
+              <li><a href="#practical-network"><span>02</span> A more practical path</a></li>
+              <li><a href="#your-vps"><span>03</span> Your gateway to the Internet</a></li>
+              <li><a href="#wireguard"><span>04</span> A network with WireGuard</a></li>
+              <li><a href="#connect-your-host"><span>05</span> Connect your host</a></li>
+              <li><a href="#routing"><span>06</span> Let the traffic in</a></li>
+              <li><a href="#growing"><span>07</span> Room to grow</a></li>
+              <li><a href="#conclusion"><span>08</span> Just the beginning</a></li>
+            </ol>
+          </nav>
+        </details>
+
+        <article class="prose" aria-label="Build your own cloud network">
+          <section id="introduction" aria-label="A little context">
+            <p class="intro drop-cap">Last Christmas, I bought my wife <a href="http://highscalability.com/blog/2017/12/18/explain-the-cloud-like-im-10.html">“Explain the Cloud Like I’m 10”</a> after she mentioned, many times, how hard it was to relate to what I do every day at Qovery.</p>
+            <p>So far, I’ve been the sole reader to enjoy the book. But while reading, I wondered: are there any resources that explain how to <em>build</em> all that?</p>
+            <p>I reached for <a href="https://github.com/codecrafters-io/build-your-own-x">build-your-own-x</a>, expecting to find some treasure to unearth, but ended up disappointed. Nothing really covered infrastructure or the cloud; most topics were software-oriented. So in today’s article, I’m going to explain how to build your own cloud network.</p>
+            <div class="callout"><span class="callout-icon" aria-hidden="true">↳</span><div><strong>First, let’s make “the cloud” a little smaller.</strong><p>The <a href="https://www.cloudflare.com/learning/cloud/what-is-the-cloud/">cloud</a> covers scalability, reliability, availability, elasticity, on-demand resources, and much more. That’s too much for one article. Here, we’ll focus on the network: building your own place on the Internet, reachable by others.</p></div></div>
+            <p class="archive-note"><strong>From the archive.</strong> Adapted from the December 2023 PDF. Provider prices, product limitations, and service availability describe that period. The original illustrations and references are preserved.</p>
+          </section>
+
+          <section id="network-plane">
+            <header class="section-heading"><span class="section-kicker">01 / The foundations</span><h2>The network plane</h2></header>
+            <p>Okay, where do we start? Whenever you want to host your next startup idea, or a cool Rust project like <a href="https://github.com/warp-tech/warpgate">Warpgate</a> for a smart SSH and HTTPS bastion, you need an address. On the Internet, these are <a href="https://www.cloudflare.com/learning/dns/glossary/what-is-my-ip-address/">IP addresses</a>, and they come in two flavors: IPv4 and IPv6.</p>
+            <h3>An address of your own</h3>
+            <p>Getting IPv4 space for yourself nowadays means putting a lot of money on the table. At the time of writing, <a href="https://auctions.ipv4.global/">IPv4 auctions</a> offered nothing below $9,000 for a <a href="https://en.wikipedia.org/wiki/Subnet">/24 subnet</a>—a block of 256 addresses.</p>
+            <p>Why buy a whole block when you only need one address? By convention, people routing traffic on the Internet generally treat a /24 as the smallest globally routable IPv4 prefix.</p>
+            <blockquote><p>It’s like your post office telling you that unless you live in a suburb with at least 256 houses, no postman will come to your mailbox.</p></blockquote>
+            <p>If you’re starting today, invest some time in IPv6. Even if IPv4 never really dies, its small pool of remaining addresses is a problem. In 2023, AWS <a href="https://www.theregister.com/2023/07/31/aws_says_ipv4_addresses_cost/">announced charges for public IPv4 addresses</a> starting in 2024, passing those growing costs on to customers and encouraging a move to IPv6.</p>
+            <p>Thanks in part to <a href="https://apenwarr.ca/log/20170810">mobile carriers</a>, IPv6 was already well supported by major Internet players. All of them? Sadly, no. In 2023, <a href="https://github.com/orgs/community/discussions/10539">GitHub still wasn’t IPv6-ready</a>.</p>
+            <details class="source-detail"><summary>From the original: checking GitHub’s IPv6 support</summary><figure><a class="figure-link" href="assets/github-ipv6.webp"><img src="assets/github-ipv6.webp" width="2003" height="516" alt="A 2023 terminal screenshot showing a DNS query for GitHub with no IPv6 answer." loading="lazy"></a><figcaption><span class="fig-number">ARCHIVE</span> The original IPv6 DNS lookup, captured in 2023.</figcaption></figure></details>
+            <h3>Who hands out IP addresses?</h3>
+            <p>That depends on where you are. <strong>Regional Internet Registries (RIRs)</strong> oversee the allocation and registration of IPv4 addresses, IPv6 addresses, and autonomous system numbers in their regions. If, like me, you’re in Europe, the addresses you use to browse the web are allocated through the <a href="https://www.ripe.net/">RIPE NCC</a>.</p>
+            <figure><a class="figure-link" href="assets/regional-registries.webp"><img src="assets/regional-registries.webp" width="1342" height="663" alt="World map of the five Regional Internet Registries: ARIN in North America, LACNIC in Latin America, RIPE NCC in Europe and surrounding regions, AFRINIC in Africa, and APNIC in Asia-Pacific." loading="lazy"></a><figcaption><span class="fig-number">FIG. 02</span> The world’s five Regional Internet Registries. Original illustration from the PDF.</figcaption></figure>
+            <p>For an individual hobbyist, going directly to a registry isn’t the practical route. Fortunately, RIRs work with <strong>Local Internet Registries (LIRs)</strong>; RIPE maintains a <a href="https://www.ripe.net/participate/member-support/list-of-members/europe">list of its members</a>.</p>
+            <p>Contact an LIR, such as the <a href="https://www.servperso.net/ripe-ncc-lir-services">service linked in the original guide</a>, and ask for IPv6 address space. The next question is: which kind?</p>
+            <div class="comparison"><div><span class="label">PI allocation</span><h4>Provider independent</h4><p>Independent of a provider’s address block, with more administration, fees, and requirements. The original guide treats this as the more involved route for someone building a business. See RIPE’s <a href="https://www.ripe.net/manage-ips-and-asns/ipv6/request-ipv6/how-to-request-an-ipv6-pi-assignment">PI assignment process</a>.</p></div><div><span class="label">PA allocation</span><h4>Provider aggregated</h4><p>A range carved from the LIR’s own space and leased to you. The LIR owns the range, so you can’t take it with you, but you administer it. The guide’s 2023 estimate was around $100 a year.</p></div></div>
+            <p>Once you have your IPv6 range, how do you get the rest of the Internet to talk to you? Simple:</p>
+            <ol><li>Learn <a href="https://www.youtube.com/watch?v=1pi18uNqsO4&amp;list=PLjVwd8FlHBAQk5U2ScrjpeRJujGTCaMfR&amp;index=1">BGP</a>.</li><li>Find a <a href="https://docs.google.com/spreadsheets/d/1abmV_mXWWCsVxHLfouSivyS7ch-PcUww8S6ksY66c5o/edit?pli=1#gid=0">provider that lets you peer with them</a> to exchange routes.</li><li>Announce your routes like the brave Internet citizen you are!</li><li>You can even practice for free on <a href="https://dn42.eu/Home">DN42</a>.</li></ol>
+            <p>Wait. Isn’t that a little overblown? To host a simple blog, I need to spend hundreds of dollars a year, leave IPv4 users behind, and learn low-level BGP networking?</p>
+            <p>Well, yes. Maybe. But you did want to learn. <span aria-label="shrug">¯\_(ツ)_/¯</span></p>
+          </section>
+
+          <section id="practical-network">
+            <header class="section-heading"><span class="section-kicker">02 / A more practical path</span><h2>Borrow a place on the Internet</h2></header>
+            <p>Okay, okay. Owning an IP address range might be overkill. Where else can we get a public address? Like when you need a lighter and don’t have one: you ask someone else.</p>
+            <h3>What about your ISP?</h3>
+            <p>If you’re reading this, you’re already on the Internet, so you already have an IP address. You can find it on <a href="https://whatismyipaddress.com/">What Is My IP Address</a>.</p>
+            <details class="source-detail"><summary>From the original: finding your public IP</summary><figure><a class="figure-link" href="assets/public-ip.webp"><img src="assets/public-ip.webp" width="2003" height="753" alt="An IP lookup page showing the author’s ISP-provided IPv4 and IPv6 addresses and approximate location in France." loading="lazy"></a><figcaption><span class="fig-number">ARCHIVE</span> An ISP connection already gives you an address on the Internet.</figcaption></figure></details>
+            <p>It’s possible to start your cloud using your ISP’s address. But I don’t recommend it as your first step: there are more moving parts than necessary.</p>
+            <ul><li><strong>Your address might change.</strong> A dynamic address means setting up <a href="https://en.wikipedia.org/wiki/Dynamic_DNS">dynamic DNS</a> with a service such as <a href="https://www.noip.com/remote-access">No-IP</a> to keep your cloud easy to reach.</li><li><strong>ISP networks filter traffic.</strong> Mail traffic is a common example: providers may block it to limit spam and infected machines. Policies differ between ISPs, leaving you to wonder why something doesn’t work.</li><li><strong>You don’t fully control the router.</strong> The box between your home and the ISP might restrict features or configurations to reduce support needs and prevent abuse.</li><li><strong>Your partner would like the Wi-Fi to keep working.</strong> They may care rather less about your learning adventure when it breaks the Internet. Your relationship will thank you for experimenting elsewhere.</li></ul>
+            <p>So we need to stand on the shoulders of someone already established on the Internet, with a public endpoint that can route traffic to us.</p>
+            <h3>Cloudflare: the easy way in</h3>
+            <p>The path of least resistance in the original guide was Cloudflare Tunnel. There are already plenty of <a href="https://www.crosstalksolutions.com/cloudflare-tunnel-easy-setup/">setup tutorials</a>, so I won’t repeat all the details here.</p>
+            <p>In essence, you run a binary on your own server. It establishes a tunnel to Cloudflare’s infrastructure. Cloudflare then routes public traffic through that tunnel, making services on your internal network accessible from the Internet.</p>
+            <figure><a class="figure-link" href="assets/cloudflare-tunnel.webp"><img src="assets/cloudflare-tunnel.webp" width="2003" height="1025" alt="Cloudflare accepts user traffic and forwards it through a reverse tunnel, past the home router, to a web server and applications on the internal network." loading="lazy"></a><figcaption><span class="fig-number">FIG. 03</span> A reverse tunnel connects your private applications to a public entry point.</figcaption></figure>
+            <p>The original article highlights several tradeoffs: public web access centered on ports 80 and 443, restrictions around disproportionate non-web traffic such as images and video, and a dependence on Cloudflare’s tooling when you want to extend the setup. These are the author’s <strong>2023 observations</strong>; product features and terms may have changed.</p>
+            <p>For more context, the original guide also links to <a href="https://www.youtube.com/watch?v=oqy3krzmSMA">this discussion of the downsides</a>.</p>
+            <blockquote><p>What if we could build the same idea ourselves, with the freedom to route whatever traffic we want?</p></blockquote>
+          </section>
+
+          <section id="your-vps">
+            <header class="section-heading"><span class="section-kicker">03 / Your public entry point</span><h2>Your gateway to the Internet</h2></header>
+            <p>Now for the real deal. We’re going to create our own virtual private network. It takes some time, but we’ll be free to route different kinds of traffic and extend the network as our needs grow.</p>
+            <p>We still need someone to lend us a public IP address. The straightforward option is to rent a cheap <strong>Virtual Private Server (VPS)</strong> from a hosting provider.</p>
+            <p>The provider matters less than you might think: we’re mainly shuffling packets around. Pick a VPS near your own network. If your private network is in Paris, sending all its traffic through Sydney isn’t very efficient.</p>
+            <figure><a class="figure-link" href="assets/network-distance.webp"><img src="assets/network-distance.webp" width="2003" height="892" alt="A world map illustrating long routes between Europe, North America, and Australia when a VPS is located far from the private network." loading="lazy"></a><figcaption><span class="fig-number">FIG. 04</span> Distance matters. Keep the trip between your public gateway and your home network short.</figcaption></figure>
+            <p>In 2023, I recommended Hetzner for affordable, reliable instances in Europe: roughly $5 per month for 2 vCPUs, 4 GB of RAM, and 20 TB of traffic. I’d also heard good things about Linode in the US. These are historical examples, rather than current price quotes.</p>
+            <details class="source-detail"><summary>From the original: the 2023 VPS pricing table</summary><figure><a class="figure-link" href="assets/vps-pricing.webp"><img src="assets/vps-pricing.webp" width="2003" height="1128" alt="The original Hetzner cloud pricing screenshot, with its smallest displayed Arm instance priced at €4.51 per month in 2023." loading="lazy"></a><figcaption><span class="fig-number">ARCHIVE</span> Provider pricing captured for the original article.</figcaption></figure></details>
+            <p>Unless you plan to run applications on the VPS—which we won’t in this guide—you don’t need to worry much about the CPU architecture. We just need Linux to move packets around.</p>
+            <p>Pick your VPS and install Linux. The rest of this guide uses <strong>Debian Bookworm</strong>. SSH into the machine and list its network interfaces:</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">VPS · terminal</span></div><pre><code>ip a</code></pre></div>
+            <figure><a class="figure-link" href="assets/public-interfaces.webp"><img src="assets/public-interfaces.webp" width="2003" height="598" alt="Output from ip a on the VPS, annotated to identify its public IPv4 address 128.140.117.115 and IPv6 address 2a01:4f8:c012:32a1::1." loading="lazy"></a><figcaption><span class="fig-number">FIG. 05</span> Find the VPS’s public IPv4 and IPv6 addresses. Use your own addresses in the examples below.</figcaption></figure>
+            <div class="callout"><span class="callout-icon" aria-hidden="true">✓</span><div><strong>Your first milestone.</strong><p>You now have a public IP address: your gateway to the Internet and the entry point to your own cloud. From your local machine, try pinging both addresses.</p></div></div>
+            <details class="source-detail"><summary>From the original: a successful IPv4 and IPv6 ping</summary><figure><a class="figure-link" href="assets/ping.webp"><img src="assets/ping.webp" width="1613" height="1028" alt="Successful ping responses from the public VPS over both IPv4 and IPv6, with zero packet loss." loading="lazy"></a><figcaption><span class="fig-number">ARCHIVE</span> Both public addresses respond.</figcaption></figure></details>
+          </section>
+
+          <section id="wireguard">
+            <header class="section-heading"><span class="section-kicker">04 / The private side</span><h2>A network with WireGuard</h2></header>
+            <p>We’ll build our network with <a href="https://www.wireguard.com/">WireGuard</a>: a simple, modern VPN with <a href="https://www.wireguard.com/protocol/">modern cryptography</a> and a focus on <a href="https://www.wireguard.com/performance/">performance</a>. Once it’s in place, your applications will have a private path to the VPS. Then we’ll make them reachable from the Internet.</p>
+            <figure><a class="figure-link" href="assets/wireguard-topology.webp"><img src="assets/wireguard-topology.webp" width="2003" height="1243" alt="The target topology: an Internet user reaches the public VPS, which connects over WireGuard through a home router to the host running the application." loading="lazy"></a><figcaption><span class="fig-number">FIG. 06</span> The network we’re building. A public VPS connects to an application host inside your private network.</figcaption></figure>
+            <p>Our network has two subnets: one for IPv4 and one for IPv6.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Network address plan"><table><thead><tr><th>Network</th><th>Private subnet</th><th>VPS</th><th>Host</th></tr></thead><tbody><tr><td>IPv4</td><td><code>10.42.0.0/16</code></td><td><code>10.42.0.1</code></td><td><code>10.42.0.2</code></td></tr><tr><td>IPv6</td><td><code>fd00:cafe::/32</code></td><td><code>fd00:cafe::1</code></td><td><code>fd00:cafe::2</code></td></tr></tbody></table></div>
+            <p>The IPv4 block contains 65,536 addresses; the IPv6 block contains 2<sup>96</sup>. Both are private ranges. These addresses won’t be routed on the public Internet. Visitors will see the VPS’s public address; the machines behind it stay inside your network.</p>
+            <p>Why use private IPv6 space when globally routable IPv6 addresses could avoid NAT? This is a beginner’s guide. Starting privately helps avoid unintentionally exposing your network through routing mistakes. It isn’t a dead end: you can later add a third, globally routable IPv6 subnet alongside the private ones.</p>
+            <h3>Prepare the VPS</h3>
+            <p>Open a root shell on the VPS. Refresh Debian’s package index, upgrade the installed packages, and install the tools we’ll use:</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">VPS · terminal</span></div><pre><code>apt-get update &amp;&amp; apt-get upgrade -y
+apt-get install -y vim nano curl wireguard nftables</code></pre></div>
+            <h3>Give each peer an identity</h3>
+            <p>WireGuard authenticates peers using public and private key pairs. We need one pair for the VPS and another for the machine running our applications.</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">VPS · /etc/wireguard</span></div><pre><code>cd /etc/wireguard
+# Restrict key files to their owner from the moment they are created.
+umask 077
+wg genkey | tee vps.private_key | wg pubkey &gt; vps.public_key
+wg genkey | tee my_cloud.private_key | wg pubkey &gt; my_cloud.public_key</code></pre></div>
+            <p>Keep each private key secret; only its machine needs it. Public keys can be shared with the other peers. The examples below use <code>__VPS_PRIVATE_KEY__</code>, <code>__VPS_PUBLIC_KEY__</code>, <code>__HOST_PRIVATE_KEY__</code>, and <code>__HOST_PUBLIC_KEY__</code> in place of the key values printed in the PDF. Replace those placeholders with your own generated values.</p>
+            <h3>Configure WireGuard on the VPS</h3>
+            <p>Create <code>/etc/wireguard/wg0.conf</code>:</p>
+            <div class="code-block" data-language="ini"><div class="code-header"><span class="file-label">VPS · /etc/wireguard/wg0.conf</span></div><pre><code>[Interface]
+Address = 10.42.0.1/16, fd00:cafe::1/32
+PrivateKey = __VPS_PRIVATE_KEY__
+ListenPort = 995
+
+# Linux must forward packets between the public and VPN interfaces.
+PostUp = sysctl -w net.ipv4.ip_forward=1
+PostUp = sysctl -w net.ipv6.conf.all.forwarding=1
+
+[Peer]
+PublicKey = __HOST_PUBLIC_KEY__
+AllowedIPs = 10.42.0.2/32, fd00:cafe::2/128</code></pre></div>
+            <p>Save and exit your editor (<code>:x</code> in Vim). Start the interface and inspect it:</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">VPS · terminal</span></div><pre><code>wg-quick up wg0
+ip a show wg0
+ping -c 4 fd00:cafe::1</code></pre></div>
+            <p>You should see a new <code>wg0</code> interface with <code>10.42.0.1/16</code> and <code>fd00:cafe::1/32</code>. Its local IPv6 address should respond to the ping.</p>
+            <details class="source-detail"><summary>Example: WireGuard startup output</summary><div class="code-block"><div class="code-header"><span class="file-label">VPS · output</span></div><pre><code>[#] ip link add wg0 type wireguard
+[#] wg setconf wg0 /dev/fd/63
+[#] ip -4 address add 10.42.0.1/16 dev wg0
+[#] ip -6 address add fd00:cafe::1/32 dev wg0
+[#] ip link set mtu 1420 up dev wg0
+[#] sysctl -w net.ipv4.ip_forward=1
+net.ipv4.ip_forward = 1
+[#] sysctl -w net.ipv6.conf.all.forwarding=1
+net.ipv6.conf.all.forwarding = 1</code></pre></div></details>
+            <p>If you edit the configuration later, restart the interface with <code>wg-quick down wg0 &amp;&amp; wg-quick up wg0</code>. To bring it up automatically after a reboot, enable its systemd unit:</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">VPS · terminal</span></div><pre><code>systemctl enable wg-quick@wg0
+
+# After the next reboot, systemd manages the interface.
+systemctl status wg-quick@wg0</code></pre></div>
+            <p>That’s the VPS side done. Time to connect your own machine.</p>
+          </section>
+
+          <section id="connect-your-host">
+            <header class="section-heading"><span class="section-kicker">05 / The other end of the tunnel</span><h2>Connect your host</h2></header>
+            <p>Your host can be anything that runs WireGuard: a Raspberry Pi, a <a href="https://www.zimaboard.com/">ZimaBoard</a>, a laptop, or a virtual machine on your laptop. In this guide, it’s another Debian Bookworm machine.</p>
+            <figure><a class="figure-link" href="assets/wireguard-host.webp"><img src="assets/wireguard-host.webp" width="2003" height="1232" alt="The VPS is configured; the next step is the application host, circled in green inside the private cloud network." loading="lazy"></a><figcaption><span class="fig-number">FIG. 07</span> The public end is ready. Let’s connect the private end.</figcaption></figure>
+            <p>Open a root shell on your host, update the system, and install WireGuard:</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">Host · terminal</span></div><pre><code>apt-get update &amp;&amp; apt-get upgrade -y
+apt-get install -y vim nano curl wireguard</code></pre></div>
+            <p>Create its configuration with the host’s private key and the VPS’s public key. Use the <strong>public address of your own VPS</strong> for <code>Endpoint</code>; it can be IPv4 or IPv6.</p>
+            <div class="code-block" data-language="ini"><div class="code-header"><span class="file-label">Host · /etc/wireguard/wg0.conf</span></div><pre><code>[Interface]
+Address = 10.42.0.2/32, fd00:cafe::2/128
+PrivateKey = __HOST_PRIVATE_KEY__
+
+[Peer]
+PublicKey = __VPS_PUBLIC_KEY__
+AllowedIPs = 10.42.0.0/16, fd00:cafe::/32
+Endpoint = [2a01:4f8:c012:32a1::1]:995
+
+# Keep the NAT mapping alive when the host sits behind a router.
+PersistentKeepalive = 20</code></pre></div>
+            <p>And now, the grand moment. Bring the interface up and ping the VPS using its <em>private</em> addresses:</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">Host · terminal</span></div><pre><code>wg-quick up wg0
+ping -c 4 10.42.0.1
+ping -6 -c 4 fd00:cafe::1</code></pre></div>
+            <details class="source-detail"><summary>Example: successful private-network pings</summary><div class="code-block"><div class="code-header"><span class="file-label">Host · output</span></div><pre><code>64 bytes from 10.42.0.1: icmp_seq=1 ttl=64 time=20.4 ms
+64 bytes from 10.42.0.1: icmp_seq=2 ttl=64 time=19.5 ms
+64 bytes from 10.42.0.1: icmp_seq=3 ttl=64 time=16.4 ms
+64 bytes from 10.42.0.1: icmp_seq=4 ttl=64 time=17.4 ms
+
+4 packets transmitted, 4 received, 0% packet loss
+
+64 bytes from fd00:cafe::1: icmp_seq=1 ttl=64 time=19.2 ms
+64 bytes from fd00:cafe::1: icmp_seq=2 ttl=64 time=16.1 ms
+64 bytes from fd00:cafe::1: icmp_seq=3 ttl=64 time=17.7 ms
+64 bytes from fd00:cafe::1: icmp_seq=4 ttl=64 time=18.3 ms
+
+4 packets transmitted, 4 received, 0% packet loss</code></pre></div></details>
+            <div class="callout"><span class="callout-icon" aria-hidden="true">✓</span><div><strong>You have a private network.</strong><p>Your host and VPS can now talk over both IPv4 and IPv6, through the WireGuard tunnel.</p></div></div>
+            <h3>Let’s try HTTP</h3>
+            <p>Run a small HTTP server on your host. Use a separate directory for its content so you don’t accidentally serve the WireGuard configuration and its private key.</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">Host · terminal</span></div><pre><code>mkdir -p /tmp/cloud-demo
+printf 'Hello from my cloud!\n' &gt; /tmp/cloud-demo/index.html
+python3 -m http.server --bind :: 80 --directory /tmp/cloud-demo</code></pre></div>
+            <p>From the VPS, request the host’s private address:</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">VPS · terminal</span></div><pre><code>curl 'http://[fd00:cafe::2]'
+# Hello from my cloud!</code></pre></div>
+            <p>Hooray! HTTP works. But if you try the VPS’s public address, it fails:</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">VPS · terminal</span></div><pre><code>curl 'http://[2a01:4f8:c012:32a1::1]'
+# curl: (7) Failed to connect ... port 80: Couldn't connect to server</code></pre></div>
+            <p>People arriving from the Internet still can’t see your app. Let’s fix that.</p>
+          </section>
+
+          <section id="routing">
+            <header class="section-heading"><span class="section-kicker">06 / Follow the packets</span><h2>Let the traffic in</h2></header>
+            <figure><a class="figure-link" href="assets/http-routing-gap.webp"><img src="assets/http-routing-gap.webp" width="2003" height="1376" alt="Private traffic successfully reaches the application host, but public HTTP traffic stops at the VPS because forwarding is not configured yet." loading="lazy"></a><figcaption><span class="fig-number">FIG. 08</span> The tunnel works. The missing piece is forwarding public traffic into it.</figcaption></figure>
+            <p>This time, we need the Linux kernel itself—specifically, its packet filtering features. Each received packet follows a series of hooks:</p>
+            <figure><a class="figure-link" href="assets/packet-flow.webp"><img src="assets/packet-flow.webp" width="2003" height="1124" alt="Linux packet flow through prerouting, a routing decision, input for local processes or forward for another host, and postrouting before an outgoing packet leaves." loading="lazy"></a><figcaption><span class="fig-number">FIG. 09</span> The original packet-flow diagram, rejoined from two PDF pages.</figcaption></figure>
+            <p>When a request hits the VPS’s public address, the kernel decides that the traffic is <em>for this host</em>. It tries to deliver the packet to a local process listening on port 80. Unfortunately, that process is in another castle: our private host.</p>
+            <p>We need the kernel to take the <strong>forward</strong> branch instead. We’ll use <strong>nftables</strong>, the modern alternative to iptables, to change the packet’s destination before that routing decision.</p>
+            <div class="network-summary" aria-label="Request path"><div>Internet<small>PUBLIC REQUEST</small></div><span aria-hidden="true">→</span><div>VPS<small>DNAT + WIREGUARD</small></div><span aria-hidden="true">→</span><div>Your application<small>PRIVATE HOST</small></div></div>
+            <h3>The firewall configuration</h3>
+            <p>Write the following to <code>/etc/nftables.conf</code> on your VPS. The example uses <code>eth0</code> as its public interface. Replace it if your interface has a different name.</p>
+            <p>The rules allow SSH and WireGuard on the VPS, forward ports 80, 443, and 2222 to the host, and masquerade the forwarded connection so replies return through the tunnel.</p>
+            <div class="code-block" data-language="nft"><div class="code-header"><span class="file-label">VPS · /etc/nftables.conf</span></div><pre><code>#!/usr/sbin/nft -f
+flush ruleset
+
+table inet SERVER_FIREWALL {
+    set blacklisted_ips {
+        type ipv4_addr;
+        flags dynamic, timeout;
+        timeout 5 m;
+    }
+
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        ct state invalid drop comment "early drop of invalid packets"
+        ct state { established, related } accept
+
+        iif lo accept comment "accept loopback"
+        iifname wg0 accept comment "accept wireguard traffic"
+
+        # ICMPv6 is needed for IPv6 operation, not only ping.
+        meta l4proto icmp accept
+        meta l4proto ipv6-icmp accept
+        udp dport 546 ip6 saddr { fc00::/7, fe80::/10 } accept
+
+        tcp dport 22 accept comment "accept local SSH"
+        udp dport 995 accept comment "accept wireguard"
+    }
+
+    chain nat_prerouting {
+        type nat hook prerouting priority 0; policy accept;
+
+        # Original example: a shared rate limit and an IPv4 blacklist.
+        tcp dport { 22, 2222 } ct state new, untracked \
+            limit rate over 5 / minute \
+            add @blacklisted_ips { ip saddr }
+        ip saddr @blacklisted_ips drop
+
+        # Change the destination before the kernel decides where to send it.
+        iif eth0 tcp dport { 80, 443, 2222 } dnat ip to 10.42.0.2
+        iif eth0 tcp dport { 80, 443, 2222 } dnat ip6 to fd00:cafe::2
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+
+        iifname wg0 accept comment "accept forwarding wireguard traffic"
+        oifname wg0 accept comment "accept forwarding wireguard traffic"
+    }
+
+    chain nat_postrouting {
+        type nat hook postrouting priority 0; policy accept;
+
+        # The host must reply through the VPS instead of its default gateway.
+        iif eth0 oifname wg0 masquerade
+    }
+
+    chain output {
+        type filter hook output priority 0; policy accept;
+    }
+}</code></pre></div>
+            <h3>Why masquerade?</h3>
+            <p>Changing the destination gets an incoming packet to your host. But the host also needs a return path. With our split tunnel, replies to an arbitrary Internet client would otherwise follow the host’s usual default route.</p>
+            <p>The <code>masquerade</code> rule replaces the client’s source address with the VPS’s address on the outgoing WireGuard interface. Your host replies to that private address, and connection tracking reverses the translation on the way back. The public client sees a response from the VPS.</p>
+            <div class="callout"><span class="callout-icon" aria-hidden="true">↳</span><div><strong>A detail that matters.</strong><p>Masquerading here makes the application see the VPS’s private address as its client. The example also starts with <code>flush ruleset</code>, replacing the VPS’s existing nftables rules. It is the original tutorial setup for a dedicated gateway.</p></div></div>
+            <p>Apply the rules on the VPS:</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">VPS · terminal</span></div><pre><code>chmod +x /etc/nftables.conf
+/etc/nftables.conf</code></pre></div>
+            <p>Now, from your host or another Internet-connected machine, request the VPS’s public addresses. Substitute your own VPS addresses:</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">An Internet-connected machine · terminal</span></div><pre><code>curl 'http://[2a01:4f8:c012:32a1::1]'
+# Hello from my cloud!
+
+curl http://128.140.117.115
+# Hello from my cloud!</code></pre></div>
+            <p>Hooray for IPv6. Hooray for IPv4. You can now route public traffic to a machine inside your own cloud network.</p>
+            <figure><a class="figure-link" href="assets/public-routing.webp"><img src="assets/public-routing.webp" width="2003" height="1205" alt="The finished route: an Internet user reaches the public VPS, and traffic is forwarded across WireGuard to the application in the private network." loading="lazy"></a><figcaption><span class="fig-number">FIG. 10</span> The complete path, from an Internet user to your privately hosted application.</figcaption></figure>
+            <h3>Run something useful</h3>
+            <p>Once you <a href="https://docs.docker.com/engine/install/debian/">install Docker on the host</a>, you can run an application in a container. For example, here is the Warpgate setup from the guide, with the image name’s printing errors corrected:</p>
+            <div class="code-block" data-language="shell"><div class="code-header"><span class="file-label">Host · terminal</span></div><pre><code>docker run --rm -ti \
+    -p 443:8888 -p 2222:2222 \
+    -v /mnt:/data \
+    ghcr.io/warp-tech/warpgate setup
+
+docker run --rm -ti \
+    -p 443:8888 -p 2222:2222 \
+    -v /mnt:/data \
+    ghcr.io/warp-tech/warpgate</code></pre></div>
+            <p>Reach Warpgate on the HTTPS port of your VPS, accepting the self-signed certificate for this example.</p>
+            <figure><a class="figure-link" href="assets/warpgate.webp"><img src="assets/warpgate.webp" width="2003" height="1017" alt="The Warpgate welcome and login screen reached through the public IPv6 address of the VPS." loading="lazy"></a><figcaption><span class="fig-number">FIG. 11</span> An application in your private network, now reachable through the public gateway.</figcaption></figure>
+            <p>Bravo! Enjoy <a href="https://www.youtube.com/watch?v=QMDf5MSE0LQ">your moment of triumph</a>—but don’t let it go to your head. There’s still plenty to learn in the networking world.</p>
+          </section>
+
+          <section id="growing">
+            <header class="section-heading"><span class="section-kicker">07 / Room to grow</span><h2>One network, more machines</h2></header>
+            <p>I won’t go into every detail, but there are three ways to extend your private network.</p>
+            <h3>1. Connect every machine to the VPS</h3>
+            <p>Connect the next host exactly as you connected the first. This works well, but traffic between hosts has to go out to the VPS and back into your network. For lots of local communication, that’s a lot of unnecessary back and forth.</p>
+            <figure><a class="figure-link" href="assets/hub-and-spoke.webp"><img src="assets/hub-and-spoke.webp" width="2003" height="1221" alt="Two private hosts connect independently to the VPS. Traffic between them travels out through the VPS and back into the private network." loading="lazy"></a><figcaption><span class="fig-number">FIG. 12</span> A hub-and-spoke setup. Simple to extend, but local traffic takes the long way around.</figcaption></figure>
+            <h3>2. Add a gateway inside your network</h3>
+            <p>If machines talk to one another frequently, keep that traffic local. Run another WireGuard gateway inside the private network and configure it to route traffic for the other hosts. You can do all of this with WireGuard.</p>
+            <figure><a class="figure-link" href="assets/local-gateway.webp"><img src="assets/local-gateway.webp" width="2003" height="1277" alt="A private host acts as a local WireGuard gateway, connecting the VPS to another internal host while keeping internal traffic local." loading="lazy"></a><figcaption><span class="fig-number">FIG. 13</span> A local gateway keeps traffic close to home.</figcaption></figure>
+            <p>The host acting as a gateway would have a configuration like this:</p>
+            <div class="code-block" data-language="ini"><div class="code-header"><span class="file-label">Gateway host · /etc/wireguard/wg0.conf</span></div><pre><code>[Interface]
+Address = 10.42.0.2/16, fd00:cafe::2/32
+ListenPort = 995
+PrivateKey = __HOST_PRIVATE_KEY__
+
+# This host now routes packets for the peers behind it.
+PostUp = sysctl -w net.ipv4.ip_forward=1
+PostUp = sysctl -w net.ipv6.conf.all.forwarding=1
+
+[Peer]
+PublicKey = __VPS_PUBLIC_KEY__
+AllowedIPs = 10.42.0.1/32, fd00:cafe::1/128
+Endpoint = [2a01:4f8:c012:32a1::1]:995
+
+[Peer]
+PublicKey = __NEW_HOST_PUBLIC_KEY__
+AllowedIPs = 10.42.0.3/32, fd00:cafe::3/128</code></pre></div>
+            <p>And on the VPS:</p>
+            <div class="code-block" data-language="ini"><div class="code-header"><span class="file-label">VPS · /etc/wireguard/wg0.conf</span></div><pre><code>[Interface]
+Address = 10.42.0.1/16, fd00:cafe::1/32
+PrivateKey = __VPS_PRIVATE_KEY__
+ListenPort = 995
+PostUp = sysctl -w net.ipv4.ip_forward=1
+PostUp = sysctl -w net.ipv6.conf.all.forwarding=1
+
+[Peer]
+PublicKey = __HOST_PUBLIC_KEY__
+
+# The gateway host routes traffic for the rest of the private network.
+AllowedIPs = 10.42.0.0/16, fd00:cafe::/32</code></pre></div>
+            <h3>3. Build a full mesh</h3>
+            <p>Every machine connects directly to every other machine. The route is efficient, but the setup is more involved: adding a host means updating the configurations on all the others. Personally, I find that tedious.</p>
+            <figure><a class="figure-link" href="assets/full-mesh.webp"><img src="assets/full-mesh.webp" width="2003" height="1175" alt="A triangular full-mesh network with direct WireGuard connections between the VPS and both private hosts, and a direct connection between the hosts." loading="lazy"></a><figcaption><span class="fig-number">FIG. 14</span> A full mesh trades more configuration for direct paths between every peer.</figcaption></figure>
+            <div class="callout"><span class="callout-icon" aria-hidden="true">+</span><div><strong>Looking for something to run?</strong><p>The original guide recommends <a href="https://casaos.io/">CasaOS</a> as a way to install applications on your host and have some fun with your new setup.</p></div></div>
+          </section>
+
+          <section id="conclusion">
+            <header class="section-heading"><span class="section-kicker">08 / Just the beginning</span><h2>A small cloud. A lot of possibility.</h2></header>
+            <p>We’ve walked through the steps needed to build your own cloud network, reachable from the Internet. A public address, a private tunnel, a little routing—and your applications have a home.</p>
+            <p>Everything is manual at this point, and there are still single points of failure. To go further, you could make the NAT gateway redundant with two VPSs and a floating IP, or introduce automation and testing to configure and deploy your WireGuard tunnels.</p>
+            <p>This might feel like a toy example, but the broader pattern—private machines behind controlled public entry points—is also useful in larger cloud infrastructure. The original article draws a comparison with AWS private networks and NAT gateways for controlling outbound traffic, while inbound access needs its own entry point.</p>
+            <p>Even on AWS, building that network takes configuration. At Qovery, the original guide’s example made the cluster’s network setup available in a click, without all this manual fiddling.</p>
+            <blockquote><p>This was the network plane. Maybe next time, we’ll explore the data plane.</p></blockquote>
+            <p>Hope you enjoyed the journey. Now go build something. :)</p>
+            <div class="end-mark" aria-hidden="true">✳</div>
+          </section>
+
+          <details class="source-detail conversion-note"><summary>About this edition</summary><p>This web edition follows <em>Build your own cloud network</em>, exported to PDF on 12 December 2023. Its 26 pages have been reflowed into one article, with the original references and all 17 substantial figures. Three figures split across pages have been rejoined.</p><p>Prose has been lightly edited for readability, repeated page-break text removed, and repetitive terminal output condensed. Printed private keys are replaced with placeholders; key files are created with restricted permissions, and the HTTP demo serves a separate directory. Obvious address and image-name typos are corrected. The /24 address count, masquerading explanation, rate-limit comment, and AWS comparison have been clarified. The PI allocation discussion is condensed and points to the original RIPE reference.</p><p>The examples retain the original Debian Bookworm and 2023 context. This is a formatted archival article, not a newly tested infrastructure deployment.</p></details>
+          <div class="author-card"><span class="avatar" aria-hidden="true">RG</span><div><strong>Written by Romain Gérard</strong><p>Software engineer. Curious about the systems beneath the software.<br><a href="https://cv.erebe.eu">More about me ↗</a> &nbsp;·&nbsp; <a href="https://github.com/erebe">Find me on GitHub ↗</a></p></div></div>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer"><a class="wordmark" href="#top" aria-label="erebe — back to top">erebe<span>.</span></a><span>Built with curiosity. Shared with the Internet.</span><a href="#top">Back to top ↑</a></footer>
+  <dialog class="lightbox" aria-labelledby="lightbox-title"><div class="lightbox-header"><span id="lightbox-title">Article illustration</span><button class="lightbox-close" type="button" autofocus>Close ×</button></div><img alt=""></dialog>
+  <div class="sr-only" id="status" role="status" aria-live="polite"></div>
+</body>
+</html>

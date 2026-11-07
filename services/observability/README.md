@@ -16,7 +16,7 @@ Loki are deliberately **not** routed from outside - neither has authentication
 of its own. Reach them with a port-forward:
 
 ```
-kubectl -n observability port-forward svc/kube-prometheus-stack-prometheus 9090:9090
+kubectl -n observability port-forward svc/prometheus-prometheus 9090:9090
 kubectl -n observability port-forward svc/loki 3100:3100
 ```
 
@@ -207,6 +207,10 @@ The `systemd journal` dashboard (uid `systemd-journal`, provisioned from
 `dashboards/`) is the front end: node and unit pickers, the unit one accepting a
 regex, and a link into Explore where live tailing lives.
 
+Keep files in `dashboards/` in classic dashboard JSON format: Grafana 13.2.1's
+v2 file provisioning logs `failed to update managedFields` for valid panel and
+layout `kind` fields ([upstream bug](https://github.com/grafana/grafana/issues/128991)).
+
 ### Host metrics: Alloy instead of node-exporter
 
 `nodeExporter.enabled: false`. `prometheus.exporter.unix` in
@@ -223,6 +227,11 @@ appear on is Alloy's `/api/v0/component/prometheus.exporter.unix.node/metrics`,
 which is a debug endpoint on a `v0` API - not somewhere to hang the host metrics
 off. The scrape itself never touches a socket: the target resolves to Alloy's
 in-memory address, so it is collected in-process.
+
+The receiver Service is `prometheus-prometheus`, from the stack's
+`fullnameOverride`. Using the release-derived `kube-prometheus-stack-prometheus`
+name makes every push fail DNS resolution, leaving host metrics absent and the
+Node Exporter dashboards' instance pickers empty.
 
 **Four labels are relabelled on by hand, and every one of them is load-bearing.**
 The exporter's targets carry none of what the kubernetes-mixin rules and the
